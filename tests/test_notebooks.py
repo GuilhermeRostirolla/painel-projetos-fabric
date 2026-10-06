@@ -10,9 +10,10 @@ RAIZ = Path(__file__).resolve().parents[1]
 NOTEBOOKS = sorted((RAIZ / "fabric").glob("*.Notebook"))
 
 
-def test_quatro_notebooks():
+def test_cinco_notebooks():
     assert [n.name for n in NOTEBOOKS] == ["nb_00_orquestrador.Notebook", "nb_01_bronze_ingestao.Notebook",
-                                           "nb_02_silver_tratamento.Notebook", "nb_03_gold_modelo.Notebook"]
+                                           "nb_02_silver_tratamento.Notebook", "nb_03_gold_modelo.Notebook",
+                                           "nb_04_publicar_modelo.Notebook"]
 
 
 @pytest.mark.parametrize("pasta", NOTEBOOKS, ids=lambda p: p.name)

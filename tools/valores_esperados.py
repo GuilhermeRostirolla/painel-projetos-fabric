@@ -16,6 +16,7 @@ sys.path.insert(0, str(RAIZ))
 from tools.gerar_modelo import MEDIDAS  # noqa: E402
 
 MES = "2026-09"  # mês usado nas medidas de período
+MES_ANO = "set/26"  # o mesmo mês como aparece em dim_data[mes_ano]
 FINAIS = "('Concluída', 'Cancelada')"
 SQL = {
     "Projetos": "SELECT count(*) FROM dim_projeto",
@@ -91,14 +92,16 @@ def formatar(valor, formato: str | None) -> str:
     return ("+" + texto) if formato and formato.startswith("+") and valor > 0 else texto
 
 
-def calcular(spark) -> list[tuple[str, str, str, str]]:
-    linhas = []
+def calcular(spark) -> tuple[list[tuple[str, str, str, str]], dict]:
+    linhas, brutos = [], {}
     for tabela, medidas in MEDIDAS.items():
         for nome, pasta, formato, _ in medidas:
             valor = spark.sql(SQL[nome]).first()[0]
             contexto = f"mês {MES[5:]}/{MES[:4]}" if nome in PERIODO else "sem filtro"
             linhas.append((pasta, nome, formatar(valor, formato), contexto))
-    return linhas
+            brutos[nome] = {"valor": valor if isinstance(valor, str) else float(valor),
+                            "periodo": nome in PERIODO}
+    return linhas, brutos
 
 
 def main() -> None:
@@ -115,7 +118,11 @@ def main() -> None:
     if faltando:
         raise SystemExit(f"medidas sem conferência: {faltando}")
 
-    linhas = calcular(spark)
+    linhas, brutos = calcular(spark)
+    import json
+    (RAIZ / "docs").mkdir(exist_ok=True)
+    (RAIZ / "docs" / "valores_esperados.json").write_text(json.dumps(
+        {"mes_ano": MES_ANO, "medidas": brutos}, ensure_ascii=False, indent=1) + "\n", encoding="utf-8")
     destino = RAIZ / "docs" / "valores_esperados.md"
     destino.parent.mkdir(exist_ok=True)
     corpo = ["# Valores esperados das medidas", "",
