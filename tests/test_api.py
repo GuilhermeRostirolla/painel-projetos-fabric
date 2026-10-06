@@ -25,6 +25,7 @@ def test_exige_token(cliente, cabecalho):
 def test_meta(cliente):
     meta = cliente.get("/v1/meta", headers=AUTH).json()
     assert meta["data_referencia"] == "2026-09-30" and meta["totais"]["tarefas"] > 1000
+    assert meta["impressao_digital"] == "6c37f364e4dd838d"
 
 
 def test_paginacao_percorre_tudo_sem_repetir(cliente):

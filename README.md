@@ -64,16 +64,18 @@ flowchart LR
 | **Token no Azure Key Vault** | O token nunca aparece no notebook nem no Git. O notebook lê o segredo em tempo de execução. |
 | **Contrato de dados na silver** | Cada recurso tem um schema fixo. Se a API mudar um campo, o erro aparece no pipeline, não como número estranho no painel. |
 | **Quarentena em vez de descarte** | Registro com status desconhecido, chave órfã ou horas negativas vai para `silver_rejeitados` com o motivo. Nada some sem rastro. |
+| **Cadastros valem pela última foto** | Equipes e pessoas vêm completas a cada carga, então a silver usa só a carga mais recente: quem foi removido na fonte também sai do painel. Tarefas e histórico vêm por incremental e não têm exclusão na API simulada. |
 | **Silver reconstruída a partir do bronze inteiro** | Neste volume é barato, e a silver fica sem estado: rodar duas vezes dá o mesmo resultado. Se o volume crescer, troco por `MERGE` incremental. |
 | **Métricas de tempo calculadas do histórico de status** | Ciclo, dias bloqueada e retrabalho saem dos eventos, não de campos prontos da API. Assim batem entre si e com o fluxo mostrado no painel. |
 | **Data de referência gravada nos dados** | Atraso, idade e "vencida" são medidos contra a data de referência, não contra `TODAY()`. O painel não muda sozinho de um dia para o outro e qualquer pessoa reproduz os mesmos números. |
 | **Horário de Brasília na gold** | A API manda as datas com fuso; a silver guarda o instante em UTC e a gold converte para o horário de Brasília, que é o que o usuário espera ver. |
 | **Simulador com "relógio"** | O mundo é simulado uma vez e a data de referência só corta a história. Subir a API em 31/08 e depois em 30/09 equivale a um sistema real que andou um mês. Foi isso que me permitiu provar a carga incremental. |
+| **Versões fixas e impressão digital do cenário** | Outra versão do Faker ou do numpy geraria outros dados com a mesma semente. As versões da API são fixas e a API expõe um hash do cenário (`/v1/meta`), travado nos testes: dá para confirmar que o Fabric recebeu exatamente os dados testados. |
 | **Notebooks no formato Git do Fabric** | A pasta `fabric/` sincroniza direto com um workspace pela integração com Git: os notebooks são texto, versionados e revisáveis linha a linha. |
 
 ## Como sei que funciona
 
-- **49 testes automatizados**: simulador (coerência, determinismo, calibração), API (token, paginação, incremental, 429), notebooks (formato, sintaxe) e o pipeline inteiro rodando com Spark.
+- **51 testes automatizados**: simulador (coerência, determinismo, calibração), API (token, paginação, incremental, 429), notebooks (formato, sintaxe) e o pipeline inteiro rodando com Spark, incluindo quarentena e exclusões na fonte.
 - **A gold é conferida contra contas feitas à mão**: status, situação de prazo, retrabalho, bloqueios, horas e projetos atrasados são recalculados em Python puro a partir da API e precisam bater com o que o Spark produziu.
 - **Carga incremental = carga completa**: rodei uma carga completa com os dados de 31/08, depois uma incremental com os de 30/09 (com 30% das chamadas falhando de propósito) e comparei a gold, linha a linha, com uma carga completa direta de 30/09. Todas as tabelas ficaram idênticas.
 - **A própria gold se confere**: antes de terminar, o `nb_03` verifica chaves, uma etapa atual por tarefa, tempos não negativos e cobertura do calendário. Se algo não fechar, a execução falha.
@@ -103,7 +105,7 @@ O Fabric precisa de uma URL pública. O jeito mais simples é o [Render](https:/
 
 1. **New → Blueprint** e aponte para este repositório. O `render.yaml` já configura tudo.
 2. Em **Environment**, copie o valor de `API_TOKEN` que o Render gerou.
-3. Teste: `https://<seu-app>.onrender.com/docs`.
+3. Teste: `https://<seu-app>.onrender.com/docs`. Em `/v1/meta`, a `impressao_digital` deve ser `6c37f364e4dd838d` (mesmos dados dos testes).
 
 > No plano gratuito a API dorme sem uso e leva cerca de 1 minuto para acordar. A ingestão já espera por isso.
 

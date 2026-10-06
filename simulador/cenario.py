@@ -8,6 +8,8 @@ Assim a data de referência é só o relógio. Subir a API em 31/08 e depois em 
 um sistema real que andou um mês, e a carga incremental pode ser comparada com a completa.
 Os registros saem no formato que a API devolve.
 """
+import hashlib
+import json
 import unicodedata
 from dataclasses import dataclass, field
 from datetime import date, datetime, time, timedelta
@@ -260,3 +262,9 @@ def gerar(cfg: Config = Config()) -> dict[str, list[dict]]:
             "projetos": sorted(saida_projetos, key=lambda x: x["id"]),
             "tarefas": sorted(saida_tarefas, key=lambda x: x["id"]),
             "historico": sorted(saida_eventos, key=lambda x: x["id"])}
+
+
+def impressao_digital(dados: dict[str, list[dict]]) -> str:
+    """Hash do cenário. Mesma semente + mesma data + mesmas versões = mesmo hash em qualquer máquina."""
+    texto = json.dumps(dados, ensure_ascii=False, sort_keys=True, separators=(",", ":"))
+    return hashlib.sha256(texto.encode()).hexdigest()[:16]
