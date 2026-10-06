@@ -84,6 +84,13 @@ def ler_bronze(recurso: str) -> DataFrame:
             .select("r.*", "_execucao"))
 
 
+def ultima_foto(df: DataFrame) -> DataFrame:
+    """Cadastros chegam completos a cada execução: vale só a última foto, assim quem foi
+    removido na fonte também sai daqui."""
+    ultima = df.agg(F.max("_execucao")).first()[0]
+    return df.filter(F.col("_execucao") == ultima)
+
+
 def mais_recente(df: DataFrame, ordem: list) -> DataFrame:
     janela = Window.partitionBy("id").orderBy(*ordem)
     return df.withColumn("_n", F.row_number().over(janela)).filter("_n = 1").drop("_n", "_execucao")
@@ -112,10 +119,10 @@ def prioridade(coluna: str):
 
 # CELL ********************
 
-equipes = mais_recente(ler_bronze("equipes"), [F.desc("_execucao")]).select(
+equipes = mais_recente(ultima_foto(ler_bronze("equipes")), [F.desc("_execucao")]).select(
     "id", texto("nome").alias("nome"), F.upper(texto("sigla")).alias("sigla"), "gestor_id")
 
-pessoas = mais_recente(ler_bronze("pessoas"), [F.desc("_execucao")]).select(
+pessoas = mais_recente(ultima_foto(ler_bronze("pessoas")), [F.desc("_execucao")]).select(
     "id", texto("nome").alias("nome"), F.lower(texto("email")).alias("email"), "equipe_id",
     texto("cargo").alias("cargo"), F.to_date("data_admissao").alias("data_admissao"),
     F.coalesce("ativo", F.lit(True)).alias("ativo"))

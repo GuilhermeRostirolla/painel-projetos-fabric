@@ -109,3 +109,10 @@ def test_relogio_andando_nao_muda_o_passado(dados):
         if p != projetos_depois[p["id"]]:
             assert projetos_depois[p["id"]]["atualizado_em"] > "2026-09-01"
     assert len(antes["tarefas"]) < len(dados["tarefas"])
+
+
+def test_impressao_digital_travada(dados):
+    """Se falhar, algo mudou os dados (código ou versão de numpy/Faker). Se a mudança for
+    intencional, atualize o hash aqui e no README."""
+    from simulador.cenario import impressao_digital
+    assert impressao_digital(dados) == "6c37f364e4dd838d"

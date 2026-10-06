@@ -57,6 +57,10 @@ RECURSOS = {
 SOBREPOSICAO = timedelta(minutes=5)   # relê um pouco antes da marca d'água; a silver remove duplicados
 MAX_TENTATIVAS = 8
 
+if not os.path.isdir(PASTA_ARQUIVOS):
+    raise RuntimeError(f"{PASTA_ARQUIVOS} não existe: anexe o lakehouse como padrão deste notebook "
+                       "(painel Explorer > Lakehouses > Adicionar)")
+
 BRONZE = os.path.join(PASTA_ARQUIVOS, "bronze")
 CONTROLE = os.path.join(BRONZE, "_controle")
 ARQ_MARCA = os.path.join(CONTROLE, "marca_dagua.json")

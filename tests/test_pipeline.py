@@ -21,6 +21,7 @@ FINAIS = {"Concluída", "Cancelada"}
 @pytest.fixture(scope="module")
 def ambiente(tmp_path_factory):
     pasta = tmp_path_factory.mktemp("lakehouse")
+    (pasta / "Files").mkdir()
     url = subir_api(REF, "t", taxa_falha=0.2)
     spark = criar_spark(pasta)
     executor = Executor(spark, {"PASTA_ARQUIVOS": str(pasta / "Files"),
@@ -113,6 +114,26 @@ def test_quarentena(ambiente):
                            "TSK-99902": "projeto_id sem correspondente",
                            "TSK-99903": "horas negativas"}
         assert spark.table("silver_tarefas").count() == len(dados["tarefas"])
+    finally:
+        destino.unlink()
+        executor.rodar("nb_02_silver_tratamento")
+
+
+def test_exclusao_na_fonte_some_da_silver(ambiente):
+    """Pessoas chegam completas a cada carga: quem sumiu da última carga sai da silver."""
+    spark, executor, pasta, dados = ambiente
+    sem_tarefa = {p["id"] for p in dados["pessoas"]} - {t["responsavel_id"] for t in dados["tarefas"]} \
+        - {e["pessoa_id"] for e in dados["historico"]} - {p["gestor_id"] for p in dados["projetos"]} \
+        - {e["gestor_id"] for e in dados["equipes"]}
+    removida = sorted(sem_tarefa)[0]
+    restantes = [p for p in dados["pessoas"] if p["id"] != removida]
+    destino = pasta / "Files" / "bronze" / "pessoas" / "data_carga=2099-01-01" / "20990101T000000Z_p0001.json"
+    destino.parent.mkdir(parents=True)
+    destino.write_text(json.dumps({"dados": restantes, "proxima": None, "_execucao": "20990101T000000Z"}))
+    try:
+        executor.rodar("nb_02_silver_tratamento")
+        ids = {r[0] for r in spark.sql("SELECT id FROM silver_pessoas").collect()}
+        assert removida not in ids and len(ids) == len(dados["pessoas"]) - 1
     finally:
         destino.unlink()
         executor.rodar("nb_02_silver_tratamento")

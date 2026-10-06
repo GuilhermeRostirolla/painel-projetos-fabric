@@ -18,7 +18,7 @@ from fastapi import Depends, FastAPI, HTTPException, Query, Request
 from fastapi.responses import JSONResponse
 from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
 
-from simulador.cenario import Config, gerar
+from simulador.cenario import Config, gerar, impressao_digital
 from simulador.validar import exigir
 
 VERSAO = "1.0.0"
@@ -38,6 +38,7 @@ def criar_app(cfg: Config | None = None, token: str | None = None,
     taxa_falha = float(os.environ.get("TAXA_FALHA", 0.03)) if taxa_falha is None else taxa_falha
     dados = gerar(cfg)
     exigir(dados, cfg.data_referencia)
+    assinatura = impressao_digital(dados)
     sorteio = random.Random()
 
     app = FastAPI(title="API de Projetos (simulada)", version=VERSAO,
@@ -90,7 +91,7 @@ def criar_app(cfg: Config | None = None, token: str | None = None,
     @app.get("/v1/meta", tags=["dados"])
     def meta(_: None = Depends(autenticar)):
         return {"versao": VERSAO, "data_referencia": cfg.data_referencia.isoformat(),
-                "semente": cfg.semente, "totais": {k: len(v) for k, v in dados.items()}}
+                "semente": cfg.semente, "impressao_digital": assinatura, "totais": {k: len(v) for k, v in dados.items()}}
 
     @app.get("/saude", tags=["infra"])
     def saude():
