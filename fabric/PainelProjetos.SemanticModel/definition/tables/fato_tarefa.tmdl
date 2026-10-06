@@ -1,0 +1,376 @@
+table fato_tarefa
+	lineageTag: 97ad3432-cf23-59f3-848b-eae30bebe04b
+	sourceLineageTag: [dbo].[fato_tarefa]
+
+	measure Tarefas = COUNTROWS ( fato_tarefa )
+		formatString: #,0
+		displayFolder: Tarefas
+		lineageTag: 5dd0e57b-29bd-5ac2-bea6-53669304728a
+
+	measure 'Tarefas Abertas' = CALCULATE ( [Tarefas], fato_tarefa[aberta] = TRUE () )
+		formatString: #,0
+		displayFolder: Tarefas
+		lineageTag: 79362781-e755-591a-8e75-f1efa8c019ba
+
+	measure 'Tarefas Concluídas' = CALCULATE ( [Tarefas], fato_tarefa[status] = "Concluída" )
+		formatString: #,0
+		displayFolder: Tarefas
+		lineageTag: 0615dbbb-e46c-596c-8cf4-bfe11ce24cbd
+
+	measure 'Tarefas Bloqueadas' = CALCULATE ( [Tarefas], fato_tarefa[status] = "Bloqueada" )
+		formatString: #,0
+		displayFolder: Tarefas
+		lineageTag: b0b442da-a757-5daf-84c3-9880b0b2bb9a
+
+	measure 'Tarefas Vencidas' = CALCULATE ( [Tarefas], fato_tarefa[situacao_prazo] = "Vencida" )
+		formatString: #,0
+		displayFolder: Prazo
+		lineageTag: 2e027398-3500-58de-a087-3704318f6776
+
+	measure '% Abertas Vencidas' = DIVIDE ( [Tarefas Vencidas], CALCULATE ( [Tarefas Abertas], NOT ISBLANK ( fato_tarefa[data_prazo] ) ) )
+		formatString: 0.0%
+		displayFolder: Prazo
+		lineageTag: bc5f3431-6574-5c87-a618-44d0acc02dab
+
+	measure '% Entregues no Prazo' = ```
+			DIVIDE (
+			    CALCULATE ( [Tarefas], fato_tarefa[situacao_prazo] = "Concluída no prazo" ),
+			    CALCULATE ( [Tarefas], fato_tarefa[situacao_prazo] IN { "Concluída no prazo", "Concluída com atraso" } )
+			)
+			```
+		formatString: 0.0%
+		displayFolder: Prazo
+		lineageTag: 42aebcbe-738f-55d4-a542-9ace8cd21a6e
+
+	measure 'Atraso Médio das Tarefas (dias)' = CALCULATE ( AVERAGE ( fato_tarefa[dias_atraso] ), fato_tarefa[situacao_prazo] IN { "Vencida", "Concluída com atraso" } )
+		formatString: #,0.0
+		displayFolder: Prazo
+		lineageTag: fbeca6a9-cb98-54b3-a495-37720f5c7f3a
+
+	measure 'Lead Time Médio (dias)' = AVERAGE ( fato_tarefa[lead_time_dias] )
+		formatString: #,0.0
+		displayFolder: Tempo
+		lineageTag: c82d60c7-dde4-51af-9b4c-c8ef56022292
+
+	measure 'Ciclo Médio (dias)' = AVERAGE ( fato_tarefa[ciclo_dias] )
+		formatString: #,0.0
+		displayFolder: Tempo
+		lineageTag: 2d7ae539-fde0-5d10-9e72-e82332cc02f0
+
+	measure 'Ciclo Mediano (dias)' = MEDIAN ( fato_tarefa[ciclo_dias] )
+		formatString: #,0.0
+		displayFolder: Tempo
+		lineageTag: 8f67decc-e910-5cc5-9753-197b737416a1
+
+	measure 'Idade Média das Abertas (dias)' = AVERAGE ( fato_tarefa[idade_dias] )
+		formatString: #,0.0
+		displayFolder: Tempo
+		lineageTag: 381645b3-ee94-5337-8418-805b59aaa7b8
+
+	measure 'Dias Bloqueada' = SUM ( fato_tarefa[dias_bloqueada] )
+		formatString: #,0.0
+		displayFolder: Tempo
+		lineageTag: 80541c9a-5d66-5866-bfa5-048596d35017
+
+	measure '% Concluídas com Retrabalho' = DIVIDE ( CALCULATE ( [Tarefas Concluídas], fato_tarefa[qtd_retrabalho] > 0 ), [Tarefas Concluídas] )
+		formatString: 0.0%
+		displayFolder: Tempo
+		lineageTag: 225604b2-f583-57b0-94ed-8a04a00fdfec
+
+	measure 'Horas Estimadas' = SUM ( fato_tarefa[estimativa_horas] )
+		formatString: #,0
+		displayFolder: Esforço
+		lineageTag: 283a690f-f6fb-5942-abca-7e2e0ca791a2
+
+	measure 'Horas Apontadas' = SUM ( fato_tarefa[horas_apontadas] )
+		formatString: #,0
+		displayFolder: Esforço
+		lineageTag: 8c17e6a2-db2a-5c4c-9bd6-a99baf5c2266
+
+	measure 'Desvio de Esforço %' = ```
+			VAR concluidas = FILTER ( fato_tarefa, fato_tarefa[status] = "Concluída" )
+			RETURN
+			    DIVIDE ( SUMX ( concluidas, fato_tarefa[horas_apontadas] ), SUMX ( concluidas, fato_tarefa[estimativa_horas] ) ) - 1
+			```
+		formatString: +0.0%;-0.0%;0.0%
+		displayFolder: Esforço
+		lineageTag: 2eafe846-1fdf-5ed4-bbef-4f43b6dc47d5
+
+	measure 'Tarefas Criadas' = [Tarefas]
+		formatString: #,0
+		displayFolder: Período
+		lineageTag: ba343ff7-d113-50ef-9bfe-4d40063b8d1f
+
+	measure 'Tarefas Entregues' = CALCULATE ( [Tarefas Concluídas], USERELATIONSHIP ( fato_tarefa[data_conclusao], dim_data[data] ) )
+		formatString: #,0
+		displayFolder: Período
+		lineageTag: ebe528ea-a459-5da9-b18c-1d7159d9511a
+
+	measure 'Saldo do Período' = [Tarefas Criadas] - [Tarefas Entregues]
+		formatString: +#,0;-#,0;0
+		displayFolder: Período
+		lineageTag: e15e9703-7ff8-50cd-a6e1-c0d9cd29e5ef
+
+	column tarefa_id
+		dataType: string
+		isHidden
+		lineageTag: 8f5890a8-8f5a-569f-8b0c-b548346d7076
+		sourceLineageTag: tarefa_id
+		summarizeBy: none
+		sourceColumn: tarefa_id
+
+		annotation SummarizationSetBy = Automatic
+
+	column projeto_id
+		dataType: string
+		isHidden
+		lineageTag: 38956822-bce7-5d96-9de4-304e8ca88d6c
+		sourceLineageTag: projeto_id
+		summarizeBy: none
+		sourceColumn: projeto_id
+
+		annotation SummarizationSetBy = Automatic
+
+	column responsavel_id
+		dataType: string
+		isHidden
+		lineageTag: a314b319-162b-5eab-9867-091bbe6f3eca
+		sourceLineageTag: responsavel_id
+		summarizeBy: none
+		sourceColumn: responsavel_id
+
+		annotation SummarizationSetBy = Automatic
+
+	column titulo
+		dataType: string
+		lineageTag: e0bebed3-df24-5f82-867d-8c4742f46479
+		sourceLineageTag: titulo
+		summarizeBy: none
+		sourceColumn: titulo
+
+		annotation SummarizationSetBy = Automatic
+
+	column tipo
+		dataType: string
+		lineageTag: 6cb197da-7471-5586-8ac7-bed40cd32de3
+		sourceLineageTag: tipo
+		summarizeBy: none
+		sourceColumn: tipo
+
+		annotation SummarizationSetBy = Automatic
+
+	column prioridade
+		dataType: string
+		lineageTag: 64c91649-f20b-5e70-b0ed-fa05b76fcf2c
+		sourceLineageTag: prioridade
+		summarizeBy: none
+		sourceColumn: prioridade
+
+		annotation SummarizationSetBy = Automatic
+
+	column status
+		dataType: string
+		isHidden
+		lineageTag: 2942ced0-cd1a-5ee6-8528-8498951af0dc
+		sourceLineageTag: status
+		summarizeBy: none
+		sourceColumn: status
+
+		annotation SummarizationSetBy = Automatic
+
+	column data_criacao
+		dataType: dateTime
+		formatString: dd/MM/yyyy
+		isHidden
+		lineageTag: b6b74b2e-c289-5ebe-b7fe-b153bdf1ac06
+		sourceLineageTag: data_criacao
+		summarizeBy: none
+		sourceColumn: data_criacao
+
+		annotation SummarizationSetBy = Automatic
+
+	column criada_em
+		dataType: dateTime
+		formatString: dd/MM/yyyy HH:mm
+		lineageTag: 663887a1-21b9-5125-bc74-a0a70d66553d
+		sourceLineageTag: criada_em
+		summarizeBy: none
+		sourceColumn: criada_em
+
+		annotation SummarizationSetBy = Automatic
+
+	column data_inicio_execucao
+		dataType: dateTime
+		formatString: dd/MM/yyyy
+		lineageTag: bdaca7a8-a665-5676-867e-29354302f5a4
+		sourceLineageTag: data_inicio_execucao
+		summarizeBy: none
+		sourceColumn: data_inicio_execucao
+
+		annotation SummarizationSetBy = Automatic
+
+	column data_conclusao
+		dataType: dateTime
+		formatString: dd/MM/yyyy
+		isHidden
+		lineageTag: c088735e-e5ec-5fbc-a29b-17502c8fcb64
+		sourceLineageTag: data_conclusao
+		summarizeBy: none
+		sourceColumn: data_conclusao
+
+		annotation SummarizationSetBy = Automatic
+
+	column concluida_em
+		dataType: dateTime
+		formatString: dd/MM/yyyy HH:mm
+		lineageTag: 7be2ebd8-0c2e-5dd3-87f5-b2523e57e32e
+		sourceLineageTag: concluida_em
+		summarizeBy: none
+		sourceColumn: concluida_em
+
+		annotation SummarizationSetBy = Automatic
+
+	column data_prazo
+		dataType: dateTime
+		formatString: dd/MM/yyyy
+		lineageTag: 9c1d848f-2435-59e4-a00b-c0f789851bed
+		sourceLineageTag: data_prazo
+		summarizeBy: none
+		sourceColumn: data_prazo
+
+		annotation SummarizationSetBy = Automatic
+
+	column estimativa_horas
+		dataType: double
+		formatString: #,0.0
+		lineageTag: 056e752e-c414-5744-8fcf-556c915a1f19
+		sourceLineageTag: estimativa_horas
+		summarizeBy: none
+		sourceColumn: estimativa_horas
+
+		annotation SummarizationSetBy = Automatic
+
+	column horas_apontadas
+		dataType: double
+		formatString: #,0.0
+		lineageTag: 65725182-4a37-58b1-a3d4-7bb7e466af93
+		sourceLineageTag: horas_apontadas
+		summarizeBy: none
+		sourceColumn: horas_apontadas
+
+		annotation SummarizationSetBy = Automatic
+
+	column desvio_horas
+		dataType: double
+		formatString: #,0.0
+		lineageTag: c329358e-e7cb-5894-a2f5-bf4549690834
+		sourceLineageTag: desvio_horas
+		summarizeBy: none
+		sourceColumn: desvio_horas
+
+		annotation SummarizationSetBy = Automatic
+
+	column aberta
+		dataType: boolean
+		lineageTag: 286f2225-814a-5883-81d6-8aebba482638
+		sourceLineageTag: aberta
+		summarizeBy: none
+		sourceColumn: aberta
+
+		annotation SummarizationSetBy = Automatic
+
+	column lead_time_dias
+		dataType: double
+		formatString: #,0.0
+		lineageTag: f624974e-68f1-5ae2-a8b2-bd1d3f15aa0a
+		sourceLineageTag: lead_time_dias
+		summarizeBy: none
+		sourceColumn: lead_time_dias
+
+		annotation SummarizationSetBy = Automatic
+
+	column ciclo_dias
+		dataType: double
+		formatString: #,0.0
+		lineageTag: f22da6ea-ce46-5ef8-b6c8-cc74f9ce4811
+		sourceLineageTag: ciclo_dias
+		summarizeBy: none
+		sourceColumn: ciclo_dias
+
+		annotation SummarizationSetBy = Automatic
+
+	column idade_dias
+		dataType: double
+		formatString: #,0.0
+		lineageTag: 1477b3f7-fa9b-5cfe-a071-9ab3319e75e7
+		sourceLineageTag: idade_dias
+		summarizeBy: none
+		sourceColumn: idade_dias
+
+		annotation SummarizationSetBy = Automatic
+
+	column dias_na_etapa_atual
+		dataType: double
+		formatString: #,0.0
+		lineageTag: e7a20e6f-5c56-5b53-a4cc-468341cef44c
+		sourceLineageTag: dias_na_etapa_atual
+		summarizeBy: none
+		sourceColumn: dias_na_etapa_atual
+
+		annotation SummarizationSetBy = Automatic
+
+	column qtd_bloqueios
+		dataType: int64
+		formatString: 0
+		lineageTag: 18993ea6-2e0e-5d41-9751-e68a6c191da9
+		sourceLineageTag: qtd_bloqueios
+		summarizeBy: none
+		sourceColumn: qtd_bloqueios
+
+		annotation SummarizationSetBy = Automatic
+
+	column dias_bloqueada
+		dataType: double
+		formatString: #,0.0
+		lineageTag: 1ff2b58d-c9b6-5cde-8e39-1563fbbb2d2b
+		sourceLineageTag: dias_bloqueada
+		summarizeBy: none
+		sourceColumn: dias_bloqueada
+
+		annotation SummarizationSetBy = Automatic
+
+	column qtd_retrabalho
+		dataType: int64
+		formatString: 0
+		lineageTag: 3921e9de-043c-5d87-a57f-acbfad443479
+		sourceLineageTag: qtd_retrabalho
+		summarizeBy: none
+		sourceColumn: qtd_retrabalho
+
+		annotation SummarizationSetBy = Automatic
+
+	column situacao_prazo
+		dataType: string
+		lineageTag: 19ad01bb-a6e8-5452-b4d5-fd283fe52d47
+		sourceLineageTag: situacao_prazo
+		summarizeBy: none
+		sourceColumn: situacao_prazo
+
+		annotation SummarizationSetBy = Automatic
+
+	column dias_atraso
+		dataType: int64
+		formatString: 0
+		lineageTag: 116b099b-28b3-5a29-a047-278ac8240113
+		sourceLineageTag: dias_atraso
+		summarizeBy: none
+		sourceColumn: dias_atraso
+
+		annotation SummarizationSetBy = Automatic
+
+	partition fato_tarefa = entity
+		mode: directLake
+		source
+			entityName: fato_tarefa
+			schemaName: dbo
+			expressionSource: DatabaseQuery

@@ -137,3 +137,38 @@ def test_exclusao_na_fonte_some_da_silver(ambiente):
     finally:
         destino.unlink()
         executor.rodar("nb_02_silver_tratamento")
+
+
+def test_schema_da_gold_igual_ao_do_modelo(ambiente):
+    """O modelo semântico é gerado de tools/schema_gold.json; se a gold mudar, regenere os dois."""
+    from pathlib import Path
+    spark, *_ = ambiente
+    salvo = json.loads((Path(__file__).resolve().parents[1] / "tools" / "schema_gold.json").read_text())
+    for tabela, colunas in salvo.items():
+        real = [[f.name, f.dataType.simpleString()] for f in spark.table(tabela).schema]
+        assert real == colunas, f"{tabela} mudou: rode tools/rodar_local.py e atualize schema_gold.json"
+
+
+def test_medidas_conferem_com_calculo_independente(ambiente):
+    """As colunas que o DAX soma/média na gold batem com o recálculo independente de valores_esperados."""
+    from tools.valores_esperados import SQL
+    spark, *_ = ambiente
+    spark.conf.set("spark.sql.session.timeZone", "UTC")
+    pela_gold = {
+        "Idade Média das Abertas (dias)": "SELECT avg(idade_dias) FROM fato_tarefa",
+        "Dias Bloqueada": "SELECT sum(dias_bloqueada) FROM fato_tarefa",
+        "Lead Time Médio (dias)": "SELECT avg(lead_time_dias) FROM fato_tarefa",
+        "% Entregues no Prazo": """SELECT sum(int(situacao_prazo = 'Concluída no prazo'))
+            / sum(int(situacao_prazo IN ('Concluída no prazo', 'Concluída com atraso'))) FROM fato_tarefa""",
+        "% Concluídas com Retrabalho": "SELECT avg(int(qtd_retrabalho > 0)) FROM fato_tarefa WHERE status = 'Concluída'",
+        "Tarefas Paradas na Etapa": """SELECT count(DISTINCT tarefa_id) FROM fato_passagem_status
+            WHERE etapa_atual AND NOT etapa_final""",
+        "Paradas há mais de 15 dias": """SELECT count(DISTINCT tarefa_id) FROM fato_passagem_status
+            WHERE etapa_atual AND NOT etapa_final AND dias_na_etapa > 15""",
+        "Tempo Médio na Etapa (dias)": "SELECT avg(dias_na_etapa) FROM fato_passagem_status WHERE NOT etapa_atual",
+        "Tarefas Vencidas": "SELECT count(*) FROM fato_tarefa WHERE situacao_prazo = 'Vencida'",
+        "Projetos Atrasados": "SELECT count(*) FROM dim_projeto WHERE situacao_prazo = 'Atrasado'",
+    }
+    for nome, consulta in pela_gold.items():
+        a, b = spark.sql(consulta).first()[0], spark.sql(SQL[nome]).first()[0]
+        assert float(a) == pytest.approx(float(b), abs=0.006), nome

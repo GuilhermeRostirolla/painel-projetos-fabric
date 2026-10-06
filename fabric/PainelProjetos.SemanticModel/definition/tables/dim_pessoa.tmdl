@@ -1,0 +1,66 @@
+table dim_pessoa
+	lineageTag: 23ffe855-0e81-5e35-b94b-b87e69f8b68d
+	sourceLineageTag: [dbo].[dim_pessoa]
+
+	column pessoa_id
+		dataType: string
+		isHidden
+		lineageTag: dcafc91a-7ea4-51d5-986e-a978282c85dc
+		sourceLineageTag: pessoa_id
+		summarizeBy: none
+		sourceColumn: pessoa_id
+
+		annotation SummarizationSetBy = Automatic
+
+	column pessoa
+		dataType: string
+		lineageTag: 9732d543-d809-5df7-baca-7b2565017fc2
+		sourceLineageTag: pessoa
+		summarizeBy: none
+		sourceColumn: pessoa
+
+		annotation SummarizationSetBy = Automatic
+
+	column equipe
+		dataType: string
+		lineageTag: 805be2b6-6828-59e5-97b3-f803a22d10a6
+		sourceLineageTag: equipe
+		summarizeBy: none
+		sourceColumn: equipe
+
+		annotation SummarizationSetBy = Automatic
+
+	column cargo
+		dataType: string
+		lineageTag: 65e82b0c-d556-5f88-8d15-b5a687dd57a6
+		sourceLineageTag: cargo
+		summarizeBy: none
+		sourceColumn: cargo
+
+		annotation SummarizationSetBy = Automatic
+
+	column ativo
+		dataType: boolean
+		lineageTag: 245f812c-ec4b-5432-96d7-89a29c3195a8
+		sourceLineageTag: ativo
+		summarizeBy: none
+		sourceColumn: ativo
+
+		annotation SummarizationSetBy = Automatic
+
+	column data_admissao
+		dataType: dateTime
+		formatString: dd/MM/yyyy
+		lineageTag: c68b17e3-49aa-5493-8f31-d1fae1a25d09
+		sourceLineageTag: data_admissao
+		summarizeBy: none
+		sourceColumn: data_admissao
+
+		annotation SummarizationSetBy = Automatic
+
+	partition dim_pessoa = entity
+		mode: directLake
+		source
+			entityName: dim_pessoa
+			schemaName: dbo
+			expressionSource: DatabaseQuery

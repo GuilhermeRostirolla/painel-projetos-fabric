@@ -1,0 +1,40 @@
+table ref_parametros
+	lineageTag: eae0448d-7a43-537b-a18d-534b9c72a6ec
+	sourceLineageTag: [dbo].[ref_parametros]
+
+	measure 'Data de Referência' = MAX ( ref_parametros[data_referencia] )
+		formatString: dd/MM/yyyy
+		displayFolder: Referência
+		lineageTag: 38a73765-bde1-5dfc-b374-2b812c260787
+
+	measure 'Texto Referência' = "Dados até " & FORMAT ( MAX ( ref_parametros[data_referencia] ), "dd/MM/yyyy" )
+		displayFolder: Referência
+		lineageTag: 63fa592f-504f-50c4-9fdd-7b06efd8485d
+
+	column data_referencia
+		dataType: dateTime
+		formatString: dd/MM/yyyy
+		lineageTag: f7761cc3-8776-50cd-b69c-fd423fdabe5c
+		sourceLineageTag: data_referencia
+		summarizeBy: none
+		sourceColumn: data_referencia
+
+		annotation SummarizationSetBy = Automatic
+
+	column processado_em
+		dataType: dateTime
+		formatString: dd/MM/yyyy HH:mm
+		isHidden
+		lineageTag: 28a0be7b-853d-56b0-9567-dc278879d028
+		sourceLineageTag: processado_em
+		summarizeBy: none
+		sourceColumn: processado_em
+
+		annotation SummarizationSetBy = Automatic
+
+	partition ref_parametros = entity
+		mode: directLake
+		source
+			entityName: ref_parametros
+			schemaName: dbo
+			expressionSource: DatabaseQuery

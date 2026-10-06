@@ -1,0 +1,194 @@
+table dim_projeto
+	lineageTag: 612c5a7e-9f7b-5aef-994d-51c1e839da89
+	sourceLineageTag: [dbo].[dim_projeto]
+
+	measure Projetos = COUNTROWS ( dim_projeto )
+		formatString: #,0
+		displayFolder: Portfólio
+		lineageTag: 2cc9f825-5e41-5dab-aadc-6e60fd5d50c3
+
+	measure 'Projetos Ativos' = CALCULATE ( [Projetos], dim_projeto[status] IN { "Em Andamento", "Planejamento" } )
+		formatString: #,0
+		displayFolder: Portfólio
+		lineageTag: be077c61-dbfd-51e8-a74e-1bb7a2c58439
+
+	measure 'Projetos em Andamento' = CALCULATE ( [Projetos], dim_projeto[status] = "Em Andamento" )
+		formatString: #,0
+		displayFolder: Portfólio
+		lineageTag: 321602fd-3a0d-56af-97cb-2be663326d81
+
+	measure 'Projetos Concluídos' = CALCULATE ( [Projetos], dim_projeto[status] = "Concluído" )
+		formatString: #,0
+		displayFolder: Portfólio
+		lineageTag: 3ab99b7b-4b44-5a32-b465-0239f11b2b07
+
+	measure 'Projetos Atrasados' = CALCULATE ( [Projetos], dim_projeto[situacao_prazo] = "Atrasado" )
+		formatString: #,0
+		displayFolder: Prazo
+		lineageTag: 220e4557-00a6-55ac-8cbd-983ef84830d7
+
+	measure '% Projetos Atrasados' = DIVIDE ( [Projetos Atrasados], [Projetos Ativos] )
+		formatString: 0.0%
+		displayFolder: Prazo
+		lineageTag: 2f4c0dc3-2322-5892-a3ff-0a9803f4a7a7
+
+	measure '% Projetos Entregues no Prazo' = DIVIDE ( CALCULATE ( [Projetos], dim_projeto[situacao_prazo] = "Concluído no prazo" ), [Projetos Concluídos] )
+		formatString: 0.0%
+		displayFolder: Prazo
+		lineageTag: 4c8b5582-a30f-51c5-9c4d-161623decc0e
+
+	measure 'Atraso Médio dos Projetos (dias)' = CALCULATE ( AVERAGE ( dim_projeto[dias_atraso] ), dim_projeto[situacao_prazo] IN { "Atrasado", "Concluído com atraso" } )
+		formatString: #,0.0
+		displayFolder: Prazo
+		lineageTag: 09ea7136-51a6-5567-b57b-ac756c2a84c2
+
+	measure 'Horas Orçadas' = SUM ( dim_projeto[horas_orcadas] )
+		formatString: #,0
+		displayFolder: Esforço
+		lineageTag: b67f30fe-001e-5503-a159-e1bc41dcd284
+
+	measure '% Orçamento Consumido' = DIVIDE ( [Horas Apontadas], [Horas Orçadas] )
+		formatString: 0.0%
+		displayFolder: Esforço
+		lineageTag: 799b8e6f-04f6-5737-9fb0-1ced7f10f44c
+
+	column projeto_id
+		dataType: string
+		isHidden
+		lineageTag: f550354b-d6b2-52c2-9c66-c7566aee0ecb
+		sourceLineageTag: projeto_id
+		summarizeBy: none
+		sourceColumn: projeto_id
+
+		annotation SummarizationSetBy = Automatic
+
+	column projeto
+		dataType: string
+		lineageTag: ed731680-8eda-5318-b17d-8c4d6d9ebebf
+		sourceLineageTag: projeto
+		summarizeBy: none
+		sourceColumn: projeto
+
+		annotation SummarizationSetBy = Automatic
+
+	column equipe
+		dataType: string
+		lineageTag: eb12451b-8f91-55df-b3bd-dd438f90b748
+		sourceLineageTag: equipe
+		summarizeBy: none
+		sourceColumn: equipe
+
+		annotation SummarizationSetBy = Automatic
+
+	column gestor
+		dataType: string
+		lineageTag: b58dbbfd-8636-592a-be3f-af09abcb7109
+		sourceLineageTag: gestor
+		summarizeBy: none
+		sourceColumn: gestor
+
+		annotation SummarizationSetBy = Automatic
+
+	column prioridade
+		dataType: string
+		lineageTag: 1e4352b8-d38c-5ea6-9ceb-33e352d98b0e
+		sourceLineageTag: prioridade
+		summarizeBy: none
+		sourceColumn: prioridade
+
+		annotation SummarizationSetBy = Automatic
+
+	column status
+		dataType: string
+		lineageTag: f7f59157-6427-566c-a41d-0e51d74c4d64
+		sourceLineageTag: status
+		summarizeBy: none
+		sourceColumn: status
+
+		annotation SummarizationSetBy = Automatic
+
+	column data_inicio
+		dataType: dateTime
+		formatString: dd/MM/yyyy
+		lineageTag: cd6bd9b9-3379-59f3-8524-ab505d819874
+		sourceLineageTag: data_inicio
+		summarizeBy: none
+		sourceColumn: data_inicio
+
+		annotation SummarizationSetBy = Automatic
+
+	column data_fim_planejada
+		dataType: dateTime
+		formatString: dd/MM/yyyy
+		lineageTag: 41fc3092-dee6-5ae7-9170-8e8289808bc0
+		sourceLineageTag: data_fim_planejada
+		summarizeBy: none
+		sourceColumn: data_fim_planejada
+
+		annotation SummarizationSetBy = Automatic
+
+	column data_conclusao
+		dataType: dateTime
+		formatString: dd/MM/yyyy
+		lineageTag: 077a3e83-210e-5f02-813a-9ef1e70df41d
+		sourceLineageTag: data_conclusao
+		summarizeBy: none
+		sourceColumn: data_conclusao
+
+		annotation SummarizationSetBy = Automatic
+
+	column horas_orcadas
+		dataType: int64
+		formatString: 0
+		lineageTag: 5533f533-b60d-5c4b-b457-d82f5d032d25
+		sourceLineageTag: horas_orcadas
+		summarizeBy: none
+		sourceColumn: horas_orcadas
+
+		annotation SummarizationSetBy = Automatic
+
+	column dias_planejados
+		dataType: int64
+		formatString: 0
+		lineageTag: 4dd63fac-141a-5067-9b1c-491c2ddc9d5a
+		sourceLineageTag: dias_planejados
+		summarizeBy: none
+		sourceColumn: dias_planejados
+
+		annotation SummarizationSetBy = Automatic
+
+	column situacao_prazo
+		dataType: string
+		lineageTag: c687c69d-b336-501b-b1e2-9d9933d33d46
+		sourceLineageTag: situacao_prazo
+		summarizeBy: none
+		sourceColumn: situacao_prazo
+
+		annotation SummarizationSetBy = Automatic
+
+	column dias_atraso
+		dataType: int64
+		formatString: 0
+		lineageTag: 7df579a4-8254-563e-9bb0-8dbc28380b27
+		sourceLineageTag: dias_atraso
+		summarizeBy: none
+		sourceColumn: dias_atraso
+
+		annotation SummarizationSetBy = Automatic
+
+	column percentual_prazo_decorrido
+		dataType: double
+		formatString: 0%
+		lineageTag: e6708388-fd79-5cda-9866-5e49f3e226e3
+		sourceLineageTag: percentual_prazo_decorrido
+		summarizeBy: none
+		sourceColumn: percentual_prazo_decorrido
+
+		annotation SummarizationSetBy = Automatic
+
+	partition dim_projeto = entity
+		mode: directLake
+		source
+			entityName: dim_projeto
+			schemaName: dbo
+			expressionSource: DatabaseQuery

@@ -1,0 +1,130 @@
+table dim_data
+	lineageTag: a8ca5a5c-7c42-5a90-ac63-cedaa3d3727c
+	sourceLineageTag: [dbo].[dim_data]
+	dataCategory: Time
+
+	column data
+		dataType: dateTime
+		isKey
+		formatString: dd/MM/yyyy
+		lineageTag: fb8a8bec-0050-5052-a92d-386af849b7b9
+		sourceLineageTag: data
+		summarizeBy: none
+		sourceColumn: data
+
+		annotation SummarizationSetBy = Automatic
+
+	column ano
+		dataType: int64
+		formatString: 0
+		lineageTag: 98416d55-c598-5464-a8d8-ef2d637ca589
+		sourceLineageTag: ano
+		summarizeBy: none
+		sourceColumn: ano
+
+		annotation SummarizationSetBy = Automatic
+
+	column mes
+		dataType: int64
+		formatString: 0
+		lineageTag: c6ca6316-0cc3-57a2-be2b-c300008929c6
+		sourceLineageTag: mes
+		summarizeBy: none
+		sourceColumn: mes
+
+		annotation SummarizationSetBy = Automatic
+
+	column mes_nome
+		dataType: string
+		lineageTag: c1540673-b631-5577-8bc7-0459f21c37bc
+		sourceLineageTag: mes_nome
+		summarizeBy: none
+		sourceColumn: mes_nome
+
+		annotation SummarizationSetBy = Automatic
+
+	column mes_ano
+		dataType: string
+		lineageTag: f1082216-d331-5744-85dd-f114923ca535
+		sourceLineageTag: mes_ano
+		summarizeBy: none
+		sourceColumn: mes_ano
+		sortByColumn: ano_mes
+
+		annotation SummarizationSetBy = Automatic
+
+	column ano_mes
+		dataType: int64
+		formatString: 0
+		isHidden
+		lineageTag: cee11ac2-3826-576c-87b5-30660a43f4a1
+		sourceLineageTag: ano_mes
+		summarizeBy: none
+		sourceColumn: ano_mes
+
+		annotation SummarizationSetBy = Automatic
+
+	column trimestre
+		dataType: string
+		lineageTag: 52e2b05a-83d3-5d89-8d92-5f41f7bf4909
+		sourceLineageTag: trimestre
+		summarizeBy: none
+		sourceColumn: trimestre
+
+		annotation SummarizationSetBy = Automatic
+
+	column semana_inicio
+		dataType: dateTime
+		formatString: dd/MM/yyyy
+		lineageTag: c18ae9a3-fd35-5681-a84c-dd1739a6c61f
+		sourceLineageTag: semana_inicio
+		summarizeBy: none
+		sourceColumn: semana_inicio
+
+		annotation SummarizationSetBy = Automatic
+
+	column dia_semana
+		dataType: int64
+		formatString: 0
+		isHidden
+		lineageTag: 66e6083d-7a5a-5bbd-b5e9-88d1aa161958
+		sourceLineageTag: dia_semana
+		summarizeBy: none
+		sourceColumn: dia_semana
+
+		annotation SummarizationSetBy = Automatic
+
+	column dia_semana_nome
+		dataType: string
+		lineageTag: fb6440d5-1332-57e7-8a58-23af8f7b7bef
+		sourceLineageTag: dia_semana_nome
+		summarizeBy: none
+		sourceColumn: dia_semana_nome
+		sortByColumn: dia_semana
+
+		annotation SummarizationSetBy = Automatic
+
+	column dia_util
+		dataType: boolean
+		lineageTag: 779874e3-442d-5f80-9c17-f8eaee033380
+		sourceLineageTag: dia_util
+		summarizeBy: none
+		sourceColumn: dia_util
+
+		annotation SummarizationSetBy = Automatic
+
+	column ate_referencia
+		dataType: boolean
+		lineageTag: aa84818b-4759-5251-8d6c-0e2a9bd9f598
+		sourceLineageTag: ate_referencia
+		summarizeBy: none
+		sourceColumn: ate_referencia
+
+		annotation SummarizationSetBy = Automatic
+
+	partition dim_data = entity
+		mode: directLake
+		source
+			entityName: dim_data
+			schemaName: dbo
+			expressionSource: DatabaseQuery

@@ -1,0 +1,40 @@
+table dim_status
+	lineageTag: 0670ac51-e941-55b9-9669-e0109d942255
+	sourceLineageTag: [dbo].[dim_status]
+
+	column status
+		dataType: string
+		lineageTag: c87af68c-e2d7-572c-8329-ed2b8eae47e8
+		sourceLineageTag: status
+		summarizeBy: none
+		sourceColumn: status
+		sortByColumn: ordem
+
+		annotation SummarizationSetBy = Automatic
+
+	column categoria
+		dataType: string
+		lineageTag: 76b45bae-ddc9-59ea-b1e6-6f72905edd8c
+		sourceLineageTag: categoria
+		summarizeBy: none
+		sourceColumn: categoria
+
+		annotation SummarizationSetBy = Automatic
+
+	column ordem
+		dataType: int64
+		formatString: 0
+		isHidden
+		lineageTag: 870b03ce-735d-5d75-91a6-9b1408fefbdb
+		sourceLineageTag: ordem
+		summarizeBy: none
+		sourceColumn: ordem
+
+		annotation SummarizationSetBy = Automatic
+
+	partition dim_status = entity
+		mode: directLake
+		source
+			entityName: dim_status
+			schemaName: dbo
+			expressionSource: DatabaseQuery
