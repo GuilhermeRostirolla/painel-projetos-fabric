@@ -1,5 +1,5 @@
 # versões fixas: outra versão do Faker ou do numpy gera outro cenário com a mesma semente
 fastapi==0.142.2
 uvicorn==0.54.0
-numpy==2.5.3
+numpy==2.4.6   # 2.5 exige Python 3.12; o runtime do Fabric usa 3.11 (mesmo cenário nas duas)
 Faker==40.41.0
