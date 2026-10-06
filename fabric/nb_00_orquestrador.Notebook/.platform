@@ -1,0 +1,11 @@
+{
+  "$schema": "https://developer.microsoft.com/json-schemas/fabric/gitIntegration/platformProperties/2.0.0/schema.json",
+  "metadata": {
+    "type": "Notebook",
+    "displayName": "nb_00_orquestrador"
+  },
+  "config": {
+    "version": "2.0",
+    "logicalId": "2e8693a6-0d08-5df7-86fc-f4c9ed510281"
+  }
+}

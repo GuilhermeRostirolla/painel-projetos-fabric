@@ -1,0 +1,118 @@
+"""Roda os notebooks de verdade (Spark local) e confere a gold contra contas feitas à mão.
+
+Lento (~1 min) e precisa de pyspark + Java: `pytest -m pipeline`. Fica fora da rodada padrão.
+"""
+import json
+from collections import Counter
+from datetime import date
+
+import pytest
+
+pytest.importorskip("pyspark")
+pytestmark = pytest.mark.pipeline
+
+from simulador.cenario import Config, gerar  # noqa: E402
+from tools.rodar_local import Executor, criar_spark, subir_api  # noqa: E402
+
+REF = date(2026, 9, 30)
+FINAIS = {"Concluída", "Cancelada"}
+
+
+@pytest.fixture(scope="module")
+def ambiente(tmp_path_factory):
+    pasta = tmp_path_factory.mktemp("lakehouse")
+    url = subir_api(REF, "t", taxa_falha=0.2)
+    spark = criar_spark(pasta)
+    executor = Executor(spark, {"PASTA_ARQUIVOS": str(pasta / "Files"),
+                                "PASTA_ARQUIVOS_SPARK": str(pasta / "Files"),
+                                "FORMATO_TABELA": "parquet"})
+    executor.rodar("nb_00_orquestrador", parametros={"URL_API": url, "TOKEN_API": "t", "MODO": "completo"})
+    return spark, executor, pasta, gerar(Config(data_referencia=REF))
+
+
+def contar(spark, sql: str) -> dict:
+    return {tuple(r)[0]: tuple(r)[1] for r in spark.sql(sql).collect()}
+
+
+def test_status_das_tarefas(ambiente):
+    spark, _, _, dados = ambiente
+    esperado = Counter(t["status"] for t in dados["tarefas"])
+    assert contar(spark, "SELECT status, count(*) FROM fato_tarefa GROUP BY 1") == esperado
+
+
+def test_situacao_de_prazo_das_tarefas(ambiente):
+    spark, _, _, dados = ambiente
+
+    def situacao(t):
+        if t["status"] == "Cancelada":
+            return "Cancelada"
+        if t["prazo"] is None:
+            return "Sem prazo"
+        if t["status"] == "Concluída":
+            return "Concluída no prazo" if t["concluida_em"][:10] <= t["prazo"] else "Concluída com atraso"
+        return "Vencida" if t["prazo"] < REF.isoformat() else "No prazo"
+
+    esperado = Counter(situacao(t) for t in dados["tarefas"])
+    assert contar(spark, "SELECT situacao_prazo, count(*) FROM fato_tarefa GROUP BY 1") == esperado
+
+
+def test_retrabalho_e_bloqueios(ambiente):
+    spark, _, _, dados = ambiente
+    eventos = dados["historico"]
+    retrabalho = sum(e["status_anterior"] == "Em Revisão" and e["status_novo"] == "Em Andamento" for e in eventos)
+    bloqueios = sum(e["status_novo"] == "Bloqueada" for e in eventos)
+    linha = spark.sql("SELECT sum(qtd_retrabalho), sum(qtd_bloqueios) FROM fato_tarefa").first()
+    assert (linha[0], linha[1]) == (retrabalho, bloqueios)
+
+
+def test_horas(ambiente):
+    spark, _, _, dados = ambiente
+    linha = spark.sql("SELECT sum(estimativa_horas), round(sum(horas_apontadas), 1) FROM fato_tarefa").first()
+    assert linha[0] == sum(t["estimativa_horas"] for t in dados["tarefas"])
+    assert linha[1] == pytest.approx(sum(t["horas_apontadas"] for t in dados["tarefas"]), abs=0.05)
+
+
+def test_projetos_atrasados(ambiente):
+    spark, _, _, dados = ambiente
+    vivos = [p for p in dados["projetos"] if p["status"] in ("Em Andamento", "Planejamento")]
+    atrasados = sum(p["data_fim_planejada"] < REF.isoformat() for p in vivos)
+    assert contar(spark, "SELECT situacao_prazo, count(*) FROM dim_projeto GROUP BY 1").get("Atrasado", 0) == atrasados
+
+
+def test_horario_de_brasilia(ambiente):
+    spark, _, _, dados = ambiente
+    t = dados["tarefas"][0]
+    criada = spark.sql(f"SELECT date_format(criada_em, 'yyyy-MM-dd HH:mm') FROM fato_tarefa "
+                       f"WHERE tarefa_id = '{t['id']}'").first()[0]
+    assert criada == t["criada_em"][:16].replace("T", " ")
+
+
+def test_textos_padronizados(ambiente):
+    spark, *_ = ambiente
+    assert set(contar(spark, "SELECT prioridade, count(*) FROM fato_tarefa GROUP BY 1")) <= \
+        {"Baixa", "Média", "Alta", "Crítica"}
+    assert spark.sql("SELECT count(*) FROM fato_tarefa WHERE titulo <> trim(titulo) OR titulo LIKE '%  %'").first()[0] == 0
+
+
+def test_quarentena(ambiente):
+    """Registros que quebram regras vão para silver_rejeitados com o motivo; o resto segue."""
+    spark, executor, pasta, dados = ambiente
+    boa = dados["tarefas"][0]
+    ruins = [
+        boa | {"id": "TSK-99901", "status": "Em Pausa"},
+        boa | {"id": "TSK-99902", "projeto_id": "PRJ-999"},
+        boa | {"id": "TSK-99903", "horas_apontadas": -3},
+    ]
+    destino = pasta / "Files" / "bronze" / "tarefas" / "data_carga=2026-10-01" / "20261001T000000Z_p0001.json"
+    destino.parent.mkdir(parents=True)
+    destino.write_text(json.dumps({"dados": ruins, "proxima": None, "_execucao": "20261001T000000Z"}))
+    try:
+        executor.rodar("nb_02_silver_tratamento")
+        motivos = contar(spark, "SELECT id, motivo FROM silver_rejeitados")
+        assert motivos == {"TSK-99901": "status de tarefa desconhecido",
+                           "TSK-99902": "projeto_id sem correspondente",
+                           "TSK-99903": "horas negativas"}
+        assert spark.table("silver_tarefas").count() == len(dados["tarefas"])
+    finally:
+        destino.unlink()
+        executor.rodar("nb_02_silver_tratamento")

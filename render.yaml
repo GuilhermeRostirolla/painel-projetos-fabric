@@ -1,0 +1,18 @@
+# Publica a API no Render (plano gratuito) direto do GitHub: New > Blueprint > este repositório.
+# No plano gratuito o serviço dorme sem uso; a primeira chamada leva ~1 min para acordar,
+# e a ingestão já espera por isso (timeout longo + novas tentativas).
+services:
+  - type: web
+    name: api-projetos-demo
+    runtime: docker
+    plan: free
+    healthCheckPath: /saude
+    envVars:
+      - key: API_TOKEN
+        generateValue: true   # o Render cria um token aleatório; copie para o Key Vault
+      - key: SEMENTE
+        value: "42"
+      - key: DATA_REFERENCIA
+        value: "2026-09-30"
+      - key: TAXA_FALHA
+        value: "0.03"
