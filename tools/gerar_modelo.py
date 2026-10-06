@@ -177,8 +177,8 @@ def relacionamentos(schema: dict) -> str:
         saida.append(f"relationship {tag('rel', de, para)}")
         if not ativo:
             saida.append("\tisActive: false")
-        if tipos[de] == "date":
-            saida.append("\tjoinOnDateBehavior: datePartOnly")
+        # sem joinOnDateBehavior: Direct Lake não aceita relacionamento "datetime-to-date";
+        # a gold já grava essas colunas como data pura, então a igualdade simples basta
         saida += [f"\tfromColumn: {de}", f"\ttoColumn: {para}", ""]
     return "\n".join(saida)
 

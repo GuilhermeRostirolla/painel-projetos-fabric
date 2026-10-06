@@ -72,3 +72,11 @@ def test_tmdl_bem_formado():
         assert texto.count("```") % 2 == 0, f"bloco ``` aberto em {arquivo.name}"
         for linha in texto.splitlines():
             assert not linha.startswith(" "), f"recuo com espaço em {arquivo.name}: {linha!r}"
+
+
+def test_nada_que_o_direct_lake_recuse():
+    """Achado na primeira publicação real: Direct Lake recusa relacionamento datePartOnly."""
+    for arquivo in (gm.DESTINO / "definition").rglob("*.tmdl"):
+        texto = arquivo.read_text()
+        assert "joinOnDateBehavior" not in texto, arquivo.name
+        assert "mode: import" not in texto, arquivo.name
