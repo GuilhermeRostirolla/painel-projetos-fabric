@@ -31,7 +31,7 @@ subprocess.run([sys.executable, "-m", "pip", "install", "-q", "--target", f"{_de
                     f"https://raw.githubusercontent.com/{REPOSITORIO}/{RAMO}/requirements-api.txt", timeout=60
                 ).text.splitlines()).encode(), check=True)
 
-_zip = requests.get(f"https://github.com/{REPOSITORIO}/archive/refs/heads/{RAMO}.zip", timeout=120)
+_zip = requests.get(f"https://github.com/{REPOSITORIO}/archive/{RAMO}.zip", timeout=120)
 _zip.raise_for_status()
 with zipfile.ZipFile(io.BytesIO(_zip.content)) as z:
     _raiz = z.namelist()[0].rstrip("/")
