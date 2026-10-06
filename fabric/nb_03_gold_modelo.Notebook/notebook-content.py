@@ -82,6 +82,9 @@ historico = spark.table("silver_historico")
 # CELL ********************
 
 # fato_passagem_status: cada evento abre uma passagem que termina no evento seguinte da mesma tarefa
+ORDEM_ETAPA = {"Backlog": 1, "A Fazer": 2, "Em Andamento": 3, "Bloqueada": 4, "Em Revisão": 5,
+               "Concluída": 6, "Cancelada": 7}
+ordem_etapa = F.create_map(*[F.lit(x) for kv in ORDEM_ETAPA.items() for x in kv])
 ordem = Window.partitionBy("tarefa_id").orderBy("ocorrido_em", "id")
 passagens = (historico
     .withColumn("entrada_em", local("ocorrido_em"))
@@ -94,7 +97,8 @@ passagens = (historico
     .withColumn("dias_na_etapa", F.when(F.col("etapa_final"), F.lit(None).cast("double"))
                 .otherwise(dias_entre(F.col("entrada_em"), F.coalesce("saida_em", FIM_REF))))
     .select(F.col("id").alias("passagem_id"), "tarefa_id", "projeto_id", "sequencia",
-            F.col("status_anterior"), F.col("status_novo").alias("status"), "pessoa_id",
+            F.col("status_anterior"), F.col("status_novo").alias("status"),
+            ordem_etapa[F.col("status_novo")].alias("ordem_etapa"), "pessoa_id",
             "entrada_em", "saida_em", F.to_date("entrada_em").alias("data_entrada"),
             "dias_na_etapa", "etapa_atual", "etapa_final"))
 
@@ -193,11 +197,11 @@ dim_pessoa = (pessoas.join(nomes_equipe, "equipe_id", "left")
     .select(F.col("id").alias("pessoa_id"), F.col("nome").alias("pessoa"), "equipe", "cargo", "ativo",
             "data_admissao"))
 
-dim_status = spark.createDataFrame(
-    [("Backlog", "Não iniciada", 1), ("A Fazer", "Não iniciada", 2), ("Em Andamento", "Em execução", 3),
-     ("Bloqueada", "Em execução", 4), ("Em Revisão", "Em execução", 5), ("Concluída", "Concluída", 6),
-     ("Cancelada", "Cancelada", 7)],
-    "status string, categoria string, ordem int")
+CATEGORIA = {"Backlog": "Não iniciada", "A Fazer": "Não iniciada", "Em Andamento": "Em execução",
+             "Bloqueada": "Em execução", "Em Revisão": "Em execução", "Concluída": "Concluída",
+             "Cancelada": "Cancelada"}
+dim_status = spark.createDataFrame([(s, CATEGORIA[s], o) for s, o in ORDEM_ETAPA.items()],
+                                   "status string, categoria string, ordem int")
 
 # METADATA ********************
 

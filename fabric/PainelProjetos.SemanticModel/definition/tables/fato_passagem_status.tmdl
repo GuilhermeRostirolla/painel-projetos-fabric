@@ -1,0 +1,187 @@
+table fato_passagem_status
+	lineageTag: beed866d-d9af-5bfb-b575-1b97c605286b
+	sourceLineageTag: [dbo].[fato_passagem_status]
+
+	measure 'Tempo Médio na Etapa (dias)' = CALCULATE ( AVERAGE ( fato_passagem_status[dias_na_etapa] ), fato_passagem_status[etapa_atual] = FALSE () )
+		formatString: #,0.0
+		displayFolder: Fluxo
+		lineageTag: fb1c28d4-38dd-5712-a0f7-4258043bc6bb
+
+	measure 'Tarefas Paradas na Etapa' = ```
+			CALCULATE (
+			    DISTINCTCOUNT ( fato_passagem_status[tarefa_id] ),
+			    fato_passagem_status[etapa_atual] = TRUE (),
+			    fato_passagem_status[etapa_final] = FALSE ()
+			)
+			```
+		formatString: #,0
+		displayFolder: Fluxo
+		lineageTag: 4e60c898-a80e-56b2-86b1-3db760b0488e
+
+	measure 'Paradas há mais de 15 dias' = CALCULATE ( [Tarefas Paradas na Etapa], fato_passagem_status[dias_na_etapa] > 15 )
+		formatString: #,0
+		displayFolder: Fluxo
+		lineageTag: 5b006b6a-ea62-55d0-8432-43b420853005
+
+	measure 'Mudanças de Status' = ```
+			// conta pela data da mudança, não pela data de criação da tarefa
+			CALCULATE (
+			    COUNTROWS ( fato_passagem_status ),
+			    USERELATIONSHIP ( fato_passagem_status[data_entrada], dim_data[data] ),
+			    CROSSFILTER ( fato_tarefa[data_criacao], dim_data[data], NONE )
+			)
+			```
+		formatString: #,0
+		displayFolder: Fluxo
+		lineageTag: cd004c63-571b-588f-b485-51c74d04b7b5
+
+	measure 'Bloqueios no Período' = CALCULATE ( [Mudanças de Status], fato_passagem_status[status] = "Bloqueada" )
+		formatString: #,0
+		displayFolder: Fluxo
+		lineageTag: e87fe2b2-3fb1-520b-886f-949b88d85a43
+
+	column passagem_id
+		dataType: string
+		isHidden
+		lineageTag: f75de3c1-146b-50a1-ae40-568d0e8b639b
+		sourceLineageTag: passagem_id
+		summarizeBy: none
+		sourceColumn: passagem_id
+
+		annotation SummarizationSetBy = Automatic
+
+	column tarefa_id
+		dataType: string
+		isHidden
+		lineageTag: de18f44e-0217-5a3b-89e1-c86ec9864111
+		sourceLineageTag: tarefa_id
+		summarizeBy: none
+		sourceColumn: tarefa_id
+
+		annotation SummarizationSetBy = Automatic
+
+	column projeto_id
+		dataType: string
+		isHidden
+		lineageTag: 23ab66e9-ca09-5aa9-94b9-3633d5b55349
+		sourceLineageTag: projeto_id
+		summarizeBy: none
+		sourceColumn: projeto_id
+
+		annotation SummarizationSetBy = Automatic
+
+	column sequencia
+		dataType: int64
+		formatString: 0
+		isHidden
+		lineageTag: a22381f9-b327-53f5-a550-267fd1455f12
+		sourceLineageTag: sequencia
+		summarizeBy: none
+		sourceColumn: sequencia
+
+		annotation SummarizationSetBy = Automatic
+
+	column status_anterior
+		dataType: string
+		lineageTag: 4e93fb90-af5b-53f0-bf0f-fc1c2ed2399d
+		sourceLineageTag: status_anterior
+		summarizeBy: none
+		sourceColumn: status_anterior
+
+		annotation SummarizationSetBy = Automatic
+
+	column status
+		dataType: string
+		lineageTag: 77880f6b-d3a4-5f27-a977-c07d49f0c7c0
+		sourceLineageTag: status
+		summarizeBy: none
+		sourceColumn: status
+		sortByColumn: ordem_etapa
+
+		annotation SummarizationSetBy = Automatic
+
+	column ordem_etapa
+		dataType: int64
+		formatString: 0
+		isHidden
+		lineageTag: 94a01b12-8206-57c6-a6e0-d73e6d18067d
+		sourceLineageTag: ordem_etapa
+		summarizeBy: none
+		sourceColumn: ordem_etapa
+
+		annotation SummarizationSetBy = Automatic
+
+	column pessoa_id
+		dataType: string
+		isHidden
+		lineageTag: d26727d1-67de-5c53-9ead-633f021f65fd
+		sourceLineageTag: pessoa_id
+		summarizeBy: none
+		sourceColumn: pessoa_id
+
+		annotation SummarizationSetBy = Automatic
+
+	column entrada_em
+		dataType: dateTime
+		formatString: dd/MM/yyyy HH:mm
+		lineageTag: 603e7722-235a-58dd-afbc-4b9515625a98
+		sourceLineageTag: entrada_em
+		summarizeBy: none
+		sourceColumn: entrada_em
+
+		annotation SummarizationSetBy = Automatic
+
+	column saida_em
+		dataType: dateTime
+		formatString: dd/MM/yyyy HH:mm
+		lineageTag: 8e39622c-f0b5-56c3-aa8b-2d2caa78f949
+		sourceLineageTag: saida_em
+		summarizeBy: none
+		sourceColumn: saida_em
+
+		annotation SummarizationSetBy = Automatic
+
+	column data_entrada
+		dataType: dateTime
+		formatString: dd/MM/yyyy
+		lineageTag: 15ad3ed2-73de-5e4f-88c6-de30b5851eba
+		sourceLineageTag: data_entrada
+		summarizeBy: none
+		sourceColumn: data_entrada
+
+		annotation SummarizationSetBy = Automatic
+
+	column dias_na_etapa
+		dataType: double
+		formatString: #,0.0
+		lineageTag: 903f7cc4-a9cb-53a0-80ef-458522c443f4
+		sourceLineageTag: dias_na_etapa
+		summarizeBy: none
+		sourceColumn: dias_na_etapa
+
+		annotation SummarizationSetBy = Automatic
+
+	column etapa_atual
+		dataType: boolean
+		lineageTag: 78328974-a501-5690-b278-f1b587bcfc36
+		sourceLineageTag: etapa_atual
+		summarizeBy: none
+		sourceColumn: etapa_atual
+
+		annotation SummarizationSetBy = Automatic
+
+	column etapa_final
+		dataType: boolean
+		lineageTag: 932ca3e7-b258-54b1-aea6-9f0df9755f7c
+		sourceLineageTag: etapa_final
+		summarizeBy: none
+		sourceColumn: etapa_final
+
+		annotation SummarizationSetBy = Automatic
+
+	partition fato_passagem_status = entity
+		mode: directLake
+		source
+			entityName: fato_passagem_status
+			schemaName: dbo
+			expressionSource: DatabaseQuery

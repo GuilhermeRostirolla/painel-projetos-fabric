@@ -2,7 +2,7 @@
 
 > **Todo gestor sabe quantos projetos tem. Poucos sabem, sem abrir dez telas, quais estão atrasados, onde as tarefas travam e quanto do orçamento de horas já foi.**
 
-Este projeto busca os dados de uma ferramenta de gestão de projetos **por API**, trata tudo no **Microsoft Fabric** em camadas (bronze, silver e gold) e entrega um modelo pronto para um painel no **Power BI em Direct Lake**.
+Este projeto busca os dados de uma ferramenta de gestão de projetos **por API**, trata tudo no **Microsoft Fabric** em camadas (bronze, silver e gold) e entrega um **modelo semântico em Direct Lake**, com 37 medidas, pronto para o painel no Power BI.
 
 É a continuação do [Painel de Ideias](https://github.com/GuilhermeRostirolla/painel-ideias-powerbi): lá o dado nascia num banco SQL Server; aqui ele vem de uma API, como acontece com Jira, Asana, ClickUp e companhia, e o pipeline precisa lidar com tudo que uma API real faz: token, paginação, carga incremental e limite de requisições.
 
@@ -16,9 +16,10 @@ Este projeto busca os dados de uma ferramenta de gestão de projetos **por API**
 
 ### O cenário simulado
 
-- **45 projetos** de **5 equipes** (Tecnologia, Dados & BI, Operações, Comercial e Pessoas & Cultura), **59 pessoas**, **~1.400 tarefas** e **~7.500 mudanças de status**, de jan/2025 a set/2026.
+- **45 projetos** de **5 equipes** (Tecnologia, Dados & BI, Operações, Comercial e Pessoas & Cultura), **59 pessoas**, **1.435 tarefas** e **7.633 mudanças de status**, de jan/2025 a set/2026.
 - Cada tarefa percorre **Backlog → A Fazer → Em Andamento → Em Revisão → Concluída**, podendo ser **bloqueada**, **voltar para retrabalho** ou ser **cancelada**.
-- Na data de referência (30/09/2026): 20 projetos em andamento, 14 concluídos, 5 em planejamento, 3 pausados e 3 cancelados. Cerca de 20% das tarefas concluídas atrasaram, e projetos com "saúde" ruim ganham escopo no caminho e estouram prazo e orçamento.
+- Na data de referência (30/09/2026): 25 projetos em andamento (**7 já passaram do prazo**), 14 concluídos, 1 em planejamento, 3 pausados e 2 cancelados. **39 tarefas vencidas** e esforço **34% acima do estimado**.
+- Cada projeto tem uma "saúde" sorteada e um prazo prometido pelo gestor, que pode ser otimista ou conservador. Projetos problemáticos ganham escopo no caminho e estouram prazo e orçamento, como na vida real.
 
 ### Por que os dados são fictícios
 
@@ -34,13 +35,14 @@ flowchart LR
     A -- "nb_01<br/>JSON bruto" --> B[("Bronze<br/>Files/bronze")]
     B -- "nb_02<br/>contrato, limpeza,<br/>deduplicação" --> SV[("Silver<br/>tabelas Delta")]
     SV -- "nb_03<br/>star schema" --> G[("Gold<br/>tabelas Delta")]
-    G -- "Direct Lake" --> P["Power BI"]
+    G -- "Direct Lake" --> M["Modelo semântico<br/>37 medidas"] --> P["Power BI"]
     O["nb_00 orquestrador<br/>(agendado)"] -.-> B & SV & G
     subgraph Fabric["Microsoft Fabric · Lakehouse"]
         B
         SV
         G
         O
+        M
     end
 ```
 
@@ -52,6 +54,7 @@ flowchart LR
 | **Silver** (`nb_02`) | Aplica o contrato de dados (schema fixo por recurso), padroniza textos e datas, deixa uma linha por registro e manda o que quebra regra para a quarentena. |
 | **Gold** (`nb_03`) | Star schema para Direct Lake: `fato_tarefa`, `fato_passagem_status`, `dim_projeto`, `dim_pessoa`, `dim_status`, `dim_data` e `ref_parametros`. Confere as próprias contas antes de terminar. |
 | **Orquestrador** (`nb_00`) | Roda as três etapas em sequência. É ele que fica agendado. |
+| **Modelo semântico** (`PainelProjetos.SemanticModel`) | Direct Lake sobre a gold: 7 tabelas, 7 relacionamentos e 37 medidas em pastas (Portfólio, Prazo, Tarefas, Tempo, Fluxo, Esforço, Período). Gerado em TMDL por `tools/gerar_modelo.py`. |
 
 ## Decisões que tomei
 
@@ -71,11 +74,15 @@ flowchart LR
 | **Horário de Brasília na gold** | A API manda as datas com fuso; a silver guarda o instante em UTC e a gold converte para o horário de Brasília, que é o que o usuário espera ver. |
 | **Simulador com "relógio"** | O mundo é simulado uma vez e a data de referência só corta a história. Subir a API em 31/08 e depois em 30/09 equivale a um sistema real que andou um mês. Foi isso que me permitiu provar a carga incremental. |
 | **Versões fixas e impressão digital do cenário** | Outra versão do Faker ou do numpy geraria outros dados com a mesma semente. As versões da API são fixas e a API expõe um hash do cenário (`/v1/meta`), travado nos testes: dá para confirmar que o Fabric recebeu exatamente os dados testados. |
+| **Direct Lake em vez de importação** | O modelo lê as tabelas Delta da gold direto do OneLake: sem cópia dos dados nem agendamento de atualização do modelo. Terminou o orquestrador, o painel já mostra o dado novo. |
+| **Modelo gerado a partir do schema real** | Colunas e tipos vêm de `tools/schema_gold.json`, extraído da gold; um teste falha se a gold mudar e o modelo não acompanhar. Nada de coluna digitada à mão. |
+| **Passagens ligadas à tarefa, não às dimensões** | `fato_passagem_status` se liga à `fato_tarefa`, então filtro de projeto, pessoa ou data chega às duas por um caminho só, sem ambiguidade. Para contar mudanças pela data da mudança, a medida ativa a outra data com `USERELATIONSHIP` e desliga a da criação com `CROSSFILTER`. |
+| **Cada medida tem um valor esperado** | `tools/valores_esperados.py` recalcula as 37 medidas em SQL, sem passar pelo DAX, e gera [`docs/valores_esperados.md`](docs/valores_esperados.md). No Power BI, cada cartão tem que bater com essa tabela. |
 | **Notebooks no formato Git do Fabric** | A pasta `fabric/` sincroniza direto com um workspace pela integração com Git: os notebooks são texto, versionados e revisáveis linha a linha. |
 
 ## Como sei que funciona
 
-- **51 testes automatizados**: simulador (coerência, determinismo, calibração), API (token, paginação, incremental, 429), notebooks (formato, sintaxe) e o pipeline inteiro rodando com Spark, incluindo quarentena e exclusões na fonte.
+- **97 testes automatizados**: simulador (coerência, determinismo, calibração), API (token, paginação, incremental, 429), notebooks (formato, sintaxe), modelo semântico (toda coluna e medida citada no DAX existe, relacionamentos sem ambiguidade) e o pipeline inteiro rodando com Spark, incluindo quarentena e exclusões na fonte.
 - **A gold é conferida contra contas feitas à mão**: status, situação de prazo, retrabalho, bloqueios, horas e projetos atrasados são recalculados em Python puro a partir da API e precisam bater com o que o Spark produziu.
 - **Carga incremental = carga completa**: rodei uma carga completa com os dados de 31/08, depois uma incremental com os de 30/09 (com 30% das chamadas falhando de propósito) e comparei a gold, linha a linha, com uma carga completa direta de 30/09. Todas as tabelas ficaram idênticas.
 - **A própria gold se confere**: antes de terminar, o `nb_03` verifica chaves, uma etapa atual por tarefa, tempos não negativos e cobertura do calendário. Se algo não fechar, a execução falha.
@@ -105,7 +112,7 @@ O Fabric precisa de uma URL pública. O jeito mais simples é o [Render](https:/
 
 1. **New → Blueprint** e aponte para este repositório. O `render.yaml` já configura tudo.
 2. Em **Environment**, copie o valor de `API_TOKEN` que o Render gerou.
-3. Teste: `https://<seu-app>.onrender.com/docs`. Em `/v1/meta`, a `impressao_digital` deve ser `6c37f364e4dd838d` (mesmos dados dos testes).
+3. Teste: `https://<seu-app>.onrender.com/docs`. Em `/v1/meta`, a `impressao_digital` deve ser `f5e3d8e3c86d9d89` (mesmos dados dos testes).
 
 > No plano gratuito a API dorme sem uso e leva cerca de 1 minuto para acordar. A ingestão já espera por isso.
 
@@ -123,7 +130,18 @@ Crie um Azure Key Vault (ou use um existente), adicione o segredo `token-api-pro
 4. Abra o `nb_00_orquestrador`, preencha `URL_API` e `KEY_VAULT_URL`, troque `MODO` para `completo` e rode.
 5. Volte `MODO` para `incremental` e **agende** o `nb_00` (ex.: todo dia às 6h).
 
-Ao final, o lakehouse terá as tabelas `silver_*` e o star schema da gold, prontos para o modelo semântico.
+Ao final, o lakehouse terá as tabelas `silver_*` e o star schema da gold.
+
+### 5. Conectar o modelo semântico
+
+1. No lakehouse, abra o **SQL analytics endpoint** → Configurações: copie a **cadeia de conexão** (algo como `xxxx.datawarehouse.fabric.microsoft.com`) e o **id** do endpoint (o GUID na URL).
+2. Gere o modelo já apontando para ele e envie para o Git:
+   ```bash
+   python tools/gerar_modelo.py --endpoint xxxx.datawarehouse.fabric.microsoft.com --endpoint-id <guid>
+   ```
+   (ou edite as duas linhas de `fabric/PainelProjetos.SemanticModel/definition/expressions.tmdl`).
+3. No workspace, **Controle do código-fonte → Atualizar tudo**: o item `PainelProjetos` aparece como modelo semântico.
+4. Abra o modelo, crie um relatório e confira alguns cartões contra [`docs/valores_esperados.md`](docs/valores_esperados.md).
 
 ## Estrutura
 
@@ -136,10 +154,14 @@ fabric/
   nb_02_silver_tratamento.Notebook/
   nb_03_gold_modelo.Notebook/
   ipynb/                os mesmos notebooks em .ipynb, para importação manual
+  PainelProjetos.SemanticModel/   modelo semântico Direct Lake (TMDL, gerado)
 tools/
   rodar_local.py        roda os notebooks com Spark local
   comparar_gold.py      compara duas golds linha a linha
   exportar_ipynb.py     gera fabric/ipynb a partir dos notebooks
+  gerar_modelo.py       gera o modelo semântico (tabelas, relacionamentos, medidas)
+  valores_esperados.py  recalcula as medidas em SQL para conferência
+docs/valores_esperados.md
 tests/
 Dockerfile, render.yaml publicação da API
 ```
@@ -147,7 +169,7 @@ Dockerfile, render.yaml publicação da API
 ## Próximos passos
 
 - [x] Simulador, API, ingestão e camadas bronze, silver e gold
-- [ ] Modelo semântico em **Direct Lake** com as medidas (projeto PBIP versionado, como no Painel de Ideias)
+- [x] Modelo semântico em **Direct Lake** com 37 medidas e valores esperados para conferência
 - [ ] Relatório: portfólio, prazos, fluxo e gargalos, esforço e pessoas
 - [ ] Segurança por linha por equipe
 

@@ -31,6 +31,10 @@ class Config:
     horizonte: date = date(2028, 12, 31)     # até onde a história é simulada
     p_cancelado: float = 0.08
     p_pausado: float = 0.08
+    recencia: float = 2.4                    # > 1 concentra os inícios de projeto perto do fim do período
+    otimismo: tuple[float, float] = (0.6, 1.05)  # prazo planejado = duração esperada × sorteio nesta faixa
+    dispersao_saude: float = 0.4             # quanto os projetos variam entre saudáveis e problemáticos
+    arrasto: float = 2.0                     # quanto o escopo de um projeto problemático se estica
 
 
 @dataclass
@@ -58,6 +62,7 @@ class _Projeto:
     inicio: datetime
     duracao: int
     escopo_fecha_em: datetime  # depois disso não entram tarefas novas
+    dias_planejados: int       # o que o gestor prometeu: erra para mais ou para menos
     corte: Corte | None
     tarefas: list[_Tarefa] = field(default_factory=list)
 
@@ -123,11 +128,12 @@ def _mundo(cfg: Config) -> tuple[list[dict], list[_Projeto]]:
     projetos = []
     for n, (equipe_id, nome) in enumerate(cat.PROJETOS):
         # mais projetos recentes que antigos: o portfólio cresce com o tempo
-        inicio = no_expediente(cfg.inicio + timedelta(days=int(rng.beta(2.4, 1.0) * janela)), rng)
+        inicio = no_expediente(cfg.inicio + timedelta(days=int(rng.beta(cfg.recencia, 1.0) * janela)), rng)
         duracao = int(rng.integers(90, 301))
-        saude = float(np.clip(rng.lognormal(0, 0.28), 0.7, 1.9))
+        saude = float(np.clip(rng.lognormal(0, cfg.dispersao_saude), 0.7, 2.2))
+        dias_planejados = int(duracao * rng.uniform(*cfg.otimismo))
         # projeto com saúde ruim ganha escopo: tarefas continuam sendo abertas depois do plano
-        janela_tarefas = duracao * 0.85 * max(saude, 1.0) ** 1.5
+        janela_tarefas = duracao * 0.85 * max(saude, 1.0) ** cfg.arrasto
 
         equipe = por_equipe[equipe_id]
         outros = [p for p in pessoas if p["equipe_id"] != equipe_id]
@@ -141,7 +147,7 @@ def _mundo(cfg: Config) -> tuple[list[dict], list[_Projeto]]:
 
         projeto = _Projeto(n, nome, equipe_id, equipe[0],
                            str(rng.choice(cat.PRIORIDADES[1:], p=(0.45, 0.4, 0.15))),
-                           inicio, duracao, inicio + timedelta(days=janela_tarefas), corte)
+                           inicio, duracao, inicio + timedelta(days=janela_tarefas), dias_planejados, corte)
 
         for _ in range(int(np.clip(duracao / 4 * rng.uniform(0.8, 1.2), 10, 60))):
             criada = no_expediente(inicio.date() + timedelta(days=int(rng.beta(1.2, 1.8) * janela_tarefas)), rng)
@@ -244,7 +250,7 @@ def gerar(cfg: Config = Config()) -> dict[str, list[dict]]:
             "prioridade": p.prioridade,
             "status": status,
             "data_inicio": iso(p.inicio.date()),
-            "data_fim_planejada": iso(p.inicio.date() + timedelta(days=p.duracao)),
+            "data_fim_planejada": iso(p.inicio.date() + timedelta(days=p.dias_planejados)),
             "data_conclusao": iso(conclusao.date()) if conclusao else None,
             # orçamento cobre o escopo original; tarefas que entram depois estouram o orçamento
             "horas_orcadas": int(np.ceil(sum(t.estimativa for t in p.tarefas if t.criada <= escopo_original)
