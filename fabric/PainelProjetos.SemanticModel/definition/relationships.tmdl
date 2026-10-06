@@ -11,13 +11,11 @@ relationship 907c98de-3a6b-548c-8e75-8926c973aa61
 	toColumn: dim_status.status
 
 relationship cd4a8d5b-f17a-59b6-a2e1-aee4b4da0707
-	joinOnDateBehavior: datePartOnly
 	fromColumn: fato_tarefa.data_criacao
 	toColumn: dim_data.data
 
 relationship 75cff12e-0da0-577a-b811-ee225ef6a329
 	isActive: false
-	joinOnDateBehavior: datePartOnly
 	fromColumn: fato_tarefa.data_conclusao
 	toColumn: dim_data.data
 
@@ -27,6 +25,5 @@ relationship 157826d2-492b-54cb-9c57-1f1bebf97477
 
 relationship 4903c32d-b239-52ff-8d6a-70cc4ae65a96
 	isActive: false
-	joinOnDateBehavior: datePartOnly
 	fromColumn: fato_passagem_status.data_entrada
 	toColumn: dim_data.data
