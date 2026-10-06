@@ -1,0 +1,153 @@
+{
+ "mes_ano": "set/26",
+ "medidas": {
+  "Projetos": {
+   "valor": 45.0,
+   "periodo": false
+  },
+  "Projetos Ativos": {
+   "valor": 26.0,
+   "periodo": false
+  },
+  "Projetos em Andamento": {
+   "valor": 25.0,
+   "periodo": false
+  },
+  "Projetos Concluídos": {
+   "valor": 14.0,
+   "periodo": false
+  },
+  "Projetos Atrasados": {
+   "valor": 7.0,
+   "periodo": false
+  },
+  "% Projetos Atrasados": {
+   "valor": 0.2692307692307692,
+   "periodo": false
+  },
+  "% Projetos Entregues no Prazo": {
+   "valor": 0.21428571428571427,
+   "periodo": false
+  },
+  "Atraso Médio dos Projetos (dias)": {
+   "valor": 89.16666666666667,
+   "periodo": false
+  },
+  "Horas Orçadas": {
+   "valor": 22750.0,
+   "periodo": false
+  },
+  "% Orçamento Consumido": {
+   "valor": 0.9634945054945042,
+   "periodo": false
+  },
+  "Tarefas": {
+   "valor": 1435.0,
+   "periodo": false
+  },
+  "Tarefas Abertas": {
+   "valor": 140.0,
+   "periodo": false
+  },
+  "Tarefas Concluídas": {
+   "valor": 1235.0,
+   "periodo": false
+  },
+  "Tarefas Bloqueadas": {
+   "valor": 7.0,
+   "periodo": false
+  },
+  "Tarefas Vencidas": {
+   "valor": 39.0,
+   "periodo": false
+  },
+  "% Abertas Vencidas": {
+   "valor": 0.30708661417322836,
+   "periodo": false
+  },
+  "% Entregues no Prazo": {
+   "valor": 0.7617801047120419,
+   "periodo": false
+  },
+  "Atraso Médio das Tarefas (dias)": {
+   "valor": 20.80128205128205,
+   "periodo": false
+  },
+  "Lead Time Médio (dias)": {
+   "valor": 20.559187471884833,
+   "periodo": false
+  },
+  "Ciclo Médio (dias)": {
+   "valor": 9.149829959514163,
+   "periodo": false
+  },
+  "Ciclo Mediano (dias)": {
+   "valor": 6.83,
+   "periodo": false
+  },
+  "Idade Média das Abertas (dias)": {
+   "valor": 42.35889219576717,
+   "periodo": false
+  },
+  "Dias Bloqueada": {
+   "valor": 1385.4599999999998,
+   "periodo": false
+  },
+  "% Concluídas com Retrabalho": {
+   "valor": 0.1797570850202429,
+   "periodo": false
+  },
+  "Horas Estimadas": {
+   "valor": 18630.0,
+   "periodo": false
+  },
+  "Horas Apontadas": {
+   "valor": 21919.49999999997,
+   "periodo": false
+  },
+  "Desvio de Esforço %": {
+   "valor": 0.33565777721066525,
+   "periodo": false
+  },
+  "Tarefas Criadas": {
+   "valor": 167.0,
+   "periodo": true
+  },
+  "Tarefas Entregues": {
+   "valor": 175.0,
+   "periodo": true
+  },
+  "Saldo do Período": {
+   "valor": -8.0,
+   "periodo": true
+  },
+  "Tempo Médio na Etapa (dias)": {
+   "valor": 4.4363294611164905,
+   "periodo": false
+  },
+  "Tarefas Paradas na Etapa": {
+   "valor": 140.0,
+   "periodo": false
+  },
+  "Paradas há mais de 15 dias": {
+   "valor": 27.0,
+   "periodo": false
+  },
+  "Mudanças de Status": {
+   "valor": 1019.0,
+   "periodo": true
+  },
+  "Bloqueios no Período": {
+   "valor": 26.0,
+   "periodo": true
+  },
+  "Data de Referência": {
+   "valor": "30/09/2026",
+   "periodo": false
+  },
+  "Texto Referência": {
+   "valor": "Dados até 30/09/2026",
+   "periodo": false
+  }
+ }
+}
