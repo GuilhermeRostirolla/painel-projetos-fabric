@@ -82,7 +82,8 @@ flowchart LR
 
 ## Como sei que funciona
 
-- **97 testes automatizados**: simulador (coerência, determinismo, calibração), API (token, paginação, incremental, 429), notebooks (formato, sintaxe), modelo semântico (toda coluna e medida citada no DAX existe, relacionamentos sem ambiguidade) e o pipeline inteiro rodando com Spark, incluindo quarentena e exclusões na fonte.
+- **Rodou no Fabric de verdade**: o orquestrador completo (bronze → silver → gold, em Delta) terminou com sucesso, com as conferências da gold passando.
+- **98 testes automatizados**: simulador (coerência, determinismo, calibração), API (token, paginação, incremental, 429), notebooks (formato, sintaxe), modelo semântico (toda coluna e medida citada no DAX existe, relacionamentos sem ambiguidade) e o pipeline inteiro rodando com Spark, incluindo quarentena e exclusões na fonte.
 - **A gold é conferida contra contas feitas à mão**: status, situação de prazo, retrabalho, bloqueios, horas e projetos atrasados são recalculados em Python puro a partir da API e precisam bater com o que o Spark produziu.
 - **Carga incremental = carga completa**: rodei uma carga completa com os dados de 31/08, depois uma incremental com os de 30/09 (com 30% das chamadas falhando de propósito) e comparei a gold, linha a linha, com uma carga completa direta de 30/09. Todas as tabelas ficaram idênticas.
 - **A própria gold se confere**: antes de terminar, o `nb_03` verifica chaves, uma etapa atual por tarefa, tempos não negativos e cobertura do calendário. Se algo não fechar, a execução falha.
@@ -122,26 +123,25 @@ Crie um Azure Key Vault (ou use um existente), adicione o segredo `token-api-pro
 
 ### 4. Montar no Fabric
 
-1. Crie um workspace e um **Lakehouse** (sugestão: `lh_projetos`).
-2. Traga os notebooks de um destes jeitos:
-   - **Integração com Git** (recomendado): Configurações do workspace → Integração com Git → conecte este repositório com a pasta `fabric`.
-   - **Importar**: Workspace → Importar → Notebook → os arquivos de `fabric/ipynb/`.
-3. Em **cada** notebook, adicione o `lh_projetos` como **lakehouse padrão** (painel Explorer → Lakehouses).
-4. Abra o `nb_00_orquestrador`, preencha `URL_API` e `KEY_VAULT_URL`, troque `MODO` para `completo` e rode.
+1. Crie um workspace com capacidade Fabric (vale a avaliação gratuita) e um **Lakehouse** chamado `lh_projetos`.
+2. Crie um notebook qualquer e rode **uma linha**: ela instala os 5 notebooks pela API REST do Fabric, já com o `lh_projetos` anexado como lakehouse padrão em cada um.
+   ```python
+   import requests; exec(requests.get("https://raw.githubusercontent.com/GuilhermeRostirolla/painel-projetos-fabric/main/tools/instalar_no_fabric.py").text)
+   ```
+   (Alternativas: integração Git do workspace com a pasta `fabric/`, que exige um token do GitHub, ou importar os `.ipynb` de `fabric/ipynb/` e anexar o lakehouse em cada um.)
+3. Abra o `nb_00_orquestrador`, preencha `URL_API` e `KEY_VAULT_URL`, troque `MODO` para `completo` e rode.
+4. Rode o `nb_04_publicar_modelo`: ele cria o modelo semântico **PainelProjetos** (descobre o SQL endpoint sozinho) e confere as 37 medidas em DAX contra [`docs/valores_esperados.json`](docs/valores_esperados.json).
 5. Volte `MODO` para `incremental` e **agende** o `nb_00` (ex.: todo dia às 6h).
 
-Ao final, o lakehouse terá as tabelas `silver_*` e o star schema da gold.
+**Quer testar no Fabric antes de publicar a API?** Num notebook com o `lh_projetos` anexado, rode
+`tools/testar_no_fabric.py` do mesmo jeito: ele sobe a API simulada dentro da própria sessão (em `localhost`, num processo separado) e roda o orquestrador contra ela.
 
-### 5. Conectar o modelo semântico
+### O que a execução real no Fabric ensinou
 
-1. No lakehouse, abra o **SQL analytics endpoint** → Configurações: copie a **cadeia de conexão** (algo como `xxxx.datawarehouse.fabric.microsoft.com`) e o **id** do endpoint (o GUID na URL).
-2. Gere o modelo já apontando para ele e envie para o Git:
-   ```bash
-   python tools/gerar_modelo.py --endpoint xxxx.datawarehouse.fabric.microsoft.com --endpoint-id <guid>
-   ```
-   (ou edite as duas linhas de `fabric/PainelProjetos.SemanticModel/definition/expressions.tmdl`).
-3. No workspace, **Controle do código-fonte → Atualizar tudo**: o item `PainelProjetos` aparece como modelo semântico.
-4. Abra o modelo, crie um relatório e confira alguns cartões contra [`docs/valores_esperados.md`](docs/valores_esperados.md).
+- **O runtime do Fabric usa Python 3.11**: o numpy 2.5 exige 3.12, então a API fixa o numpy 2.4.6 (a impressão digital confirma que o cenário é o mesmo).
+- **Direct Lake não aceita relacionamento de data com `joinOnDateBehavior`**: a gold grava as datas sem hora e o modelo usa igualdade simples. Um teste impede que isso volte.
+- **Um notebook só chama outro se os dois tiverem o mesmo lakehouse padrão**: por isso o instalador anexa o `lh_projetos` em todos.
+- **Instalar pacotes na sessão pode quebrar bibliotecas que o Fabric já carregou**: a API de teste roda num processo separado, com dependências isoladas.
 
 ## Estrutura
 
@@ -153,6 +153,7 @@ fabric/
   nb_01_bronze_ingestao.Notebook/
   nb_02_silver_tratamento.Notebook/
   nb_03_gold_modelo.Notebook/
+  nb_04_publicar_modelo.Notebook/   publica o modelo e confere as medidas em DAX
   ipynb/                os mesmos notebooks em .ipynb, para importação manual
   PainelProjetos.SemanticModel/   modelo semântico Direct Lake (TMDL, gerado)
 tools/
@@ -161,7 +162,9 @@ tools/
   exportar_ipynb.py     gera fabric/ipynb a partir dos notebooks
   gerar_modelo.py       gera o modelo semântico (tabelas, relacionamentos, medidas)
   valores_esperados.py  recalcula as medidas em SQL para conferência
-docs/valores_esperados.md
+  instalar_no_fabric.py instala os notebooks num workspace pela API do Fabric
+  testar_no_fabric.py   teste ponta a ponta no Fabric com a API na própria sessão
+docs/valores_esperados.md e .json
 tests/
 Dockerfile, render.yaml publicação da API
 ```
