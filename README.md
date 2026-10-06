@@ -83,7 +83,7 @@ flowchart LR
 ## Como sei que funciona
 
 - **Rodou no Fabric de verdade**: o orquestrador completo (bronze → silver → gold, em Delta) terminou com sucesso, com as conferências da gold passando.
-- **98 testes automatizados**: simulador (coerência, determinismo, calibração), API (token, paginação, incremental, 429), notebooks (formato, sintaxe), modelo semântico (toda coluna e medida citada no DAX existe, relacionamentos sem ambiguidade) e o pipeline inteiro rodando com Spark, incluindo quarentena e exclusões na fonte.
+- **101 testes automatizados**: simulador (coerência, determinismo, calibração), API (token, paginação, incremental, 429), notebooks (formato, sintaxe), modelo semântico (toda coluna e medida citada no DAX existe, relacionamentos sem ambiguidade) e o pipeline inteiro rodando com Spark, incluindo quarentena e exclusões na fonte.
 - **A gold é conferida contra contas feitas à mão**: status, situação de prazo, retrabalho, bloqueios, horas e projetos atrasados são recalculados em Python puro a partir da API e precisam bater com o que o Spark produziu.
 - **Carga incremental = carga completa**: rodei uma carga completa com os dados de 31/08, depois uma incremental com os de 30/09 (com 30% das chamadas falhando de propósito) e comparei a gold, linha a linha, com uma carga completa direta de 30/09. Todas as tabelas ficaram idênticas.
 - **A própria gold se confere**: antes de terminar, o `nb_03` verifica chaves, uma etapa atual por tarefa, tempos não negativos e cobertura do calendário. Se algo não fechar, a execução falha.
