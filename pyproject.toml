@@ -1,0 +1,5 @@
+[tool.pytest.ini_options]
+pythonpath = ["."]
+testpaths = ["tests"]
+markers = ["pipeline: roda os notebooks com Spark local (lento, precisa de Java)"]
+addopts = "-m 'not pipeline'"
