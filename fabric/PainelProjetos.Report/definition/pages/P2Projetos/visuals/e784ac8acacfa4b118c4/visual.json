@@ -2,15 +2,15 @@
   "$schema": "https://developer.microsoft.com/json-schemas/fabric/item/report/definition/visualContainer/2.11.0/schema.json",
   "name": "e784ac8acacfa4b118c4",
   "position": {
-    "x": 1134,
-    "y": 26,
+    "x": 1132,
+    "y": 22,
     "z": 500,
-    "height": 26,
-    "width": 130,
+    "height": 32,
+    "width": 136,
     "tabOrder": 500
   },
   "visual": {
-    "visualType": "multiRowCard",
+    "visualType": "card",
     "query": {
       "queryState": {
         "Values": {
@@ -34,7 +34,7 @@
       }
     },
     "objects": {
-      "dataLabels": [
+      "labels": [
         {
           "properties": {
             "fontSize": {
@@ -54,13 +54,6 @@
                   }
                 }
               }
-            },
-            "fontFamily": {
-              "expr": {
-                "Literal": {
-                  "Value": "'Segoe UI'"
-                }
-              }
             }
           }
         }
@@ -72,51 +65,6 @@
               "expr": {
                 "Literal": {
                   "Value": "false"
-                }
-              }
-            }
-          }
-        }
-      ],
-      "card": [
-        {
-          "properties": {
-            "barShow": {
-              "expr": {
-                "Literal": {
-                  "Value": "false"
-                }
-              }
-            },
-            "outline": {
-              "expr": {
-                "Literal": {
-                  "Value": "'None'"
-                }
-              }
-            },
-            "cardPadding": {
-              "expr": {
-                "Literal": {
-                  "Value": "0.0D"
-                }
-              }
-            },
-            "cardBackground": {
-              "solid": {
-                "color": {
-                  "expr": {
-                    "Literal": {
-                      "Value": "'#FFFFFF'"
-                    }
-                  }
-                }
-              }
-            },
-            "cardBackgroundTransparency": {
-              "expr": {
-                "Literal": {
-                  "Value": "100.0D"
                 }
               }
             }

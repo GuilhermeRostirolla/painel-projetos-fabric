@@ -111,6 +111,13 @@
                   "Value": "28.0D"
                 }
               }
+            },
+            "maxMarginFactor": {
+              "expr": {
+                "Literal": {
+                  "Value": "45L"
+                }
+              }
             }
           }
         }
@@ -198,7 +205,7 @@
             "position": {
               "expr": {
                 "Literal": {
-                  "Value": "'TopLeft'"
+                  "Value": "'Top'"
                 }
               }
             },
@@ -264,7 +271,7 @@
       "dataPoint": [
         {
           "properties": {
-            "fill": {
+            "defaultColor": {
               "solid": {
                 "color": {
                   "expr": {
@@ -275,9 +282,6 @@
                 }
               }
             }
-          },
-          "selector": {
-            "metadata": "fato_passagem_status.Tempo Médio na Etapa (dias)"
           }
         },
         {
