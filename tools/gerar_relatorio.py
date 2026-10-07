@@ -145,8 +145,8 @@ class Pagina:
         self.painel(0, 0, LARGURA, 76, COR["cabecalho"], borda=False, raio=0.0)
         self.texto(titulo, 24, 8, 560, 34, 17, "#FFFFFF", negrito=True)
         self.texto(subtitulo, 24, 42, 560, 24, 9.5, COR["cabecalho_texto"])
-        self.segmentacao("dim_projeto.equipe", "Equipe", 860, 12, 128, 52)
-        self.segmentacao("dim_projeto.status", "Status do projeto", 996, 12, 128, 52)
+        self.segmentacao("dim_projeto.equipe", "Equipe", 860, 8, 128, 60)
+        self.segmentacao("dim_projeto.status", "Status do projeto", 996, 8, 128, 60)
         self.cartao_simples("Texto Referência", 1132, 22, 136, 32, 9.0, COR["cabecalho_texto"])
 
     def _id(self) -> str:
@@ -218,12 +218,12 @@ class Pagina:
         barra, cor_contexto = TOM[tom]
         self.painel(x, y, w, h, COR["cartao"])
         self.painel(x + 10, y + 14, 3, h - 28, barra, borda=False, raio=2.0)
-        self.texto(rotulo.upper(), x + 20, y + 10, w - 28, 20, 8, COR["suave"], negrito=True)
-        self.valor(medida, x + 17, y + 30, w - 26, 34, 20, COR["texto"], negrito=True)
+        self.texto(rotulo.upper(), x + 20, y + 8, w - 28, 18, 8, COR["suave"], negrito=True)
+        self.valor(medida, x + 17, y + 26, w - 26, 42, 20, COR["texto"], negrito=True)
         if contexto in TABELA_DA_MEDIDA:
-            self.valor(contexto, x + 17, y + 64, w - 26, 26, 9, cor_contexto)
+            self.valor(contexto, x + 17, y + 68, w - 26, 24, 9, cor_contexto)
         else:
-            self.texto(contexto, x + 20, y + 66, w - 28, 22, 9, cor_contexto)
+            self.texto(contexto, x + 20, y + 68, w - 28, 22, 9, cor_contexto)
 
     def linha_de_cartoes(self, itens):
         n, espaco = len(itens), 12
@@ -240,7 +240,7 @@ class Pagina:
                                                    "fontColor": cor(COR["cabecalho_texto"]), "textSize": lit(8.0)}}],
                         "items": [{"properties": {"fontColor": cor("#FFFFFF"), "background": cor(COR["cabecalho2"]),
                                                   "textSize": lit(10.0)}}]},
-            "visualContainerObjects": moldura(fundo=COR["cabecalho2"], borda=False, raio=6.0, respiro=4.0),
+            "visualContainerObjects": moldura(fundo=COR["cabecalho2"], borda=False, raio=6.0, respiro=2.0),
             "drillFilterOtherVisuals": True})
 
     def grafico(self, tipo, titulo, subtitulo, categoria, medidas, x, y, w, h, cores=None, destaques=None,
