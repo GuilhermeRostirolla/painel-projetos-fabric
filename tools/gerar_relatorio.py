@@ -375,7 +375,7 @@ def paginas() -> list[Pagina]:
                     [("dim_projeto.projeto", "Projeto"), ("dim_projeto.equipe", "Equipe"),
                      ("dim_projeto.gestor", "Gestor"), ("dim_projeto.situacao_prazo", "Prazo"),
                      ("dim_projeto.data_fim_planejada", "Fim planejado"), ("dim_projeto.dias_atraso", "Dias de atraso"),
-                     ("Tarefas Abertas", "Abertas"), ("% Orçamento Consumido", "% orçamento")],
+                     ("% Orçamento Consumido", "% orçamento")],
                     416, y2, 840, alto, ordem="dim_projeto.dias_atraso",
                     barras={"dim_projeto.dias_atraso": COR["barra_vermelha"],
                             "% Orçamento Consumido": COR["barra_azul"]})
