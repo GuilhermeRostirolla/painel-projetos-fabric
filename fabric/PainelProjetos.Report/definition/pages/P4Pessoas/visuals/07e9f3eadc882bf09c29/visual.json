@@ -2,97 +2,34 @@
   "$schema": "https://developer.microsoft.com/json-schemas/fabric/item/report/definition/visualContainer/2.11.0/schema.json",
   "name": "07e9f3eadc882bf09c29",
   "position": {
-    "x": 1036,
-    "y": 18,
+    "x": 24,
+    "y": 42,
     "z": 200,
-    "height": 46,
-    "width": 220,
+    "height": 24,
+    "width": 560,
     "tabOrder": 200
   },
   "visual": {
-    "visualType": "card",
-    "query": {
-      "queryState": {
-        "Values": {
-          "projections": [
-            {
-              "field": {
-                "Measure": {
-                  "Expression": {
-                    "SourceRef": {
-                      "Entity": "ref_parametros"
-                    }
-                  },
-                  "Property": "Texto Referência"
-                }
-              },
-              "queryRef": "ref_parametros.Texto Referência",
-              "nativeQueryRef": "Texto Referência"
-            }
-          ]
-        }
-      }
-    },
+    "visualType": "textbox",
     "objects": {
-      "labels": [
+      "general": [
         {
           "properties": {
-            "fontSize": {
-              "expr": {
-                "Literal": {
-                  "Value": "11.0D"
-                }
-              }
-            },
-            "color": {
-              "solid": {
-                "color": {
-                  "expr": {
-                    "Literal": {
-                      "Value": "'#5B6573'"
+            "paragraphs": [
+              {
+                "textRuns": [
+                  {
+                    "value": "Carga de cada pessoa e horas apontadas contra o estimado",
+                    "textStyle": {
+                      "fontFamily": "Segoe UI",
+                      "fontSize": "9.5pt",
+                      "color": "#B9C6D6"
                     }
                   }
-                }
+                ],
+                "horizontalTextAlignment": "left"
               }
-            },
-            "labelDisplayUnits": {
-              "expr": {
-                "Literal": {
-                  "Value": "1.0D"
-                }
-              }
-            }
-          }
-        }
-      ],
-      "categoryLabels": [
-        {
-          "properties": {
-            "show": {
-              "expr": {
-                "Literal": {
-                  "Value": "false"
-                }
-              }
-            },
-            "fontSize": {
-              "expr": {
-                "Literal": {
-                  "Value": "9.0D"
-                }
-              }
-            },
-            "color": {
-              "solid": {
-                "color": {
-                  "expr": {
-                    "Literal": {
-                      "Value": "'#5B6573'"
-                    }
-                  }
-                }
-              }
-            }
+            ]
           }
         }
       ]
@@ -120,24 +57,6 @@
                   "Value": "false"
                 }
               }
-            },
-            "color": {
-              "solid": {
-                "color": {
-                  "expr": {
-                    "Literal": {
-                      "Value": "'#FFFFFF'"
-                    }
-                  }
-                }
-              }
-            },
-            "transparency": {
-              "expr": {
-                "Literal": {
-                  "Value": "0.0D"
-                }
-              }
             }
           }
         }
@@ -157,7 +76,7 @@
                 "color": {
                   "expr": {
                     "Literal": {
-                      "Value": "'#E3E7ED'"
+                      "Value": "'#E4E8EE'"
                     }
                   }
                 }
@@ -166,7 +85,7 @@
             "radius": {
               "expr": {
                 "Literal": {
-                  "Value": "8.0D"
+                  "Value": "10.0D"
                 }
               }
             }
@@ -205,28 +124,28 @@
             "top": {
               "expr": {
                 "Literal": {
-                  "Value": "8.0D"
+                  "Value": "0.0D"
                 }
               }
             },
             "bottom": {
               "expr": {
                 "Literal": {
-                  "Value": "8.0D"
+                  "Value": "0.0D"
                 }
               }
             },
             "left": {
               "expr": {
                 "Literal": {
-                  "Value": "8.0D"
+                  "Value": "0.0D"
                 }
               }
             },
             "right": {
               "expr": {
                 "Literal": {
-                  "Value": "8.0D"
+                  "Value": "0.0D"
                 }
               }
             }

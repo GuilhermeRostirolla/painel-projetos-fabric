@@ -2,97 +2,28 @@
   "$schema": "https://developer.microsoft.com/json-schemas/fabric/item/report/definition/visualContainer/2.11.0/schema.json",
   "name": "7feff5e424c024f39c58",
   "position": {
-    "x": 438.7,
-    "y": 146,
+    "x": 34.0,
+    "y": 106,
     "z": 700,
-    "height": 96,
-    "width": 195.3,
+    "height": 68,
+    "width": 3,
     "tabOrder": 700
   },
   "visual": {
-    "visualType": "card",
-    "query": {
-      "queryState": {
-        "Values": {
-          "projections": [
-            {
-              "field": {
-                "Measure": {
-                  "Expression": {
-                    "SourceRef": {
-                      "Entity": "fato_tarefa"
-                    }
-                  },
-                  "Property": "Tarefas Abertas"
-                }
-              },
-              "queryRef": "fato_tarefa.Tarefas Abertas",
-              "nativeQueryRef": "Tarefas Abertas"
-            }
-          ]
-        }
-      }
-    },
+    "visualType": "textbox",
     "objects": {
-      "labels": [
+      "general": [
         {
           "properties": {
-            "fontSize": {
-              "expr": {
-                "Literal": {
-                  "Value": "22.0D"
-                }
-              }
-            },
-            "color": {
-              "solid": {
-                "color": {
-                  "expr": {
-                    "Literal": {
-                      "Value": "'#1B2430'"
-                    }
+            "paragraphs": [
+              {
+                "textRuns": [
+                  {
+                    "value": ""
                   }
-                }
+                ]
               }
-            },
-            "labelDisplayUnits": {
-              "expr": {
-                "Literal": {
-                  "Value": "1.0D"
-                }
-              }
-            }
-          }
-        }
-      ],
-      "categoryLabels": [
-        {
-          "properties": {
-            "show": {
-              "expr": {
-                "Literal": {
-                  "Value": "true"
-                }
-              }
-            },
-            "fontSize": {
-              "expr": {
-                "Literal": {
-                  "Value": "9.0D"
-                }
-              }
-            },
-            "color": {
-              "solid": {
-                "color": {
-                  "expr": {
-                    "Literal": {
-                      "Value": "'#5B6573'"
-                    }
-                  }
-                }
-              }
-            }
+            ]
           }
         }
       ]
@@ -126,7 +57,7 @@
                 "color": {
                   "expr": {
                     "Literal": {
-                      "Value": "'#FFFFFF'"
+                      "Value": "'#2F6DB5'"
                     }
                   }
                 }
@@ -148,7 +79,7 @@
             "show": {
               "expr": {
                 "Literal": {
-                  "Value": "true"
+                  "Value": "false"
                 }
               }
             },
@@ -157,7 +88,7 @@
                 "color": {
                   "expr": {
                     "Literal": {
-                      "Value": "'#E3E7ED'"
+                      "Value": "'#E4E8EE'"
                     }
                   }
                 }
@@ -166,7 +97,7 @@
             "radius": {
               "expr": {
                 "Literal": {
-                  "Value": "8.0D"
+                  "Value": "2.0D"
                 }
               }
             }
@@ -205,28 +136,28 @@
             "top": {
               "expr": {
                 "Literal": {
-                  "Value": "8.0D"
+                  "Value": "0.0D"
                 }
               }
             },
             "bottom": {
               "expr": {
                 "Literal": {
-                  "Value": "8.0D"
+                  "Value": "0.0D"
                 }
               }
             },
             "left": {
               "expr": {
                 "Literal": {
-                  "Value": "8.0D"
+                  "Value": "0.0D"
                 }
               }
             },
             "right": {
               "expr": {
                 "Literal": {
-                  "Value": "8.0D"
+                  "Value": "0.0D"
                 }
               }
             }

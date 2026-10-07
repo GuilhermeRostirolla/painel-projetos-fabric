@@ -19,7 +19,7 @@
 # 2. Baixa o TMDL do repositório no GitHub e troca os dois valores do endpoint.
 # 3. Publica a definição e enquadra o modelo (refresh do Direct Lake).
 # 3b. Publica o **relatório** (4 páginas, formato PBIR) ligado ao modelo.
-# 4. **Roda as 37 medidas em DAX** e compara com `docs/valores_esperados.json`, que foi calculado em SQL sem passar pelo DAX.
+# 4. **Roda as 46 medidas em DAX** e compara com `docs/valores_esperados.json`, que foi calculado em SQL sem passar pelo DAX.
 #    Se alguma não bater, o notebook falha e mostra qual.
 # 5. **Entra como cada papel de segurança** (RLS por equipe) e confere que ele só enxerga os projetos e as tarefas da própria equipe.
 #

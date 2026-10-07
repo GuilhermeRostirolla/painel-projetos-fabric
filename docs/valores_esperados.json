@@ -148,6 +148,42 @@
   "Texto Referência": {
    "valor": "Dados até 30/09/2026",
    "periodo": false
+  },
+  "Contexto Projetos Ativos": {
+   "valor": "de 45 no portfólio",
+   "periodo": false
+  },
+  "Contexto Projetos Atrasados": {
+   "valor": "27% dos ativos",
+   "periodo": false
+  },
+  "Contexto Atrasados de Ativos": {
+   "valor": "7 de 26 ativos",
+   "periodo": false
+  },
+  "Contexto Entregues no Prazo": {
+   "valor": "3 de 14 concluídos",
+   "periodo": false
+  },
+  "Contexto Tarefas Abertas": {
+   "valor": "7 bloqueadas agora",
+   "periodo": false
+  },
+  "Contexto Tarefas Vencidas": {
+   "valor": "31% das abertas",
+   "periodo": false
+  },
+  "Contexto Tarefas Concluídas": {
+   "valor": "86% de todas as tarefas",
+   "periodo": false
+  },
+  "Contexto Horas Apontadas": {
+   "valor": "+18% vs. o estimado",
+   "periodo": false
+  },
+  "Contexto Orçamento": {
+   "valor": "restam 831 h",
+   "periodo": false
   }
  },
  "por_equipe": {
