@@ -29,6 +29,21 @@
           "name": "TemaPainelProjetos.json",
           "path": "TemaPainelProjetos.json",
           "type": "CustomTheme"
+        },
+        {
+          "name": "fundo_P1Portfolio.png",
+          "path": "fundo_P1Portfolio.png",
+          "type": "Image"
+        },
+        {
+          "name": "fundo_P2ProjetosTarefas.png",
+          "path": "fundo_P2ProjetosTarefas.png",
+          "type": "Image"
+        },
+        {
+          "name": "fundo_P3Cronograma.png",
+          "path": "fundo_P3Cronograma.png",
+          "type": "Image"
         }
       ]
     },

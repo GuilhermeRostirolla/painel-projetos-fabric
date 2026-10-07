@@ -2,129 +2,152 @@
   "$schema": "https://developer.microsoft.com/json-schemas/fabric/item/report/definition/visualContainer/2.11.0/schema.json",
   "name": "bbc5bb75e42b855c9257",
   "position": {
-    "x": 14,
-    "y": 266,
+    "x": 158.0,
+    "y": 122,
     "z": 600,
-    "height": 58,
-    "width": 172,
+    "height": 36,
+    "width": 194.0,
     "tabOrder": 600
   },
   "visual": {
-    "visualType": "slicer",
+    "visualType": "multiRowCard",
     "query": {
       "queryState": {
         "Values": {
           "projections": [
             {
               "field": {
-                "Column": {
+                "Measure": {
                   "Expression": {
                     "SourceRef": {
-                      "Entity": "dim_projeto"
+                      "Entity": "fato_tarefa"
                     }
                   },
-                  "Property": "status"
+                  "Property": "Tarefas Abertas"
                 }
               },
-              "queryRef": "dim_projeto.status",
-              "nativeQueryRef": "status"
+              "queryRef": "fato_tarefa.Tarefas Abertas",
+              "nativeQueryRef": "Tarefas Abertas"
             }
           ]
         }
       }
     },
     "objects": {
-      "data": [
+      "dataLabels": [
         {
           "properties": {
-            "mode": {
+            "fontSize": {
               "expr": {
                 "Literal": {
-                  "Value": "'Dropdown'"
+                  "Value": "20.0D"
+                }
+              }
+            },
+            "color": {
+              "solid": {
+                "color": {
+                  "expr": {
+                    "Literal": {
+                      "Value": "'#E8EDF5'"
+                    }
+                  }
+                }
+              }
+            },
+            "fontFamily": {
+              "expr": {
+                "Literal": {
+                  "Value": "'Segoe UI Semibold'"
                 }
               }
             }
           }
         }
       ],
-      "header": [
+      "cardTitle": [
+        {
+          "properties": {
+            "fontSize": {
+              "expr": {
+                "Literal": {
+                  "Value": "20.0D"
+                }
+              }
+            },
+            "color": {
+              "solid": {
+                "color": {
+                  "expr": {
+                    "Literal": {
+                      "Value": "'#E8EDF5'"
+                    }
+                  }
+                }
+              }
+            },
+            "fontFamily": {
+              "expr": {
+                "Literal": {
+                  "Value": "'Segoe UI Semibold'"
+                }
+              }
+            }
+          }
+        }
+      ],
+      "categoryLabels": [
         {
           "properties": {
             "show": {
               "expr": {
                 "Literal": {
-                  "Value": "true"
-                }
-              }
-            },
-            "text": {
-              "expr": {
-                "Literal": {
-                  "Value": "'Status do projeto'"
-                }
-              }
-            },
-            "fontColor": {
-              "solid": {
-                "color": {
-                  "expr": {
-                    "Literal": {
-                      "Value": "'#98A2B3'"
-                    }
-                  }
-                }
-              }
-            },
-            "textSize": {
-              "expr": {
-                "Literal": {
-                  "Value": "8.0D"
+                  "Value": "false"
                 }
               }
             }
           }
         }
       ],
-      "items": [
+      "card": [
         {
           "properties": {
-            "fontColor": {
-              "solid": {
-                "color": {
-                  "expr": {
-                    "Literal": {
-                      "Value": "'#1A202C'"
-                    }
-                  }
-                }
-              }
-            },
-            "background": {
-              "solid": {
-                "color": {
-                  "expr": {
-                    "Literal": {
-                      "Value": "'#FFFFFF'"
-                    }
-                  }
-                }
-              }
-            },
-            "textSize": {
+            "barShow": {
               "expr": {
                 "Literal": {
-                  "Value": "9.5D"
+                  "Value": "false"
                 }
               }
             },
-            "outlineColor": {
+            "outline": {
+              "expr": {
+                "Literal": {
+                  "Value": "'None'"
+                }
+              }
+            },
+            "cardPadding": {
+              "expr": {
+                "Literal": {
+                  "Value": "0.0D"
+                }
+              }
+            },
+            "cardBackground": {
               "solid": {
                 "color": {
                   "expr": {
                     "Literal": {
-                      "Value": "'#ECEEF2'"
+                      "Value": "'#121B2E'"
                     }
                   }
+                }
+              }
+            },
+            "cardBackgroundTransparency": {
+              "expr": {
+                "Literal": {
+                  "Value": "100.0D"
                 }
               }
             }
@@ -174,7 +197,7 @@
                 "color": {
                   "expr": {
                     "Literal": {
-                      "Value": "'#ECEEF2'"
+                      "Value": "'#1E2940'"
                     }
                   }
                 }
@@ -222,28 +245,28 @@
             "top": {
               "expr": {
                 "Literal": {
-                  "Value": "2.0D"
+                  "Value": "0.0D"
                 }
               }
             },
             "bottom": {
               "expr": {
                 "Literal": {
-                  "Value": "2.0D"
+                  "Value": "0.0D"
                 }
               }
             },
             "left": {
               "expr": {
                 "Literal": {
-                  "Value": "2.0D"
+                  "Value": "0.0D"
                 }
               }
             },
             "right": {
               "expr": {
                 "Literal": {
-                  "Value": "2.0D"
+                  "Value": "0.0D"
                 }
               }
             }

@@ -60,11 +60,11 @@ RETURN
                 NOT ISBLANK ( t_ini ) && t_ini <= fim && ate >= ini,
                 SWITCH (
                     TRUE (),
-                    situacao = "Concluída", "#A9C1DF",
-                    situacao = "Cancelada", "#D5DAE1",
-                    situacao = "Bloqueada", "#D29B00",
-                    prazo = "Vencida", "#C2362F",
-                    "#2F6DB5"
+                    situacao = "Concluída", "#5D7398",
+                    situacao = "Cancelada", "#364259",
+                    situacao = "Bloqueada", "#C4851A",
+                    prazo = "Vencida", "#E44A5D",
+                    "#4682F5"
                 )
             ),
         IF (
@@ -83,11 +83,11 @@ RETURN
                     p_ini <= fim && p_fim >= ini,
                     SWITCH (
                         TRUE (),
-                        MAX ( dim_projeto[situacao_prazo] ) = "Atrasado", "#C2362F",
-                        p_status = "Cancelado", "#D5DAE1",
-                        p_status = "Concluído", "#A9C1DF",
-                        p_status = "Pausado", "#C6CFDB",
-                        "#2F6DB5"
+                        MAX ( dim_projeto[situacao_prazo] ) = "Atrasado", "#E44A5D",
+                        p_status = "Cancelado", "#364259",
+                        p_status = "Concluído", "#5D7398",
+                        p_status = "Pausado", "#33415E",
+                        "#4682F5"
                     )
                 )
         )
