@@ -9,12 +9,28 @@
     "background": [
       {
         "properties": {
-          "color": {
-            "solid": {
-              "color": {
+          "image": {
+            "image": {
+              "name": {
                 "expr": {
                   "Literal": {
-                    "Value": "'#F7F8FA'"
+                    "Value": "'fundo_P2ProjetosTarefas.png'"
+                  }
+                }
+              },
+              "url": {
+                "expr": {
+                  "ResourcePackageItem": {
+                    "PackageName": "RegisteredResources",
+                    "PackageType": 1,
+                    "ItemName": "fundo_P2ProjetosTarefas.png"
+                  }
+                }
+              },
+              "scaling": {
+                "expr": {
+                  "Literal": {
+                    "Value": "'Fit'"
                   }
                 }
               }
@@ -38,7 +54,7 @@
               "color": {
                 "expr": {
                   "Literal": {
-                    "Value": "'#F7F8FA'"
+                    "Value": "'#0A1020'"
                   }
                 }
               }

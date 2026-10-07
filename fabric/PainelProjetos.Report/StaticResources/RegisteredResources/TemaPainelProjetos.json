@@ -1,43 +1,66 @@
 {
   "name": "TemaPainelProjetos",
   "dataColors": [
-    "#2F6DB5",
-    "#C6CFDB",
-    "#1F8A5B",
-    "#D29B00",
-    "#C2362F",
-    "#A9C1DF"
+    "#4682F5",
+    "#E44A5D",
+    "#C4851A",
+    "#1D9A74",
+    "#5D7398",
+    "#33415E"
   ],
-  "foreground": "#1A202C",
-  "foregroundNeutralSecondary": "#5F6B7A",
-  "foregroundNeutralTertiary": "#98A2B3",
-  "background": "#FFFFFF",
-  "backgroundLight": "#F7F8FA",
-  "backgroundNeutral": "#ECEEF2",
-  "tableAccent": "#2F6DB5",
-  "good": "#1F8A5B",
-  "neutral": "#D29B00",
-  "bad": "#C2362F",
-  "maximum": "#2F6DB5",
-  "center": "#C6CFDB",
-  "minimum": "#DCE7F5",
+  "foreground": "#E8EDF5",
+  "foregroundNeutralSecondary": "#9AA7BD",
+  "foregroundNeutralTertiary": "#62718B",
+  "background": "#121B2E",
+  "backgroundLight": "#0F1729",
+  "backgroundNeutral": "#1E2940",
+  "tableAccent": "#4682F5",
+  "good": "#1D9A74",
+  "neutral": "#C4851A",
+  "bad": "#E44A5D",
   "textClasses": {
     "callout": {
       "fontFace": "Segoe UI Semibold",
-      "color": "#1A202C"
+      "color": "#E8EDF5"
     },
     "title": {
       "fontFace": "Segoe UI Semibold",
-      "color": "#1A202C",
+      "color": "#E8EDF5",
       "fontSize": 12
     },
     "header": {
       "fontFace": "Segoe UI Semibold",
-      "color": "#1A202C"
+      "color": "#E8EDF5"
     },
     "label": {
       "fontFace": "Segoe UI",
-      "color": "#5F6B7A"
+      "color": "#9AA7BD"
+    }
+  },
+  "visualStyles": {
+    "*": {
+      "*": {
+        "background": [
+          {
+            "show": false
+          }
+        ],
+        "border": [
+          {
+            "show": false
+          }
+        ],
+        "dropShadow": [
+          {
+            "show": false
+          }
+        ],
+        "visualHeader": [
+          {
+            "show": false
+          }
+        ]
+      }
     }
   }
 }

@@ -78,7 +78,7 @@ def test_cabe_na_pagina_e_nao_sobrepoe(pagina):
 
 def test_cartoes_tem_contexto():
     for pagina in PAGINAS[:2]:
-        assert len(pagina.cartoes) == 5, pagina.nome
+        assert len(pagina.cartoes) == 4, pagina.nome
         for medida, contexto in pagina.cartoes:
             assert contexto, f"{medida} sem linha de contexto em {pagina.nome}"
 
@@ -109,3 +109,13 @@ def test_json_valido_e_referencias_de_tema():
     for pacote in relatorio["resourcePackages"]:
         for item in pacote["items"]:
             assert (gr.DESTINO / "StaticResources" / pacote["name"] / item["path"]).exists(), item["path"]
+
+
+def test_cada_pagina_tem_fundo_e_visuais_dentro_dos_cartoes():
+    from tools.design import layout
+    for pagina in PAGINAS:
+        assert (gr.DESTINO / "StaticResources" / "RegisteredResources" / pagina.fundo).exists()
+        for chave, caixa in layout.CARTOES[pagina.nome].items():
+            x, y, w, h = caixa[:4]
+            ax, ay, aw, ah = layout.area(caixa)
+            assert x < ax and y < ay and ax + aw < x + w and ay + ah < y + h, chave
