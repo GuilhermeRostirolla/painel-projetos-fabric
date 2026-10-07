@@ -13,7 +13,7 @@ from pathlib import Path
 RAIZ = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(RAIZ))
 
-from tools.gerar_modelo import MEDIDAS  # noqa: E402
+from tools.gerar_modelo import MEDIDAS, PAPEIS  # noqa: E402
 
 MES = "2026-09"  # mês usado nas medidas de período
 MES_ANO = "set/26"  # o mesmo mês como aparece em dim_data[mes_ano]
@@ -104,6 +104,19 @@ def calcular(spark) -> tuple[list[tuple[str, str, str, str]], dict]:
     return linhas, brutos
 
 
+def por_equipe(spark) -> dict:
+    """O que cada papel de segurança (RLS) deve enxergar: só os projetos da equipe e suas tarefas."""
+    linhas = spark.sql(f"""
+        SELECT p.equipe,
+               count(DISTINCT p.projeto_id) AS projetos,
+               count(t.tarefa_id) AS tarefas,
+               sum(int(t.status NOT IN {FINAIS})) AS abertas
+        FROM dim_projeto p LEFT JOIN fato_tarefa t ON t.projeto_id = p.projeto_id
+        GROUP BY p.equipe""").collect()
+    return {r["equipe"]: {"Projetos": r["projetos"], "Tarefas": r["tarefas"], "Tarefas Abertas": r["abertas"]}
+            for r in sorted(linhas, key=lambda r: r["equipe"])}
+
+
 def main() -> None:
     args = argparse.ArgumentParser()
     args.add_argument("--pasta", type=Path, default=RAIZ / ".local" / "lakehouse")
@@ -122,7 +135,8 @@ def main() -> None:
     import json
     (RAIZ / "docs").mkdir(exist_ok=True)
     (RAIZ / "docs" / "valores_esperados.json").write_text(json.dumps(
-        {"mes_ano": MES_ANO, "medidas": brutos}, ensure_ascii=False, indent=1) + "\n", encoding="utf-8")
+        {"mes_ano": MES_ANO, "medidas": brutos, "por_equipe": por_equipe(spark), "papeis": PAPEIS},
+        ensure_ascii=False, indent=1) + "\n", encoding="utf-8")
     destino = RAIZ / "docs" / "valores_esperados.md"
     destino.parent.mkdir(exist_ok=True)
     corpo = ["# Valores esperados das medidas", "",

@@ -11,7 +11,7 @@
 
 # MARKDOWN ********************
 
-# # 04 · Publicar o modelo semântico e o relatório
+# # 04 · Publicar e conferir o modelo, o relatório e a segurança
 #
 # Cria (ou atualiza) o modelo semântico **PainelProjetos** neste workspace pela API REST do Fabric e depois confere cada medida.
 #
@@ -21,6 +21,7 @@
 # 3b. Publica o **relatório** (4 páginas, formato PBIR) ligado ao modelo.
 # 4. **Roda as 37 medidas em DAX** e compara com `docs/valores_esperados.json`, que foi calculado em SQL sem passar pelo DAX.
 #    Se alguma não bater, o notebook falha e mostra qual.
+# 5. **Entra como cada papel de segurança** (RLS por equipe) e confere que ele só enxerga os projetos e as tarefas da própria equipe.
 #
 # Rode depois do orquestrador (a gold precisa existir). Pode rodar de novo sempre que o modelo mudar no repositório.
 
@@ -210,6 +211,31 @@ if CONFERIR_MEDIDAS:
     if falhas:
         raise AssertionError(f"{len(falhas)} medida(s) não bateram: {falhas}")
     print(f"\nas {len(medidas)} medidas batem com o cálculo independente")
+
+# METADATA ********************
+
+# META {
+# META   "language": "python",
+# META   "language_group": "synapse_pyspark"
+# META }
+
+# CELL ********************
+
+# 5. Segurança por linha: entra como cada papel e confere o que ele enxerga
+if CONFERIR_MEDIDAS:
+    consulta = 'EVALUATE ROW ( "Projetos", [Projetos], "Tarefas", [Tarefas], "Tarefas Abertas", [Tarefas Abertas] )'
+    falhas = []
+    for papel_nome, equipe in esperado["papeis"].items():
+        linha = fabric.evaluate_dax(NOME_MODELO, consulta, workspace=WORKSPACE, role=papel_nome).iloc[0]
+        visto = {re.sub(r"^\[|\]$", "", str(k)): v for k, v in linha.items()}
+        for medida, valor in esperado["por_equipe"][equipe].items():
+            ok = visto.get(medida) is not None and int(visto[medida]) == int(valor)
+            print(f"{'ok    ' if ok else 'DIFERE'}  papel {papel_nome:<15} {medida:<16} DAX={visto.get(medida)!s:<6} SQL={valor}")
+            if not ok:
+                falhas.append(f"{papel_nome}/{medida}")
+    if falhas:
+        raise AssertionError(f"RLS não filtrou como esperado: {falhas}")
+    print(f"\nos {len(esperado['papeis'])} papéis de segurança enxergam só a própria equipe")
 
 # METADATA ********************
 

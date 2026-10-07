@@ -149,5 +149,39 @@
    "valor": "Dados até 30/09/2026",
    "periodo": false
   }
+ },
+ "por_equipe": {
+  "Comercial": {
+   "Projetos": 8,
+   "Tarefas": 246,
+   "Tarefas Abertas": 26
+  },
+  "Dados & BI": {
+   "Projetos": 9,
+   "Tarefas": 245,
+   "Tarefas Abertas": 36
+  },
+  "Operações": {
+   "Projetos": 9,
+   "Tarefas": 314,
+   "Tarefas Abertas": 16
+  },
+  "Pessoas & Cultura": {
+   "Projetos": 8,
+   "Tarefas": 274,
+   "Tarefas Abertas": 22
+  },
+  "Tecnologia": {
+   "Projetos": 11,
+   "Tarefas": 356,
+   "Tarefas Abertas": 40
+  }
+ },
+ "papeis": {
+  "Tecnologia": "Tecnologia",
+  "DadosBI": "Dados & BI",
+  "Operacoes": "Operações",
+  "Comercial": "Comercial",
+  "PessoasCultura": "Pessoas & Cultura"
  }
 }

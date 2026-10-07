@@ -80,3 +80,15 @@ def test_nada_que_o_direct_lake_recuse():
         texto = arquivo.read_text()
         assert "joinOnDateBehavior" not in texto, arquivo.name
         assert "mode: import" not in texto, arquivo.name
+
+
+def test_um_papel_por_equipe():
+    """Cada equipe do simulador tem um papel, e o filtro usa o nome exato que a gold grava."""
+    from simulador.catalogos import EQUIPES
+    assert sorted(gm.PAPEIS.values()) == sorted(e.nome for e in EQUIPES)
+    modelo = (gm.DESTINO / "definition" / "model.tmdl").read_text()
+    for nome, equipe in gm.PAPEIS.items():
+        texto = (gm.DESTINO / "definition" / "roles" / f"{nome}.tmdl").read_text()
+        assert texto.startswith(f"role {nome}\n") and f'[equipe] = "{equipe}"' in texto
+        assert f"ref role {nome}" in modelo
+        assert nome.isidentifier() and nome.isascii()

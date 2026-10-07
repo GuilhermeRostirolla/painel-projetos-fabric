@@ -1,0 +1,7 @@
+role PessoasCultura
+	modelPermission: read
+
+	tablePermission dim_projeto = [equipe] = "Pessoas & Cultura"
+
+	annotation PBI_Id = 46e6db07a9ef562281192432c9de3452
+

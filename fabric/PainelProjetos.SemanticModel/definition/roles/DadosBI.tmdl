@@ -1,0 +1,7 @@
+role DadosBI
+	modelPermission: read
+
+	tablePermission dim_projeto = [equipe] = "Dados & BI"
+
+	annotation PBI_Id = bef621d2636f551ea864619899cdd6aa
+

@@ -12,3 +12,9 @@ ref table dim_status
 ref table dim_data
 ref table ref_parametros
 
+ref role Tecnologia
+ref role DadosBI
+ref role Operacoes
+ref role Comercial
+ref role PessoasCultura
+
