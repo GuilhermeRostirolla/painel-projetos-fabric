@@ -11,29 +11,15 @@
 
 # MARKDOWN ********************
 
-# # 03 · Gold: modelo para o Power BI
+# # 03 - Gold
 #
-# Star schema pronto para o modelo semântico em **Direct Lake**:
-#
-# | Tabela | Grão | Para quê |
-# |---|---|---|
-# | `fato_tarefa` | uma linha por tarefa | volume, prazo, esforço (estimado × apontado), lead time e ciclo |
-# | `fato_passagem_status` | uma linha por passagem da tarefa por uma etapa | tempo em cada etapa, gargalos, bloqueios, fluxo do mês |
-# | `dim_projeto` | um projeto | status, equipe, gestor, prazo planejado × real |
-# | `dim_pessoa` | uma pessoa | responsável pelas tarefas |
-# | `dim_status` | uma etapa | ordem e categoria das etapas |
-# | `dim_data` | um dia | calendário em português |
-# | `ref_parametros` | uma linha | data de referência dos dados |
-#
-# As métricas de tempo saem do **histórico de status**, não de campos prontos da API: ciclo, dias bloqueada e retrabalho
-# são recalculados a partir dos eventos, então batem entre si e com o fluxo mostrado no painel.
-#
-# Datas e horas ficam no **horário de Brasília** e tudo é medido contra a **data de referência** gravada nos dados,
-# não contra o relógio: o painel não muda sozinho de um dia para o outro.
+# Star schema para o Direct Lake: fato_tarefa, fato_passagem_status, dim_projeto, dim_pessoa, dim_status, dim_data e ref_parametros.
+# Tempos (ciclo, bloqueio, retrabalho) calculados a partir do histórico de status. Datas no horário de Brasília,
+# medidas contra a data de referência dos dados.
 
 # PARAMETERS CELL ********************
 
-FORMATO_TABELA = "delta"   # delta no Fabric; o teste local usa parquet
+FORMATO_TABELA = "delta"
 
 # METADATA ********************
 
@@ -53,7 +39,6 @@ FINAIS = ["Concluída", "Cancelada"]
 
 
 def local(coluna: str):
-    """Instante UTC -> data e hora de Brasília (é o que o Power BI vai mostrar)."""
     return F.from_utc_timestamp(F.col(coluna), FUSO)
 
 
@@ -63,7 +48,7 @@ def dias_entre(inicio, fim):
 
 ref = spark.table("silver_meta").first()
 DATA_REF = ref["data_referencia"]
-FIM_REF = F.to_timestamp(F.lit(f"{DATA_REF} 23:59:59"))   # fim do dia de referência, já em horário local
+FIM_REF = F.to_timestamp(F.lit(f"{DATA_REF} 23:59:59"))
 print(f"data de referência: {DATA_REF}")
 
 equipes = spark.table("silver_equipes")
@@ -81,7 +66,6 @@ historico = spark.table("silver_historico")
 
 # CELL ********************
 
-# fato_passagem_status: cada evento abre uma passagem que termina no evento seguinte da mesma tarefa
 ORDEM_ETAPA = {"Backlog": 1, "A Fazer": 2, "Em Andamento": 3, "Bloqueada": 4, "Em Revisão": 5,
                "Concluída": 6, "Cancelada": 7}
 ordem_etapa = F.create_map(*[F.lit(x) for kv in ORDEM_ETAPA.items() for x in kv])
@@ -93,7 +77,6 @@ passagens = (historico
     .join(tarefas.select(F.col("id").alias("tarefa_id"), "projeto_id"), "tarefa_id")
     .withColumn("etapa_final", F.col("status_novo").isin(FINAIS))
     .withColumn("etapa_atual", F.col("saida_em").isNull())
-    # etapa final não tem duração; etapa ainda aberta conta até a data de referência
     .withColumn("dias_na_etapa", F.when(F.col("etapa_final"), F.lit(None).cast("double"))
                 .otherwise(dias_entre(F.col("entrada_em"), F.coalesce("saida_em", FIM_REF))))
     .select(F.col("id").alias("passagem_id"), "tarefa_id", "projeto_id", "sequencia",
@@ -102,7 +85,6 @@ passagens = (historico
             "entrada_em", "saida_em", F.to_date("entrada_em").alias("data_entrada"),
             "dias_na_etapa", "etapa_atual", "etapa_final"))
 
-# indicadores por tarefa a partir das passagens
 por_tarefa = passagens.groupBy("tarefa_id").agg(
     F.min(F.when(F.col("status") == "Em Andamento", F.col("entrada_em"))).alias("inicio_execucao_em"),
     F.sum(F.when(F.col("status") == "Bloqueada", 1).otherwise(0)).alias("qtd_bloqueios"),
@@ -187,7 +169,6 @@ dim_projeto = (projetos
          .otherwise(F.col("status")).alias("situacao_prazo"),
         F.when(F.col("status").isin("Concluído", "Em Andamento", "Planejamento"),
                F.greatest(F.datediff(fim_real_ou_ref, "data_fim_planejada"), F.lit(0))).alias("dias_atraso"),
-        # quanto do prazo planejado já passou (só para projetos vivos)
         F.when(ativo_ou_planejado,
                F.round(F.datediff(F.lit(DATA_REF), "data_inicio") / F.datediff("data_fim_planejada", "data_inicio"), 4))
          .alias("percentual_prazo_decorrido"),
@@ -215,19 +196,19 @@ dim_status = spark.createDataFrame([(s, CATEGORIA[s], o) for s, o in ORDEM_ETAPA
 limites = (fato_tarefa.select(F.min("data_criacao").alias("d")).union(dim_projeto.select(F.min("data_inicio")))
            .union(dim_projeto.select(F.max("data_fim_planejada"))).union(spark.createDataFrame([(DATA_REF,)], "d date")))
 inicio_cal, fim_cal = limites.agg(F.min("d"), F.max("d")).first()
-inicio_cal, fim_cal = inicio_cal.replace(month=1, day=1), fim_cal.replace(month=12, day=31)   # anos completos
+inicio_cal, fim_cal = inicio_cal.replace(month=1, day=1), fim_cal.replace(month=12, day=31)
 
 MESES = F.array(*[F.lit(m) for m in ("jan", "fev", "mar", "abr", "mai", "jun",
                                       "jul", "ago", "set", "out", "nov", "dez")])
 DIAS = F.array(*[F.lit(d) for d in ("seg", "ter", "qua", "qui", "sex", "sáb", "dom")])
-dia_semana = (F.dayofweek("data") + 5) % 7 + 1   # 1 = segunda ... 7 = domingo
+dia_semana = (F.dayofweek("data") + 5) % 7 + 1
 
 dim_data = (spark.sql(f"SELECT explode(sequence(DATE'{inicio_cal}', DATE'{fim_cal}')) AS data")
     .select(
         "data", F.year("data").alias("ano"), F.month("data").alias("mes"),
         F.element_at(MESES, F.month("data")).alias("mes_nome"),
         F.concat(F.element_at(MESES, F.month("data")), F.lit("/"), F.date_format("data", "yy")).alias("mes_ano"),
-        (F.year("data") * 100 + F.month("data")).alias("ano_mes"),   # ordenação de mes_ano
+        (F.year("data") * 100 + F.month("data")).alias("ano_mes"),
         F.concat(F.lit("T"), F.quarter("data")).alias("trimestre"),
         F.date_sub("data", dia_semana - 1).alias("semana_inicio"),
         dia_semana.alias("dia_semana"), F.element_at(DIAS, dia_semana).alias("dia_semana_nome"),
@@ -267,7 +248,6 @@ for nome, df in saida.items():
 
 # CELL ********************
 
-# Conferências: o modelo só é publicado se as contas fecharem
 checagens = {
     "toda tarefa tem projeto": spark.sql("""SELECT count(*) FROM fato_tarefa f
         LEFT ANTI JOIN dim_projeto p ON f.projeto_id = p.projeto_id""").first()[0] == 0,

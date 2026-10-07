@@ -11,21 +11,15 @@
 
 # MARKDOWN ********************
 
-# # 02 · Silver: tratamento
+# # 02 - Silver
 #
-# Lê todo o JSON bruto do bronze e entrega uma tabela limpa por recurso:
-#
-# - **Contrato de dados:** cada recurso tem um schema fixo. Se a API mudar um campo, o erro aparece aqui, não no painel.
-# - **Padronização:** textos sem espaço sobrando, prioridade com grafia única, datas convertidas com fuso.
-# - **Uma linha por registro:** a mesma tarefa pode chegar em várias execuções (carga incremental com sobreposição); fica a versão mais recente.
-# - **Quarentena:** registro que quebra uma regra (status desconhecido, chave órfã) vai para `silver_rejeitados` com o motivo, em vez de sumir.
-#
-# Reprocessar o bronze inteiro a cada execução é barato neste volume e deixa a silver sem estado: rodar duas vezes dá o mesmo resultado.
+# Lê o bronze inteiro e gera uma tabela por recurso com schema fixo, textos e datas padronizados e uma linha por registro.
+# O que quebra regra vai para silver_rejeitados com o motivo.
 
 # PARAMETERS CELL ********************
 
-PASTA_ARQUIVOS_SPARK = "Files"   # caminho do lakehouse padrão visto pelo Spark
-FORMATO_TABELA = "delta"         # delta no Fabric; o teste local usa parquet
+PASTA_ARQUIVOS_SPARK = "Files"
+FORMATO_TABELA = "delta"
 
 # METADATA ********************
 
@@ -43,7 +37,7 @@ from pyspark.sql import functions as F
 from pyspark.sql.types import (ArrayType, BooleanType, DoubleType, IntegerType,
                                LongType, StringType, StructField, StructType)
 
-spark.conf.set("spark.sql.session.timeZone", "UTC")   # timestamps guardados como instante UTC
+spark.conf.set("spark.sql.session.timeZone", "UTC")
 BRONZE = f"{PASTA_ARQUIVOS_SPARK}/bronze"
 
 PRIORIDADES = ["Baixa", "Média", "Alta", "Crítica"]
@@ -73,7 +67,6 @@ CONTRATOS = {
 
 
 def ler_bronze(recurso: str) -> DataFrame:
-    """Uma linha por registro, com a execução de origem para desempate."""
     caminho = f"{BRONZE}/{recurso}/*/*.json"
     if recurso == "meta":
         return spark.read.schema(CONTRATOS["meta"]).option("multiLine", True).json(caminho) \
@@ -85,8 +78,6 @@ def ler_bronze(recurso: str) -> DataFrame:
 
 
 def ultima_foto(df: DataFrame) -> DataFrame:
-    """Cadastros chegam completos a cada execução: vale só a última foto, assim quem foi
-    removido na fonte também sai daqui."""
     ultima = df.agg(F.max("_execucao")).first()[0]
     return df.filter(F.col("_execucao") == ultima)
 
@@ -97,13 +88,12 @@ def mais_recente(df: DataFrame, ordem: list) -> DataFrame:
 
 
 def texto(coluna: str):
-    """Tira espaços nas pontas e repetidos no meio; vazio vira nulo."""
     limpo = F.regexp_replace(F.trim(F.col(coluna)), r"\s+", " ")
     return F.when(limpo == "", None).otherwise(limpo)
 
 
 def instante(coluna: str):
-    return F.to_timestamp(F.col(coluna))   # o texto traz o fuso (-03:00); vira instante UTC
+    return F.to_timestamp(F.col(coluna))
 
 
 def prioridade(coluna: str):
@@ -158,7 +148,6 @@ meta = (ler_bronze("meta").orderBy(F.desc("_arquivo")).limit(1)
 
 # CELL ********************
 
-# Regras de qualidade: (tabela, condição que REPROVA o registro, motivo)
 ids = lambda df: df.select(F.col("id").alias("_ref"))
 regras = {
     "projetos": [
@@ -174,7 +163,6 @@ regras = {
         (~F.col("status_novo").isin(STATUS_TAREFA) | F.col("status_novo").isNull(), "status desconhecido"),
     ],
 }
-# chaves estrangeiras: (tabela, coluna, tabela referenciada), na ordem das dependências
 chaves = [("pessoas", "equipe_id", "equipes"), ("projetos", "equipe_id", "equipes"),
           ("projetos", "gestor_id", "pessoas"), ("tarefas", "projeto_id", "projetos"),
           ("tarefas", "responsavel_id", "pessoas"), ("historico", "tarefa_id", "tarefas"),

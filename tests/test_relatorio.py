@@ -58,8 +58,6 @@ def _contem(fora, dentro):
 
 @pytest.mark.parametrize("pagina", PAGINAS, ids=lambda p: p.nome)
 def test_cabe_na_pagina_e_nao_sobrepoe(pagina):
-    """Visuais não se sobrepõem. Painéis de fundo (cartões, cabeçalho) podem ter visuais por cima,
-    desde que os contenham inteiros: nada fica meio dentro, meio fora."""
     for v in pagina.visuais:
         x0, y0, x1, y1 = _caixa(v)
         assert x0 >= 0 and y0 >= 0
@@ -74,14 +72,12 @@ def test_cabe_na_pagina_e_nao_sobrepoe(pagina):
             f"visual atravessa a borda de um painel em {pagina.nome}: {ca} x {cb}"
         if fundo_a and fundo_b:
             continue
-        # o painel tem que estar embaixo (z menor) do que está dentro dele
         painel, dentro = (a, b) if fundo_a else (b, a)
         assert painel["position"]["z"] < dentro["position"]["z"]
 
 
 @pytest.mark.parametrize("pagina", PAGINAS, ids=lambda p: p.nome)
 def test_cartoes_tem_contexto(pagina):
-    """cada número grande vem com uma linha que diz se é muito ou pouco"""
     cartoes = [v for v in pagina.visuais if v["visual"]["visualType"] == "multiRowCard"
                and v["position"]["y"] >= 92 and v["position"]["height"] >= 30]
     assert len(cartoes) == 6
@@ -92,7 +88,6 @@ def test_cartoes_tem_contexto(pagina):
 
 
 def test_relatorio_gerado_esta_em_dia(tmp_path):
-    """fabric/PainelProjetos.Report é gerado: se falhar, rode python -m tools.gerar_relatorio"""
     gr.gerar(tmp_path)
     gerados = sorted(p.relative_to(tmp_path) for p in tmp_path.rglob("*") if p.is_file())
     atuais = sorted(p.relative_to(gr.DESTINO) for p in gr.DESTINO.rglob("*") if p.is_file())

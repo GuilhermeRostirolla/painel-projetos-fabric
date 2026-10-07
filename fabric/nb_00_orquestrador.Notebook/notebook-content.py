@@ -11,19 +11,18 @@
 
 # MARKDOWN ********************
 
-# # 00 · Orquestrador
+# # 00 - Orquestrador
 #
-# Roda bronze → silver → gold em sequência. É este notebook que fica **agendado** (ex.: todo dia às 6h).
-# Se uma etapa falhar, as seguintes não rodam e a execução aparece com erro no histórico do agendamento.
+# Roda bronze, silver e gold em sequência. É o notebook agendado; se uma etapa falhar, as seguintes não rodam.
 
 # PARAMETERS CELL ********************
 
 URL_API = "https://api-projetos-demo.onrender.com"
 KEY_VAULT_URL = ""
 NOME_SEGREDO = "token-api-projetos"
-TOKEN_API = ""          # só para testes; em produção use o Key Vault
-MODO = "incremental"    # incremental | completo
-TEMPO_LIMITE = 1800     # segundos por notebook
+TOKEN_API = ""
+MODO = "incremental"
+TEMPO_LIMITE = 1800
 
 # METADATA ********************
 

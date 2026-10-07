@@ -1,10 +1,4 @@
-"""Gera fabric/ipynb/*.ipynb a partir dos notebook-content.py (fonte da verdade).
-
-Para quem prefere importar os notebooks no Fabric (Workspace > Importar > Notebook)
-em vez de sincronizar a pasta fabric/ pela integração com Git.
-
-    python tools/exportar_ipynb.py
-"""
+"""Gera fabric/ipynb/*.ipynb a partir dos notebook-content.py."""
 import json
 import re
 from pathlib import Path
@@ -48,7 +42,7 @@ def main() -> None:
         nome = pasta.name.removesuffix(".Notebook")
         celulas = [celula(t, l) for t, l in blocos((pasta / "notebook-content.py").read_text(encoding="utf-8"))]
         for i, c in enumerate(celulas):
-            c["id"] = f"{nome[:5]}-{i:02d}"   # id fixo: reexportar não gera diff à toa
+            c["id"] = f"{nome[:5]}-{i:02d}"
         nb = {"cells": celulas,
               "metadata": {"kernel_info": {"name": "synapse_pyspark"},
                            "kernelspec": {"name": "synapse_pyspark", "display_name": "Synapse PySpark"},

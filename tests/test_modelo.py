@@ -48,19 +48,17 @@ def test_relacionamentos_e_ordenacao_apontam_para_colunas_reais():
 
 
 def test_um_unico_caminho_ativo_entre_tabelas():
-    """Dois relacionamentos ativos entre o mesmo par de tabelas deixariam o modelo ambíguo."""
     pares = [tuple(sorted((d.split(".")[0], p.split(".")[0]))) for d, p, ativo in gm.RELACIONAMENTOS if ativo]
     assert len(pares) == len(set(pares))
 
 
 def test_tmdl_gerado_esta_em_dia(tmp_path):
-    """fabric/PainelProjetos.SemanticModel é gerado: se falhar, rode python tools/gerar_modelo.py"""
     gm.gerar(destino=tmp_path)
     for arquivo in tmp_path.rglob("*"):
         if arquivo.is_file():
             atual = gm.DESTINO / arquivo.relative_to(tmp_path)
             texto = atual.read_text()
-            if arquivo.name == "expressions.tmdl":  # o endpoint pode ter sido preenchido
+            if arquivo.name == "expressions.tmdl":
                 texto = re.sub(r'Sql\.Database\("[^"]*", "[^"]*"\)',
                                f'Sql.Database("{gm.ENDPOINT}", "{gm.ENDPOINT_ID}")', texto)
             assert texto == arquivo.read_text(), f"{atual} desatualizado"
@@ -75,7 +73,6 @@ def test_tmdl_bem_formado():
 
 
 def test_nada_que_o_direct_lake_recuse():
-    """Achado na primeira publicação real: Direct Lake recusa relacionamento datePartOnly."""
     for arquivo in (gm.DESTINO / "definition").rglob("*.tmdl"):
         texto = arquivo.read_text()
         assert "joinOnDateBehavior" not in texto, arquivo.name
@@ -83,7 +80,6 @@ def test_nada_que_o_direct_lake_recuse():
 
 
 def test_um_papel_por_equipe():
-    """Cada equipe do simulador tem um papel, e o filtro usa o nome exato que a gold grava."""
     from simulador.catalogos import EQUIPES
     assert sorted(gm.PAPEIS.values()) == sorted(e.nome for e in EQUIPES)
     modelo = (gm.DESTINO / "definition" / "model.tmdl").read_text()

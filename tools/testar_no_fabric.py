@@ -1,13 +1,6 @@
-"""Teste ponta a ponta DENTRO do Fabric, sem publicar a API: sobe a API simulada na própria
-sessão Spark (localhost) e roda o orquestrador contra ela.
+"""Sobe a API simulada dentro da sessão do Fabric e roda o orquestrador contra ela.
 
-Numa célula de um notebook do workspace:
-
-    import requests; exec(requests.get("https://raw.githubusercontent.com/GuilhermeRostirolla/painel-projetos-fabric/main/tools/testar_no_fabric.py").text)
-
-Serve para validar Spark, Delta, o modelo e as medidas antes de a API estar publicada no Render.
-Depois que a API estiver no ar, use o nb_00_orquestrador normalmente, com a URL pública.
-"""
+    import requests; exec(requests.get("https://raw.githubusercontent.com/GuilhermeRostirolla/painel-projetos-fabric/main/tools/testar_no_fabric.py").text)"""
 import io
 import os
 import subprocess
@@ -21,11 +14,9 @@ REPOSITORIO = globals().get("REPOSITORIO", "GuilhermeRostirolla/painel-projetos-
 RAMO = globals().get("RAMO", "main")
 MODO = globals().get("MODO", "completo")
 PORTA = 8765
-TOKEN_TESTE = "token-teste-local"  # só vale para a API que sobe aqui, em localhost
+TOKEN_TESTE = "token-teste-local"
 
 _destino = "/tmp/painel_api"
-# a API roda num processo separado, com dependências isoladas: instalar FastAPI na sessão
-# atualizaria bibliotecas que o próprio Fabric já carregou
 subprocess.run([sys.executable, "-m", "pip", "install", "-q", "--target", f"{_destino}/libs",
                 "-r", "/dev/stdin"], input="\n".join(requests.get(
                     f"https://raw.githubusercontent.com/{REPOSITORIO}/{RAMO}/requirements-api.txt", timeout=60
@@ -52,7 +43,7 @@ for _ in range(60):
 else:
     raise RuntimeError("a API de teste não subiu")
 _meta = requests.get(f"{URL}/v1/meta", headers={"Authorization": f"Bearer {TOKEN_TESTE}"}, timeout=10).json()
-print(f"API de teste no ar em {URL} · impressão digital {_meta['impressao_digital']} (esperado f5e3d8e3c86d9d89)")
+print(f"API de teste no ar em {URL}, impressão digital {_meta['impressao_digital']} (esperado f5e3d8e3c86d9d89)")
 
 try:
     _retorno = notebookutils.notebook.run("nb_00_orquestrador", 3600, {  # noqa: F821

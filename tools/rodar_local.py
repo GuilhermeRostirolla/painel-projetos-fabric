@@ -1,13 +1,6 @@
-"""Roda os notebooks do Fabric na sua máquina, sem Fabric.
+"""Roda os notebooks localmente (Spark + API simulada, tabelas em Parquet).
 
-Sobe a API simulada numa porta local, cria uma sessão Spark e executa o orquestrador
-(nb_00) exatamente como está no repositório. Só os parâmetros de caminho e formato são
-trocados: arquivos vão para <pasta>/Files e tabelas para <pasta>/Tables, em Parquet
-(o Delta exige jars que o Fabric já traz).
-
-    python tools/rodar_local.py --pasta .local/lakehouse --modo completo
-    python tools/rodar_local.py --pasta .local/lakehouse --modo incremental --data-referencia 2026-09-30
-"""
+    python tools/rodar_local.py --pasta .local/lakehouse --modo completo"""
 import argparse
 import re
 import shutil
@@ -31,7 +24,6 @@ class _Saida(Exception):
 
 
 def celulas(caminho: Path) -> list[tuple[str, str]]:
-    """Lê um notebook-content.py do Fabric e devolve [(tipo, código)], sem markdown e metadados."""
     tipo, linhas, saida = None, [], []
     for linha in caminho.read_text(encoding="utf-8").splitlines() + ["# METADATA ****"]:
         m = MARCADOR.match(linha)
@@ -47,7 +39,7 @@ def celulas(caminho: Path) -> list[tuple[str, str]]:
 class Executor:
     def __init__(self, spark, sobrescrever: dict):
         self.spark = spark
-        self.sobrescrever = sobrescrever  # parâmetros locais aplicados a todo notebook
+        self.sobrescrever = sobrescrever
         self.notebookutils = SimpleNamespace(
             notebook=SimpleNamespace(run=self.rodar, exit=self._sair),
             credentials=SimpleNamespace(getSecret=self._segredo),
@@ -69,7 +61,7 @@ class Executor:
         try:
             for tipo, codigo in celulas(caminho):
                 exec(compile(codigo, f"{nome}", "exec"), espaco)
-                if tipo == "PARAMETERS CELL":  # como o Fabric: valores passados vencem os padrões
+                if tipo == "PARAMETERS CELL":
                     for chave, valor in {**self.sobrescrever, **(parametros or {})}.items():
                         if chave in espaco:
                             espaco[chave] = valor
@@ -120,7 +112,6 @@ def main() -> None:
     pasta = a.pasta.resolve()
     if a.limpar:
         shutil.rmtree(pasta, ignore_errors=True)
-    # silver e gold são reconstruídas inteiras a cada execução; o estado que importa mora em Files
     shutil.rmtree(pasta / "Tables", ignore_errors=True)
     (pasta / "Files").mkdir(parents=True, exist_ok=True)
 
@@ -133,7 +124,7 @@ def main() -> None:
                                 "FORMATO_TABELA": "parquet"})
     inicio = time.time()
     executor.rodar("nb_00_orquestrador", parametros={"URL_API": url, "TOKEN_API": token, "MODO": a.modo})
-    print(f"\nconcluído em {time.time() - inicio:.0f}s · lakehouse local em {pasta}")
+    print(f"\nconcluído em {time.time() - inicio:.0f}s, lakehouse local em {pasta}")
 
 
 if __name__ == "__main__":

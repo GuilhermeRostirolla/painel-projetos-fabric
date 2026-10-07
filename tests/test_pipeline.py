@@ -1,7 +1,4 @@
-"""Roda os notebooks de verdade (Spark local) e confere a gold contra contas feitas à mão.
-
-Lento (~1 min) e precisa de pyspark + Java: `pytest -m pipeline`. Fica fora da rodada padrão.
-"""
+"""Pipeline completo no Spark local. Lento: pytest -m pipeline"""
 import json
 from collections import Counter
 from datetime import date
@@ -96,7 +93,6 @@ def test_textos_padronizados(ambiente):
 
 
 def test_quarentena(ambiente):
-    """Registros que quebram regras vão para silver_rejeitados com o motivo; o resto segue."""
     spark, executor, pasta, dados = ambiente
     boa = dados["tarefas"][0]
     ruins = [
@@ -120,7 +116,6 @@ def test_quarentena(ambiente):
 
 
 def test_exclusao_na_fonte_some_da_silver(ambiente):
-    """Pessoas chegam completas a cada carga: quem sumiu da última carga sai da silver."""
     spark, executor, pasta, dados = ambiente
     sem_tarefa = {p["id"] for p in dados["pessoas"]} - {t["responsavel_id"] for t in dados["tarefas"]} \
         - {e["pessoa_id"] for e in dados["historico"]} - {p["gestor_id"] for p in dados["projetos"]} \
@@ -140,7 +135,6 @@ def test_exclusao_na_fonte_some_da_silver(ambiente):
 
 
 def test_schema_da_gold_igual_ao_do_modelo(ambiente):
-    """O modelo semântico é gerado de tools/schema_gold.json; se a gold mudar, regenere os dois."""
     from pathlib import Path
     spark, *_ = ambiente
     salvo = json.loads((Path(__file__).resolve().parents[1] / "tools" / "schema_gold.json").read_text())
@@ -150,7 +144,6 @@ def test_schema_da_gold_igual_ao_do_modelo(ambiente):
 
 
 def test_medidas_conferem_com_calculo_independente(ambiente):
-    """As colunas que o DAX soma/média na gold batem com o recálculo independente de valores_esperados."""
     from tools.valores_esperados import SQL
     spark, *_ = ambiente
     spark.conf.set("spark.sql.session.timeZone", "UTC")

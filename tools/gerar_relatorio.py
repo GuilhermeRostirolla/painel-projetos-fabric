@@ -1,15 +1,6 @@
-"""Gera o relatório do Power BI (formato PBIR) em fabric/PainelProjetos.Report.
+"""Gera o relatório (PBIR) em fabric/PainelProjetos.Report.
 
-Todas as páginas e visuais estão descritos aqui embaixo; o script escreve os JSON no formato
-que o Fabric e o Power BI Desktop leem (o mesmo do Painel de Ideias). Medidas e colunas são
-conferidas contra o modelo semântico pelos testes, então o relatório não aponta para campo
-que não existe.
-
-    python tools/gerar_relatorio.py
-
-Publicação: o nb_04_publicar_modelo cria ou atualiza o relatório no workspace, ligado ao
-modelo PainelProjetos.
-"""
+    python -m tools.gerar_relatorio"""
 import hashlib
 import json
 import shutil
@@ -26,21 +17,16 @@ SCHEMA = "https://developer.microsoft.com/json-schemas/fabric/item/report/defini
 TEMA_BASE = "CY26SU04"
 TEMA = "TemaPainelProjetos.json"
 
-# Tokens do redesign (Figma "Painel de Projetos — Redesign", quadro 05 · Guia de estilo).
-# Um assunto por cor: azul conta volume, cinza é referência, verde/âmbar/vermelho só situação.
-# Paleta conferida com o validador de daltonismo (status: verde × âmbar × vermelho separados).
 COR = {"texto": "#17212B", "suave": "#5A6472", "apagado": "#8A93A0", "fundo": "#F3F5F8", "cartao": "#FFFFFF",
        "borda": "#E4E8EE", "grade": "#EDF0F4", "cabecalho": "#0F2A44", "cabecalho2": "#1C3A5A",
        "cabecalho_texto": "#B9C6D6", "azul": "#2F6DB5", "referencia": "#A3ACB9", "neutro": "#B8C4D3",
        "bom": "#1F8A5B", "atencao": "#D29B00", "atencao_texto": "#9A7000", "critico": "#C2362F",
        "barra_azul": "#C9DAEE", "barra_vermelha": "#F2C9C6"}
-TOM = {"n": (COR["azul"], COR["suave"]), "c": (COR["critico"], COR["critico"]),
-       "w": (COR["atencao"], COR["atencao_texto"]), "g": (COR["bom"], COR["bom"])}
+TOM = {"neutro": (COR["azul"], COR["suave"]), "critico": (COR["critico"], COR["critico"]),
+       "atencao": (COR["atencao"], COR["atencao_texto"]), "bom": (COR["bom"], COR["bom"])}
 
 TABELA_DA_MEDIDA = {m[0]: tabela for tabela, medidas in MEDIDAS.items() for m in medidas}
 
-
-# --- expressões PBIR -------------------------------------------------------------------
 
 def lit(valor) -> dict:
     if isinstance(valor, bool):
@@ -63,7 +49,6 @@ def coluna(tabela: str, nome: str) -> dict:
 
 
 def campo(ref: str) -> dict:
-    """'Medida' (sem ponto) ou 'tabela.coluna'."""
     if "." in ref and ref.split(".")[0] in {"dim_data", "dim_projeto", "dim_pessoa", "dim_status",
                                              "fato_tarefa", "fato_passagem_status", "ref_parametros"}:
         return coluna(*ref.split(".", 1))
@@ -84,7 +69,6 @@ def projecao(ref: str, rotulo: str | None = None, ativo: bool = False) -> dict:
 
 
 def campos(refs) -> list[dict]:
-    """refs: lista de 'ref' ou ('ref', 'rótulo')."""
     return [projecao(*(r if isinstance(r, tuple) else (r,))) for r in refs]
 
 
@@ -93,7 +77,6 @@ def ordenar(ref: str, decrescente: bool = True) -> dict:
 
 
 def quando(ref: str, valor: str) -> dict:
-    """seletor de um ponto pela categoria (ex.: só a barra 'Atrasado')"""
     return {"data": [{"scopeId": {"Comparison": {"ComparisonKind": 0, "Left": campo(ref),
                                                  "Right": {"Literal": {"Value": "'" + valor + "'"}}}}}]}
 
@@ -129,10 +112,7 @@ def moldura(titulo: str | None = None, subtitulo: str | None = None, fundo: str 
     return objetos
 
 
-# --- visuais -------------------------------------------------------------------------------
-
 class Pagina:
-    """Grade de 1280 × 720: cabeçalho 0–76, cartões 92–188, linhas de gráficos em 204 e 460."""
 
     Y_KPI, H_KPI = 92, 96
     Y2, Y3, H_LINHA = 204, 460, 244
@@ -140,8 +120,7 @@ class Pagina:
     def __init__(self, nome: str, titulo: str, subtitulo: str):
         self.nome, self.titulo = nome, titulo
         self.visuais: list[dict] = []
-        self.fundos: set[str] = set()   # painéis decorativos: os visuais de cima ficam dentro deles
-        # cabeçalho escuro com título, filtros e data de referência
+        self.fundos: set[str] = set()
         self.painel(0, 0, LARGURA, 76, COR["cabecalho"], borda=False, raio=0.0)
         self.texto(titulo, 24, 8, 560, 34, 17, "#FFFFFF", negrito=True)
         self.texto(subtitulo, 24, 42, 560, 24, 9.5, COR["cabecalho_texto"])
@@ -166,7 +145,6 @@ class Pagina:
         return nome
 
     def painel(self, x, y, w, h, fundo, borda=True, raio=10.0):
-        """caixa de fundo (caixa de texto vazia): só cor, borda e cantos"""
         nome = self._add(x, y, w, h, {
             "visualType": "textbox",
             "objects": {"general": [{"properties": {"paragraphs": [{"textRuns": [{"value": ""}]}]}}]},
@@ -185,14 +163,12 @@ class Pagina:
             "drillFilterOtherVisuals": True})
 
     def valor(self, medida, x, y, w, h, tamanho, cor_valor, negrito=False):
-        """um número (ou texto) alinhado à esquerda, sem rótulo: cartão de várias linhas enxuto"""
         self._add(x, y, w, h, {
             "visualType": "multiRowCard",
             "query": {"queryState": {"Values": {"projections": campos([medida])}}},
             "objects": {
                 "dataLabels": [{"properties": {"fontSize": lit(float(tamanho)), "color": cor(cor_valor),
                                                "fontFamily": lit("Segoe UI Semibold" if negrito else "Segoe UI")}}],
-                # medida de texto aparece como título do cartão, que tem estilo próprio (azul por padrão)
                 "cardTitle": [{"properties": {"fontSize": lit(float(tamanho)), "color": cor(cor_valor),
                                               "fontFamily": lit("Segoe UI Semibold" if negrito else "Segoe UI")}}],
                 "categoryLabels": [{"properties": {"show": lit(False)}}],
@@ -204,7 +180,6 @@ class Pagina:
             "drillFilterOtherVisuals": True})
 
     def cartao_simples(self, medida, x, y, w, h, tamanho, cor_valor):
-        """cartão clássico sem rótulo nem fundo (centralizado): usado na data de referência"""
         self._add(x, y, w, h, {
             "visualType": "card",
             "query": {"queryState": {"Values": {"projections": campos([medida])}}},
@@ -214,7 +189,6 @@ class Pagina:
             "drillFilterOtherVisuals": True})
 
     def kpi(self, medida, rotulo, contexto, tom, x, y, w, h):
-        """cartão: barra de situação, rótulo em caixa alta, número grande e linha de contexto"""
         barra, cor_contexto = TOM[tom]
         self.painel(x, y, w, h, COR["cartao"])
         self.painel(x + 10, y + 14, 3, h - 28, barra, borda=False, raio=2.0)
@@ -245,8 +219,6 @@ class Pagina:
 
     def grafico(self, tipo, titulo, subtitulo, categoria, medidas, x, y, w, h, cores=None, destaques=None,
                 ordem=None, ordem_crescente=False):
-        """tipo: barras horizontais (clusteredBarChart), colunas ou linha.
-        cores: uma por medida. destaques: {valor da categoria: cor} (o resto fica com a cor da medida)."""
         barras = tipo != "lineChart"
         horizontal = tipo == "clusteredBarChart"
         objetos = {
@@ -254,7 +226,6 @@ class Pagina:
                                              "labelColor": cor(COR["texto"] if horizontal else COR["apagado"]),
                                              "showAxisTitle": lit(False), "innerPadding": lit(28.0 if barras else 0.0),
                                              "maxMarginFactor": lit(45 if horizontal else 25)}}],
-            # barras: sem eixo de valor nem grade (o rótulo na ponta já diz o número); linha: grade bem clara
             "valueAxis": [{"properties": {"show": lit(not barras), "fontSize": lit(8.0),
                                           "labelColor": cor(COR["apagado"]), "showAxisTitle": lit(False),
                                           "labelDisplayUnits": lit(1.0), "gridlineShow": lit(not barras),
@@ -285,7 +256,6 @@ class Pagina:
                                "visualContainerObjects": moldura(titulo, subtitulo), "drillFilterOtherVisuals": True})
 
     def tabela(self, titulo, subtitulo, colunas_, x, y, w, h, ordem, crescente=False, barras=None, filtro=None):
-        """barras: {campo: cor} → barra de dados atrás do número"""
         objetos = {
             "columnHeaders": [{"properties": {"fontColor": cor(COR["suave"]), "bold": lit(True),
                                               "backColor": cor(COR["cartao"]), "fontSize": lit(8.5),
@@ -317,24 +287,22 @@ class Pagina:
             "drillFilterOtherVisuals": True}, extra)
 
 
-# --- páginas -------------------------------------------------------------------------------
-
 SITUACAO = {"Atrasado": COR["critico"], "Concluído com atraso": COR["atencao"]}
 
 
 def paginas() -> list[Pagina]:
     y2, y3, h = Pagina.Y2, Pagina.Y3, Pagina.H_LINHA
-    alto = y3 + h - y2   # visual que ocupa as duas linhas
+    alto = y3 + h - y2
 
-    geral = Pagina("P1Geral", "Painel de Projetos", "Portfólio, prazos e entregas · dados simulados de uma "
+    geral = Pagina("P1Geral", "Painel de Projetos", "Portfólio, prazos e entregas - dados simulados de uma "
                                                      "ferramenta de gestão de projetos")
     geral.linha_de_cartoes([
-        ("Projetos Ativos", "Projetos ativos", "Contexto Projetos Ativos", "n"),
-        ("Projetos Atrasados", "Projetos atrasados", "Contexto Projetos Atrasados", "c"),
-        ("Tarefas Abertas", "Tarefas abertas", "Contexto Tarefas Abertas", "n"),
-        ("Tarefas Vencidas", "Tarefas vencidas", "Contexto Tarefas Vencidas", "c"),
-        ("% Entregues no Prazo", "Entregues no prazo", "das tarefas concluídas", "n"),
-        ("Desvio de Esforço %", "Desvio de esforço", "horas apontadas vs. estimadas", "w")])
+        ("Projetos Ativos", "Projetos ativos", "Contexto Projetos Ativos", "neutro"),
+        ("Projetos Atrasados", "Projetos atrasados", "Contexto Projetos Atrasados", "critico"),
+        ("Tarefas Abertas", "Tarefas abertas", "Contexto Tarefas Abertas", "neutro"),
+        ("Tarefas Vencidas", "Tarefas vencidas", "Contexto Tarefas Vencidas", "critico"),
+        ("% Entregues no Prazo", "Entregues no prazo", "das tarefas concluídas", "neutro"),
+        ("Desvio de Esforço %", "Desvio de esforço", "horas apontadas vs. estimadas", "atencao")])
     geral.grafico("lineChart", "Tarefas criadas × entregues por mês",
                   "Entregas (azul) acompanhando a demanda (cinza)", "dim_data.mes_ano",
                   [("Tarefas Criadas", "Criadas"), ("Tarefas Entregues", "Entregues")],
@@ -357,12 +325,12 @@ def paginas() -> list[Pagina]:
 
     projetos = Pagina("P2Projetos", "Projetos", "Quem está atrasado, quanto, e quanto do orçamento de horas já foi")
     projetos.linha_de_cartoes([
-        ("Projetos", "Projetos", "no portfólio", "n"),
-        ("Projetos em Andamento", "Em andamento", "em execução agora", "n"),
-        ("Projetos Concluídos", "Concluídos", "já entregues", "g"),
-        ("% Projetos Atrasados", "% atrasados", "Contexto Atrasados de Ativos", "c"),
-        ("% Projetos Entregues no Prazo", "Entregues no prazo", "Contexto Entregues no Prazo", "c"),
-        ("Atraso Médio dos Projetos (dias)", "Atraso médio (dias)", "entre os projetos atrasados", "w")])
+        ("Projetos", "Projetos", "no portfólio", "neutro"),
+        ("Projetos em Andamento", "Em andamento", "em execução agora", "neutro"),
+        ("Projetos Concluídos", "Concluídos", "já entregues", "bom"),
+        ("% Projetos Atrasados", "% atrasados", "Contexto Atrasados de Ativos", "critico"),
+        ("% Projetos Entregues no Prazo", "Entregues no prazo", "Contexto Entregues no Prazo", "critico"),
+        ("Atraso Médio dos Projetos (dias)", "Atraso médio (dias)", "entre os projetos atrasados", "atencao")])
     projetos.grafico("clusteredBarChart", "Orçamento de horas consumido",
                      "% das horas orçadas já apontadas, por equipe", "dim_projeto.equipe",
                      [("% Orçamento Consumido", "% consumido")], 24, y2, 380, h, cores=[COR["azul"]],
@@ -382,14 +350,14 @@ def paginas() -> list[Pagina]:
 
     fluxo = Pagina("P3Fluxo", "Fluxo e gargalos", "Tempo em cada etapa, onde as tarefas travam e quanto voltam")
     fluxo.linha_de_cartoes([
-        ("Lead Time Médio (dias)", "Lead time médio (dias)", "da criação à conclusão", "n"),
-        ("Ciclo Médio (dias)", "Ciclo médio (dias)", "do início à conclusão", "n"),
-        ("Ciclo Mediano (dias)", "Ciclo mediano (dias)", "metade termina antes disso", "n"),
-        ("% Concluídas com Retrabalho", "Com retrabalho", "voltaram da revisão", "w"),
-        ("Tarefas Bloqueadas", "Bloqueadas", "tarefas travadas agora", "c"),
-        ("Paradas há mais de 15 dias", "Paradas > 15 dias", "sem mudar de etapa", "w")])
+        ("Lead Time Médio (dias)", "Lead time médio (dias)", "da criação à conclusão", "neutro"),
+        ("Ciclo Médio (dias)", "Ciclo médio (dias)", "do início à conclusão", "neutro"),
+        ("Ciclo Mediano (dias)", "Ciclo mediano (dias)", "metade termina antes disso", "neutro"),
+        ("% Concluídas com Retrabalho", "Com retrabalho", "voltaram da revisão", "atencao"),
+        ("Tarefas Bloqueadas", "Bloqueadas", "tarefas travadas agora", "critico"),
+        ("Paradas há mais de 15 dias", "Paradas > 15 dias", "sem mudar de etapa", "atencao")])
     bloqueada = {"Bloqueada": COR["critico"]}
-    fluxo.grafico("clusteredBarChart", "Tempo médio em cada etapa (dias)", "Na ordem do fluxo · vermelho: bloqueio",
+    fluxo.grafico("clusteredBarChart", "Tempo médio em cada etapa (dias)", "Na ordem do fluxo; vermelho: bloqueio",
                   "fato_passagem_status.status", ["Tempo Médio na Etapa (dias)"], 24, y2, 610, h,
                   cores=[COR["azul"]], destaques=bloqueada, ordem="fato_passagem_status.status", ordem_crescente=True)
     fluxo.grafico("clusteredBarChart", "Onde as tarefas estão paradas agora", "Tarefas abertas por etapa atual",
@@ -404,17 +372,17 @@ def paginas() -> list[Pagina]:
 
     pessoas = Pagina("P4Pessoas", "Pessoas e esforço", "Carga de cada pessoa e horas apontadas contra o estimado")
     pessoas.linha_de_cartoes([
-        ("Horas Orçadas", "Horas orçadas", "para todo o portfólio", "n"),
-        ("Horas Estimadas", "Horas estimadas", "soma das tarefas", "n"),
-        ("Horas Apontadas", "Horas apontadas", "Contexto Horas Apontadas", "w"),
-        ("% Orçamento Consumido", "Orçamento consumido", "Contexto Orçamento", "w"),
-        ("Tarefas Concluídas", "Tarefas concluídas", "Contexto Tarefas Concluídas", "g"),
-        ("Idade Média das Abertas (dias)", "Idade das abertas (dias)", "média desde a criação", "n")])
+        ("Horas Orçadas", "Horas orçadas", "para todo o portfólio", "neutro"),
+        ("Horas Estimadas", "Horas estimadas", "soma das tarefas", "neutro"),
+        ("Horas Apontadas", "Horas apontadas", "Contexto Horas Apontadas", "atencao"),
+        ("% Orçamento Consumido", "Orçamento consumido", "Contexto Orçamento", "atencao"),
+        ("Tarefas Concluídas", "Tarefas concluídas", "Contexto Tarefas Concluídas", "bom"),
+        ("Idade Média das Abertas (dias)", "Idade das abertas (dias)", "média desde a criação", "neutro")])
     pessoas.grafico("clusteredBarChart", "Horas estimadas × apontadas por equipe",
-                    "Cinza: estimado · azul: apontado", "dim_pessoa.equipe",
+                    "Cinza: estimado, azul: apontado", "dim_pessoa.equipe",
                     [("Horas Estimadas", "Estimadas"), ("Horas Apontadas", "Apontadas")],
                     24, y2, 460, alto, cores=[COR["referencia"], COR["azul"]], ordem="Horas Apontadas")
-    pessoas.tabela("Carga por pessoa", "Ordenado por tarefas abertas · barras: abertas (azul) e vencidas (vermelho)",
+    pessoas.tabela("Carga por pessoa", "Ordenado por tarefas abertas; barras: abertas (azul) e vencidas (vermelho)",
                    [("dim_pessoa.pessoa", "Pessoa"), ("dim_pessoa.equipe", "Equipe"), ("dim_pessoa.cargo", "Cargo"),
                     ("Tarefas Abertas", "Abertas"), ("Tarefas Vencidas", "Vencidas"),
                     ("Tarefas Concluídas", "Concluídas"), ("Horas Apontadas", "Horas"),
@@ -423,8 +391,6 @@ def paginas() -> list[Pagina]:
                    barras={"Tarefas Abertas": COR["barra_azul"], "Tarefas Vencidas": COR["barra_vermelha"]})
     return [geral, projetos, fluxo, pessoas]
 
-
-# --- arquivos ------------------------------------------------------------------------------
 
 def tema() -> dict:
     return {"name": "TemaPainelProjetos",

@@ -67,7 +67,6 @@ def test_projeto_cancelado_nao_tem_tarefa_aberta(dados):
 
 
 def test_sujeira_proposital_presente(dados):
-    """A silver precisa padronizar: prioridade com caixa trocada e títulos com espaço sobrando."""
     assert any(t["prioridade"] not in cat.PRIORIDADES for t in dados["tarefas"])
     assert any(t["titulo"] != t["titulo"].strip() for t in dados["tarefas"])
 
@@ -94,7 +93,6 @@ def test_corte_cancela_tarefa_aberta():
 
 
 def test_relogio_andando_nao_muda_o_passado(dados):
-    """Cortar o mesmo mundo um mês antes: tudo que já existia mantém id e conteúdo."""
     antes = gerar(Config(data_referencia=date(2026, 8, 31)))
     eventos_depois = {e["id"]: e for e in dados["historico"]}
     assert all(eventos_depois[e["id"]] == e for e in antes["historico"])
@@ -102,7 +100,7 @@ def test_relogio_andando_nao_muda_o_passado(dados):
     for t in antes["tarefas"]:
         depois = tarefas_depois[t["id"]]
         assert (t["titulo"], t["criada_em"], t["projeto_id"]) == (depois["titulo"], depois["criada_em"], depois["projeto_id"])
-        if t != depois:  # se mudou, precisa ter sido atualizada depois do corte
+        if t != depois:
             assert depois["atualizado_em"] > "2026-09-01"
     projetos_depois = {p["id"]: p for p in dados["projetos"]}
     for p in antes["projetos"]:
@@ -112,7 +110,5 @@ def test_relogio_andando_nao_muda_o_passado(dados):
 
 
 def test_impressao_digital_travada(dados):
-    """Se falhar, algo mudou os dados (código ou versão de numpy/Faker). Se a mudança for
-    intencional, atualize o hash aqui e no README."""
     from simulador.cenario import impressao_digital
     assert impressao_digital(dados) == "f5e3d8e3c86d9d89"

@@ -1,13 +1,6 @@
-"""Monta o cenário: equipes, pessoas, projetos, tarefas e histórico de status.
+"""Gera o cenário (equipes, pessoas, projetos, tarefas, histórico).
 
-Funciona em dois passos:
-  1. `_mundo` simula a história completa até um horizonte distante, sem olhar a data de referência.
-  2. `gerar` corta essa história na data de referência: só existe o que já aconteceu até ela.
-
-Assim a data de referência é só o relógio. Subir a API em 31/08 e depois em 30/09 equivale a
-um sistema real que andou um mês, e a carga incremental pode ser comparada com a completa.
-Os registros saem no formato que a API devolve.
-"""
+_mundo simula tudo até o horizonte; gerar corta na data de referência."""
 import hashlib
 import json
 import unicodedata
@@ -26,15 +19,15 @@ from simulador.tempo import iso, no_expediente
 class Config:
     semente: int = 42
     data_referencia: date = date(2026, 9, 30)
-    inicio: date = date(2025, 1, 6)          # primeiro projeto pode começar aqui
-    fim_portfolio: date = date(2026, 9, 26)  # último projeto pode começar aqui
-    horizonte: date = date(2028, 12, 31)     # até onde a história é simulada
+    inicio: date = date(2025, 1, 6)
+    fim_portfolio: date = date(2026, 9, 26)
+    horizonte: date = date(2028, 12, 31)
     p_cancelado: float = 0.08
     p_pausado: float = 0.08
-    recencia: float = 2.4                    # > 1 concentra os inícios de projeto perto do fim do período
-    otimismo: tuple[float, float] = (0.6, 1.05)  # prazo planejado = duração esperada × sorteio nesta faixa
-    dispersao_saude: float = 0.4             # quanto os projetos variam entre saudáveis e problemáticos
-    arrasto: float = 2.0                     # quanto o escopo de um projeto problemático se estica
+    recencia: float = 2.4
+    otimismo: tuple[float, float] = (0.6, 1.05)
+    dispersao_saude: float = 0.4
+    arrasto: float = 2.0
 
 
 @dataclass
@@ -48,8 +41,8 @@ class _Tarefa:
     estimativa: int
     prazo: date | None
     trajeto: Trajeto
-    horas_total: float     # horas reais se concluir
-    fracao_parcial: float  # parte já apontada enquanto está em curso
+    horas_total: float
+    fracao_parcial: float
 
 
 @dataclass
@@ -61,8 +54,8 @@ class _Projeto:
     prioridade: str
     inicio: datetime
     duracao: int
-    escopo_fecha_em: datetime  # depois disso não entram tarefas novas
-    dias_planejados: int       # o que o gestor prometeu: erra para mais ou para menos
+    escopo_fecha_em: datetime
+    dias_planejados: int
     corte: Corte | None
     tarefas: list[_Tarefa] = field(default_factory=list)
 
@@ -91,10 +84,8 @@ def _pessoas(rng: np.random.Generator, fake: Faker, cfg: Config) -> list[dict]:
                 "cargo": cat.CARGOS["gestor"] if i == 0 else str(rng.choice(cat.CARGOS["membro"])),
                 "data_admissao": cfg.inicio - timedelta(days=int(rng.integers(30, 3000))),
                 "_saida": None,
-                # ritmo < 1 entrega mais rápido que a média; não sai na API
                 "_ritmo": float(np.clip(rng.lognormal(0, 0.2), 0.6, 1.6)),
             })
-    # algumas pessoas saem da empresa no meio do período (gestores ficam)
     janela = (cfg.fim_portfolio - cfg.inicio).days
     for i in rng.choice(len(pessoas), size=6, replace=False):
         if pessoas[i]["cargo"] != cat.CARGOS["gestor"]:
@@ -104,7 +95,6 @@ def _pessoas(rng: np.random.Generator, fake: Faker, cfg: Config) -> list[dict]:
 
 def _prioridade(rng: np.random.Generator) -> str:
     valor = str(rng.choice(cat.PRIORIDADES, p=cat.PESO_PRIORIDADES))
-    # o sistema de origem aceita texto livre: parte vem com caixa trocada
     sorte = rng.random()
     return valor.lower() if sorte < 0.07 else valor.upper() if sorte < 0.10 else valor
 
@@ -127,12 +117,10 @@ def _mundo(cfg: Config) -> tuple[list[dict], list[_Projeto]]:
 
     projetos = []
     for n, (equipe_id, nome) in enumerate(cat.PROJETOS):
-        # mais projetos recentes que antigos: o portfólio cresce com o tempo
         inicio = no_expediente(cfg.inicio + timedelta(days=int(rng.beta(cfg.recencia, 1.0) * janela)), rng)
         duracao = int(rng.integers(90, 301))
         saude = float(np.clip(rng.lognormal(0, cfg.dispersao_saude), 0.7, 2.2))
         dias_planejados = int(duracao * rng.uniform(*cfg.otimismo))
-        # projeto com saúde ruim ganha escopo: tarefas continuam sendo abertas depois do plano
         janela_tarefas = duracao * 0.85 * max(saude, 1.0) ** cfg.arrasto
 
         equipe = por_equipe[equipe_id]
@@ -153,11 +141,10 @@ def _mundo(cfg: Config) -> tuple[list[dict], list[_Projeto]]:
             criada = no_expediente(inicio.date() + timedelta(days=int(rng.beta(1.2, 1.8) * janela_tarefas)), rng)
             tipo = cat.TIPOS[int(rng.choice(len(cat.TIPOS), p=pesos_tipo))]
             estimativa = int(rng.choice(tipo.estimativas))
-            # só recebe tarefa quem ainda está na empresa quando ela é criada
             disponiveis = [m for m in membros if m["_saida"] is None or m["_saida"] > criada.date()]
             responsavel = (disponiveis or [projeto.gestor])[int(rng.integers(0, len(disponiveis) or 1))]
             prazo = None
-            if rng.random() > 0.06:  # algumas tarefas são abertas sem prazo
+            if rng.random() > 0.06:
                 dias_prazo = (14 + estimativa / 6 * 1.4 * 1.3) * rng.uniform(1.0, 1.8)
                 prazo = criada.date() + timedelta(days=int(np.ceil(dias_prazo)))
             trajeto = simular(rng, criada, estimativa, saude, responsavel["_ritmo"], horizonte, corte)
@@ -165,7 +152,7 @@ def _mundo(cfg: Config) -> tuple[list[dict], list[_Projeto]]:
             tarefa = _Tarefa(criada, n, tipo.nome, _titulo(rng, tipo.nome), _prioridade(rng), responsavel,
                              estimativa, prazo, trajeto, horas, float(rng.uniform(0.15, 0.85)))
             if corte and criada >= corte.quando:
-                continue  # projeto já tinha parado: a tarefa nunca foi aberta
+                continue
             projeto.tarefas.append(tarefa)
         projetos.append(projeto)
     return pessoas, projetos
@@ -184,11 +171,9 @@ def _horas(tarefa: _Tarefa, eventos: list) -> float:
 
 
 def gerar(cfg: Config = Config()) -> dict[str, list[dict]]:
-    """O mundo como estava no fim do dia de referência."""
     ref = datetime.combine(cfg.data_referencia, time(23, 59, 59))
     pessoas, projetos = _mundo(cfg)
 
-    # ids seguem a ordem de criação, como num sistema real: quem já existia mantém o id
     projetos_vivos = sorted((p for p in projetos if p.inicio <= ref), key=lambda p: (p.inicio, p.n))
     id_projeto = {p.n: f"PRJ-{i:03d}" for i, p in enumerate(sorted(projetos, key=lambda p: (p.inicio, p.n)), 1)}
     todas = sorted((t for p in projetos for t in p.tarefas), key=lambda t: (t.criada, t.projeto, t.titulo))
@@ -236,7 +221,6 @@ def gerar(cfg: Config = Config()) -> dict[str, list[dict]]:
             status = "Planejamento"
         elif p.escopo_fecha_em <= ref and status_tarefas <= cat.STATUS_FINAIS:
             status = "Concluído"
-            # fecha quando a última tarefa termina ou quando o escopo fecha, o que vier depois
             conclusao = max(max(momentos), p.escopo_fecha_em)
             momentos.append(conclusao)
         else:
@@ -252,7 +236,6 @@ def gerar(cfg: Config = Config()) -> dict[str, list[dict]]:
             "data_inicio": iso(p.inicio.date()),
             "data_fim_planejada": iso(p.inicio.date() + timedelta(days=p.dias_planejados)),
             "data_conclusao": iso(conclusao.date()) if conclusao else None,
-            # orçamento cobre o escopo original; tarefas que entram depois estouram o orçamento
             "horas_orcadas": int(np.ceil(sum(t.estimativa for t in p.tarefas if t.criada <= escopo_original)
                                          * 1.1 / 10) * 10),
             "criado_em": iso(p.inicio),
@@ -271,6 +254,5 @@ def gerar(cfg: Config = Config()) -> dict[str, list[dict]]:
 
 
 def impressao_digital(dados: dict[str, list[dict]]) -> str:
-    """Hash do cenário. Mesma semente + mesma data + mesmas versões = mesmo hash em qualquer máquina."""
     texto = json.dumps(dados, ensure_ascii=False, sort_keys=True, separators=(",", ":"))
     return hashlib.sha256(texto.encode()).hexdigest()[:16]
