@@ -183,11 +183,24 @@ def relacionamentos(schema: dict) -> str:
     return "\n".join(saida)
 
 
+# Segurança por linha: um papel por equipe. O filtro em dim_projeto chega às tarefas e às passagens
+# pelos relacionamentos; no Power BI Service basta colocar cada pessoa no papel da sua equipe.
+PAPEIS = {"Tecnologia": "Tecnologia", "DadosBI": "Dados & BI", "Operacoes": "Operações",
+          "Comercial": "Comercial", "PessoasCultura": "Pessoas & Cultura"}
+
+
+def papel(nome: str, equipe: str) -> str:
+    return (f"role {nome}\n\tmodelPermission: read\n\n"
+            f'\ttablePermission dim_projeto = [equipe] = "{equipe}"\n\n'
+            f"\tannotation PBI_Id = {tag('papel', nome).replace('-', '')}\n\n")
+
+
 def gerar(endpoint: str = ENDPOINT, endpoint_id: str = ENDPOINT_ID, destino: Path = DESTINO) -> None:
     schema = json.loads((RAIZ / "tools" / "schema_gold.json").read_text())
     definicao = destino / "definition"
     (definicao / "tables").mkdir(parents=True, exist_ok=True)
-    for antigo in (definicao / "tables").glob("*.tmdl"):
+    (definicao / "roles").mkdir(parents=True, exist_ok=True)
+    for antigo in [*(definicao / "tables").glob("*.tmdl"), *(definicao / "roles").glob("*.tmdl")]:
         antigo.unlink()
 
     (destino / ".platform").write_text(json.dumps({
@@ -201,7 +214,8 @@ def gerar(endpoint: str = ENDPOINT, endpoint_id: str = ENDPOINT_ID, destino: Pat
     (definicao / "model.tmdl").write_text(
         "model Model\n\tculture: pt-BR\n\tdefaultPowerBIDataSourceVersion: powerBI_V3\n"
         "\tdiscourageImplicitMeasures\n\tsourceQueryCulture: pt-BR\n\n"
-        + "".join(f"ref table {t}\n" for t in TABELAS) + "\n")
+        + "".join(f"ref table {t}\n" for t in TABELAS) + "\n"
+        + "".join(f"ref role {r}\n" for r in PAPEIS) + "\n")
     (definicao / "expressions.tmdl").write_text(
         "expression DatabaseQuery =\n\t\tlet\n"
         f'\t\t    database = Sql.Database("{endpoint}", "{endpoint_id}")\n'
@@ -210,6 +224,8 @@ def gerar(endpoint: str = ENDPOINT, endpoint_id: str = ENDPOINT_ID, destino: Pat
     (definicao / "relationships.tmdl").write_text(relacionamentos(schema))
     for nome in TABELAS:
         (definicao / "tables" / f"{nome}.tmdl").write_text(tabela(nome, schema[nome]))
+    for nome, equipe in PAPEIS.items():
+        (definicao / "roles" / f"{nome}.tmdl").write_text(papel(nome, equipe))
 
 
 def main() -> None:
@@ -220,7 +236,7 @@ def main() -> None:
     gerar(a.endpoint, a.endpoint_id)
     n = sum(len(m) for m in MEDIDAS.values())
     print(f"modelo gerado em {DESTINO.relative_to(RAIZ)}: {len(TABELAS)} tabelas, "
-          f"{len(RELACIONAMENTOS)} relacionamentos, {n} medidas")
+          f"{len(RELACIONAMENTOS)} relacionamentos, {n} medidas, {len(PAPEIS)} papéis de segurança")
 
 
 if __name__ == "__main__":

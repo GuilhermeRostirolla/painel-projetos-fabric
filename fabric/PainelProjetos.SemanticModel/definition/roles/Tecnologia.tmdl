@@ -1,0 +1,7 @@
+role Tecnologia
+	modelPermission: read
+
+	tablePermission dim_projeto = [equipe] = "Tecnologia"
+
+	annotation PBI_Id = 91029852e04f57219a453d19401c97d4
+

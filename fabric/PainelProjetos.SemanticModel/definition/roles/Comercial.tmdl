@@ -1,0 +1,7 @@
+role Comercial
+	modelPermission: read
+
+	tablePermission dim_projeto = [equipe] = "Comercial"
+
+	annotation PBI_Id = e2b1eef972c557c59af7c31a3e0bf3e4
+

@@ -1,0 +1,7 @@
+role Operacoes
+	modelPermission: read
+
+	tablePermission dim_projeto = [equipe] = "Operações"
+
+	annotation PBI_Id = cbace459541a50a9987ba05e90a602bd
+
