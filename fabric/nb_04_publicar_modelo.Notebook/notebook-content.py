@@ -11,19 +11,11 @@
 
 # MARKDOWN ********************
 
-# # 04 · Publicar e conferir o modelo, o relatório e a segurança
+# # 04 - Publicar modelo e relatório
 #
-# Cria (ou atualiza) o modelo semântico **PainelProjetos** neste workspace pela API REST do Fabric e depois confere cada medida.
-#
-# 1. Descobre sozinho o **SQL analytics endpoint** do lakehouse: ninguém precisa copiar endereço nem GUID.
-# 2. Baixa o TMDL do repositório no GitHub e troca os dois valores do endpoint.
-# 3. Publica a definição e enquadra o modelo (refresh do Direct Lake).
-# 3b. Publica o **relatório** (4 páginas, formato PBIR) ligado ao modelo.
-# 4. **Roda as 46 medidas em DAX** e compara com `docs/valores_esperados.json`, que foi calculado em SQL sem passar pelo DAX.
-#    Se alguma não bater, o notebook falha e mostra qual.
-# 5. **Entra como cada papel de segurança** (RLS por equipe) e confere que ele só enxerga os projetos e as tarefas da própria equipe.
-#
-# Rode depois do orquestrador (a gold precisa existir). Pode rodar de novo sempre que o modelo mudar no repositório.
+# Cria/atualiza o modelo semântico e o relatório pela API do Fabric, a partir do commit do GitHub.
+# Depois confere as medidas em DAX contra docs/valores_esperados.json e testa cada papel de RLS.
+# Rodar depois do orquestrador.
 
 # PARAMETERS CELL ********************
 
@@ -31,7 +23,7 @@ REPOSITORIO = "GuilhermeRostirolla/painel-projetos-fabric"
 RAMO = "main"
 NOME_LAKEHOUSE = "lh_projetos"
 NOME_MODELO = "PainelProjetos"
-CONFERIR_MEDIDAS = True   # só faz sentido com os dados padrão da API (semente 42, referência 30/09/2026)
+CONFERIR_MEDIDAS = True
 
 # METADATA ********************
 
@@ -57,7 +49,6 @@ PASTA_MODELO = f"fabric/{NOME_MODELO}.SemanticModel/"
 
 
 def esperar(resposta, o_que: str):
-    """A API do Fabric responde 202 para operações longas; acompanha até terminar."""
     if resposta.status_code not in (200, 201, 202):
         raise RuntimeError(f"{o_que}: HTTP {resposta.status_code} {resposta.text[:500]}")
     if resposta.status_code != 202:
@@ -73,12 +64,11 @@ def esperar(resposta, o_que: str):
     raise TimeoutError(f"{o_que}: operação {operacao} não terminou em 10 minutos")
 
 
-# 1. SQL analytics endpoint do lakehouse
 lakehouses = cliente.get(f"v1/workspaces/{WORKSPACE}/lakehouses").json()["value"]
 lakehouse = next((l for l in lakehouses if l["displayName"] == NOME_LAKEHOUSE), None)
 if lakehouse is None:
     raise ValueError(f"lakehouse {NOME_LAKEHOUSE} não encontrado neste workspace")
-for _ in range(30):  # logo após criar o lakehouse, o endpoint pode levar alguns minutos para existir
+for _ in range(30):
     endpoint = cliente.get(f"v1/workspaces/{WORKSPACE}/lakehouses/{lakehouse['id']}").json() \
         .get("properties", {}).get("sqlEndpointProperties", {})
     if endpoint.get("provisioningStatus") == "Success" and endpoint.get("connectionString"):
@@ -97,9 +87,6 @@ print(f"SQL endpoint: {endpoint['connectionString']} ({endpoint['id']})")
 
 # CELL ********************
 
-# 2. TMDL do GitHub (repositório público: sem token)
-# fixa o commit: o raw.githubusercontent.com guarda o ramo em cache por alguns minutos, e publicar
-# logo depois de um push traria arquivos da versão anterior
 COMMIT = requests.get(f"https://api.github.com/repos/{REPOSITORIO}/commits/{RAMO}", timeout=60).json()["sha"]
 print(f"publicando a partir do commit {COMMIT[:7]} ({RAMO})")
 arvore = requests.get(f"https://api.github.com/repos/{REPOSITORIO}/git/trees/{COMMIT}?recursive=1", timeout=60)
@@ -117,7 +104,6 @@ for caminho in caminhos:
                    "payloadType": "InlineBase64"})
 print(f"{len(partes)} arquivos de definição: " + ", ".join(sorted(p["path"] for p in partes)))
 
-# 3. Cria ou atualiza
 modelos = cliente.get(f"v1/workspaces/{WORKSPACE}/semanticModels").json()["value"]
 existente = next((m for m in modelos if m["displayName"] == NOME_MODELO), None)
 definicao = {"definition": {"parts": partes}}
@@ -130,12 +116,11 @@ else:
                          json={"displayName": NOME_MODELO, **definicao}), "criar o modelo")
     print(f"modelo {NOME_MODELO} criado")
 
-# enquadra o Direct Lake nas tabelas atuais (ele também faz isso sozinho quando a gold muda)
 fabric.refresh_dataset(NOME_MODELO, workspace=WORKSPACE)
 time.sleep(20)
 try:
     print(fabric.list_refresh_requests(NOME_MODELO, workspace=WORKSPACE).head(1).to_string())
-except Exception as erro:  # só informativo
+except Exception as erro:
     print(f"não consegui listar o refresh ({erro}); seguindo para a conferência")
 
 # METADATA ********************
@@ -147,7 +132,6 @@ except Exception as erro:  # só informativo
 
 # CELL ********************
 
-# 3b. Relatório (PBIR do repositório), ligado ao modelo deste workspace
 PASTA_RELATORIO = f"fabric/{NOME_MODELO}.Report/"
 modelo_id = next(m["id"] for m in cliente.get(f"v1/workspaces/{WORKSPACE}/semanticModels").json()["value"]
                  if m["displayName"] == NOME_MODELO)
@@ -156,7 +140,6 @@ for caminho in [i["path"] for i in arvore.json()["tree"] if i["type"] == "blob"
                 and i["path"].startswith(PASTA_RELATORIO) and not i["path"].endswith(".platform")]:
     conteudo = requests.get(f"https://raw.githubusercontent.com/{REPOSITORIO}/{COMMIT}/{caminho}", timeout=60).content
     if caminho.endswith("definition.pbir"):
-        # no repositório o relatório aponta para a pasta do modelo; aqui, para o modelo publicado
         pbir = json.loads(conteudo)
         pbir["datasetReference"] = {"byConnection": {"connectionString": f"semanticmodelid={modelo_id}"}}
         conteudo = json.dumps(pbir).encode("utf-8")
@@ -184,7 +167,6 @@ else:
 
 # CELL ********************
 
-# 4. Cada medida em DAX x valor calculado em SQL
 if CONFERIR_MEDIDAS:
     url = f"https://raw.githubusercontent.com/{REPOSITORIO}/{COMMIT}/docs/valores_esperados.json"
     esperado = requests.get(url, timeout=60).json()
@@ -225,7 +207,6 @@ if CONFERIR_MEDIDAS:
 
 # CELL ********************
 
-# 5. Segurança por linha: entra como cada papel e confere o que ele enxerga
 if CONFERIR_MEDIDAS:
     consulta = 'EVALUATE ROW ( "Projetos", [Projetos], "Tarefas", [Tarefas], "Tarefas Abertas", [Tarefas Abertas] )'
     falhas = []
@@ -240,7 +221,6 @@ if CONFERIR_MEDIDAS:
     if falhas:
         raise AssertionError(f"RLS não filtrou como esperado: {falhas}")
     print(f"\nos {len(esperado['papeis'])} papéis de segurança enxergam só a própria equipe")
-    # resumo para quem chamar este notebook com notebookutils.notebook.run
     notebookutils.notebook.exit(json.dumps({"medidas_ok": len(medidas), "papeis_ok": len(esperado["papeis"])}))
 
 # METADATA ********************

@@ -1,63 +1,52 @@
-# Painel de Projetos · API + Microsoft Fabric + Power BI
+# Painel de Projetos - API + Microsoft Fabric + Power BI
 
-> **Todo gestor sabe quantos projetos tem. Poucos sabem, sem abrir dez telas, quais estão atrasados, onde as tarefas travam e quanto do orçamento de horas já foi.**
+Pipeline que busca dados de uma ferramenta de gestão de projetos por API, trata no Microsoft Fabric (bronze, silver e gold) e entrega um modelo semântico em Direct Lake com um relatório de 4 páginas no Power BI. Modelo e relatório são gerados por código e publicados por notebook.
 
-Este projeto busca os dados de uma ferramenta de gestão de projetos **por API**, trata tudo no **Microsoft Fabric** em camadas (bronze, silver e gold) e entrega um **modelo semântico em Direct Lake** com 46 medidas e um **relatório do Power BI com 4 páginas**, tudo publicado por código.
+É a continuação do [Painel de Ideias](https://github.com/GuilhermeRostirolla/painel-ideias-powerbi). Lá o dado vinha de um SQL Server; aqui vem de uma API, como num Jira ou ClickUp, então a ingestão precisa lidar com token, paginação, carga incremental e limite de requisições.
 
-É a continuação do [Painel de Ideias](https://github.com/GuilhermeRostirolla/painel-ideias-powerbi): lá o dado nascia num banco SQL Server; aqui ele vem de uma API, como acontece com Jira, Asana, ClickUp e companhia, e o pipeline precisa lidar com tudo que uma API real faz: token, paginação, carga incremental e limite de requisições.
+![Visão geral](docs/img/visao_geral.png)
 
-![Visão Geral](docs/img/visao_geral.png)
+## O que o painel responde
 
-### Perguntas que o painel responde
+- Quais projetos estão atrasados, quanto e de quem são
+- Quantas tarefas estão vencidas e quanto tempo levam do início ao fim (lead time e ciclo)
+- Em que etapa as tarefas ficam paradas e quanto voltam da revisão
+- Horas estimadas x apontadas por projeto, equipe e pessoa
 
-- **Portfólio:** quantos projetos estão em andamento, pausados, cancelados e concluídos, por equipe e gestor.
-- **Prazo:** quais projetos passaram do fim planejado, quantas tarefas estão vencidas e quanto cada uma atrasou.
-- **Fluxo:** quanto tempo as tarefas ficam em cada etapa, onde travam (bloqueios) e quanto voltam da revisão (retrabalho).
-- **Entrega:** lead time (da criação à conclusão) e tempo de ciclo (do início do trabalho à conclusão), por tipo de tarefa.
-- **Esforço:** horas estimadas × apontadas, estouro de orçamento por projeto, carga por pessoa.
+## Dados
 
-### O cenário simulado
+Os dados são fictícios: informação de projeto e de desempenho de pessoas é sensível, então montei uma API simulada que se comporta como a de uma ferramenta real (token, paginação, filtro incremental e respostas 429 de vez em quando).
 
-- **45 projetos** de **5 equipes** (Tecnologia, Dados & BI, Operações, Comercial e Pessoas & Cultura), **59 pessoas**, **1.435 tarefas** e **7.633 mudanças de status**, de jan/2025 a set/2026.
-- Cada tarefa percorre **Backlog → A Fazer → Em Andamento → Em Revisão → Concluída**, podendo ser **bloqueada**, **voltar para retrabalho** ou ser **cancelada**.
-- Na data de referência (30/09/2026): 25 projetos em andamento (**7 já passaram do prazo**), 14 concluídos, 1 em planejamento, 3 pausados e 2 cancelados. **39 tarefas vencidas** e esforço **34% acima do estimado**.
-- Cada projeto tem uma "saúde" sorteada e um prazo prometido pelo gestor, que pode ser otimista ou conservador. Projetos problemáticos ganham escopo no caminho e estouram prazo e orçamento, como na vida real.
+Por trás dela tem um simulador em Python em que cada tarefa passa por uma máquina de estados (Backlog, A Fazer, Em Andamento, Em Revisão, Concluída), com bloqueios, retrabalho e cancelamentos. Cada projeto tem uma "saúde" e um prazo que o gestor prometeu, às vezes otimista demais.
 
-### Por que os dados são fictícios
-
-Dados de projetos e de desempenho de pessoas são **informações sensíveis**. Por isso, em vez de apontar para uma ferramenta real, criei uma **API simulada** que se comporta como uma: exige token, pagina os resultados, aceita filtro incremental e, de vez em quando, responde "muitas requisições" para provar que a ingestão sabe esperar e tentar de novo.
-
-Por trás da API há um **simulador em Python** que não sorteia números soltos: cada tarefa vive a jornada como uma **máquina de estados**, com tempos variáveis em cada etapa, bloqueios, retrabalho e cancelamentos. O resultado tem cara de dado real e **nenhum dado real** dentro.
+Cenário em 30/09/2026: 45 projetos de 5 equipes, 59 pessoas, 1.435 tarefas e 7.633 mudanças de status desde jan/2025. 7 projetos atrasados, 39 tarefas vencidas e esforço 34% acima do estimado.
 
 ## Arquitetura
 
 ```mermaid
 flowchart LR
-    S["Simulador<br/>(Python)"] --> A["API REST<br/>FastAPI · token · paginação"]
-    A -- "nb_01<br/>JSON bruto" --> B[("Bronze<br/>Files/bronze")]
-    B -- "nb_02<br/>contrato, limpeza,<br/>deduplicação" --> SV[("Silver<br/>tabelas Delta")]
-    SV -- "nb_03<br/>star schema" --> G[("Gold<br/>tabelas Delta")]
-    G -- "Direct Lake" --> M["Modelo semântico<br/>46 medidas"] --> P["Power BI"]
-    O["nb_00 orquestrador<br/>(agendado)"] -.-> B & SV & G
-    subgraph Fabric["Microsoft Fabric · Lakehouse"]
+    S["Simulador<br/>(Python)"] --> A["API REST<br/>FastAPI"]
+    A -- "nb_01" --> B[("Bronze<br/>JSON bruto")]
+    B -- "nb_02" --> SV[("Silver<br/>Delta")]
+    SV -- "nb_03" --> G[("Gold<br/>star schema")]
+    G -- "Direct Lake" --> M["Modelo semântico"] --> P["Relatório"]
+    O["nb_00<br/>(agendado)"] -.-> B & SV & G
+    subgraph Fabric["Microsoft Fabric"]
         B
         SV
         G
         O
         M
+        P
     end
 ```
 
-| Camada | O que faz |
-|---|---|
-| **Simulador** (`simulador/`) | Gera equipes, pessoas, projetos, tarefas e o histórico de status como uma máquina de estados. Valida a coerência de tudo antes de servir. |
-| **API** (`api/`) | FastAPI com token, paginação, filtro `atualizado_desde` e respostas 429 ocasionais. Publicada no Render (gratuito) para o Fabric conseguir chamar. |
-| **Bronze** (`nb_01`) | Grava cada página da API exatamente como chegou, em JSON, com controle de marca d'água para a carga incremental. |
-| **Silver** (`nb_02`) | Aplica o contrato de dados (schema fixo por recurso), padroniza textos e datas, deixa uma linha por registro e manda o que quebra regra para a quarentena. |
-| **Gold** (`nb_03`) | Star schema para Direct Lake: `fato_tarefa`, `fato_passagem_status`, `dim_projeto`, `dim_pessoa`, `dim_status`, `dim_data` e `ref_parametros`. Confere as próprias contas antes de terminar. |
-| **Orquestrador** (`nb_00`) | Roda as três etapas em sequência. É ele que fica agendado. |
-| **Relatório** (`PainelProjetos.Report`) | 4 páginas em PBIR: Visão Geral, Projetos, Fluxo e gargalos, Pessoas e esforço. Gerado por `tools/gerar_relatorio.py` e publicado pelo `nb_04`. |
-| **Modelo semântico** (`PainelProjetos.SemanticModel`) | Direct Lake sobre a gold: 7 tabelas, 7 relacionamentos e 46 medidas em pastas (Portfólio, Prazo, Tarefas, Tempo, Fluxo, Esforço, Período e o contexto de cada cartão). Gerado em TMDL por `tools/gerar_modelo.py`. |
+- **Bronze (`nb_01`)**: grava cada página da API como veio, com marca d'água por recurso. A marca só avança se todos os recursos forem gravados, então uma falha no meio faz a próxima execução repetir a janela. 429 e 5xx têm nova tentativa respeitando o `Retry-After`. O token fica no Key Vault.
+- **Silver (`nb_02`)**: schema fixo por recurso, textos e datas padronizados, uma linha por registro. Registro com status desconhecido ou chave órfã vai para `silver_rejeitados` com o motivo.
+- **Gold (`nb_03`)**: `fato_tarefa`, `fato_passagem_status` e as dimensões. Ciclo, tempo bloqueado e retrabalho saem do histórico de status. Tudo é medido contra a data de referência gravada nos dados, não contra `TODAY()`, para os números não mudarem sozinhos.
+- **Modelo (`PainelProjetos.SemanticModel`)**: Direct Lake, 7 tabelas, 46 medidas e um papel de RLS por equipe. O TMDL é gerado por `tools/gerar_modelo.py` a partir do schema da gold.
+- **Relatório (`PainelProjetos.Report`)**: PBIR gerado por `tools/gerar_relatorio.py`.
+- **Publicação (`nb_04`)**: cria ou atualiza modelo e relatório pela API REST do Fabric, roda as medidas em DAX e compara com valores calculados em SQL (`docs/valores_esperados.json`), e consulta o modelo como cada papel de RLS para conferir o filtro.
 
 ## Páginas
 
@@ -69,156 +58,71 @@ flowchart LR
 |---|
 | ![Pessoas e esforço](docs/img/pessoas.png) |
 
-> Capturas do relatório publicado no Microsoft Fabric, com os dados de 30/09/2026.
+## Design
 
-## Design do relatório
+A primeira versão do relatório funcionava, mas era feia: tudo no mesmo azul, filtros ocupando uma linha inteira, números soltos e rótulos cortados nas colunas. Antes de mexer no gerador, listei os problemas e desenhei a proposta no Figma (mockup em [`docs/design/`](docs/design/)).
 
-A primeira versão do relatório funcionava, mas era genérica: tudo no mesmo azul, filtros ocupando uma linha inteira, números sem contexto e colunas com rótulos quebrados. Antes de mexer no código, fiz um diagnóstico e desenhei a proposta no Figma ([`docs/design/`](docs/design/)):
+O que mudou: cabeçalho com título e filtros, cartões com uma linha de contexto ("27% dos ativos", "restam 831 h"), cor só com significado (azul para volume, cinza para referência, vermelho e âmbar para atraso), barras horizontais no lugar de colunas com nomes longos e barras de dados nas tabelas.
 
-| Problema | O que mudou |
+| Antes | Proposta |
 |---|---|
-| Sem hierarquia: título, filtros e gráficos com o mesmo peso | Cabeçalho escuro com título, filtros e data de referência; cartões logo abaixo |
-| Cartões sem contexto | Rótulo em cima, número grande, linha de contexto e uma barra de cor que indica alerta |
-| Cor sem significado (roxo aleatório, “Atrasado” de duas cores) | Azul = volume, cinza = referência, verde/âmbar/vermelho só para situação; paleta conferida para daltonismo |
-| Colunas com nomes longos quebrando em duas linhas | Barras horizontais, sem eixo de valor: o rótulo na ponta já diz o número |
-| Tabelas cruas | Barras de dados nos dias de atraso e nas horas, e um bloco “Precisam de atenção” na visão geral |
+| ![Antes](docs/design/antes_visao_geral.png) | ![Proposta](docs/design/proposta_visao_geral.png) |
 
-| Antes | Proposta no Figma |
-|---|---|
-| ![Antes](docs/design/antes_visao_geral.png) | ![Proposta no Figma](docs/design/proposta_visao_geral.png) |
+## Testes
 
-O resultado publicado no Fabric é a imagem do topo deste README. O arquivo do Figma tem também o diagnóstico completo e o guia de estilo (cores, tipografia e regras), e o mockup em HTML que gerou o Figma está em [`docs/design/redesign.html`](docs/design/redesign.html).
-
-## Decisões que tomei
-
-| Decisão | Por quê |
-|---|---|
-| **Bronze guarda o JSON bruto, sem tratar** | Se uma regra da silver mudar, reprocesso tudo a partir do bronze sem chamar a API de novo. E sempre dá para ver exatamente o que a fonte mandou. |
-| **Carga incremental com marca d'água e sobreposição** | Cada execução pede só o que mudou desde a última. Relê 5 minutos antes da marca para não perder nada na fronteira; os duplicados que isso gera são removidos na silver. |
-| **Marca d'água só avança no fim** | Se a ingestão cair no meio, a próxima execução repete a janela inteira. Melhor buscar duas vezes do que perder dado. |
-| **Novas tentativas com espera** | 429, erro 5xx e queda de conexão não derrubam a carga: o notebook respeita o `Retry-After` e tenta de novo com espera crescente. |
-| **Token no Azure Key Vault** | O token nunca aparece no notebook nem no Git. O notebook lê o segredo em tempo de execução. |
-| **Contrato de dados na silver** | Cada recurso tem um schema fixo. Se a API mudar um campo, o erro aparece no pipeline, não como número estranho no painel. |
-| **Quarentena em vez de descarte** | Registro com status desconhecido, chave órfã ou horas negativas vai para `silver_rejeitados` com o motivo. Nada some sem rastro. |
-| **Cadastros valem pela última foto** | Equipes e pessoas vêm completas a cada carga, então a silver usa só a carga mais recente: quem foi removido na fonte também sai do painel. Tarefas e histórico vêm por incremental e não têm exclusão na API simulada. |
-| **Silver reconstruída a partir do bronze inteiro** | Neste volume é barato, e a silver fica sem estado: rodar duas vezes dá o mesmo resultado. Se o volume crescer, troco por `MERGE` incremental. |
-| **Métricas de tempo calculadas do histórico de status** | Ciclo, dias bloqueada e retrabalho saem dos eventos, não de campos prontos da API. Assim batem entre si e com o fluxo mostrado no painel. |
-| **Data de referência gravada nos dados** | Atraso, idade e "vencida" são medidos contra a data de referência, não contra `TODAY()`. O painel não muda sozinho de um dia para o outro e qualquer pessoa reproduz os mesmos números. |
-| **Horário de Brasília na gold** | A API manda as datas com fuso; a silver guarda o instante em UTC e a gold converte para o horário de Brasília, que é o que o usuário espera ver. |
-| **Simulador com "relógio"** | O mundo é simulado uma vez e a data de referência só corta a história. Subir a API em 31/08 e depois em 30/09 equivale a um sistema real que andou um mês. Foi isso que me permitiu provar a carga incremental. |
-| **Versões fixas e impressão digital do cenário** | Outra versão do Faker ou do numpy geraria outros dados com a mesma semente. As versões da API são fixas e a API expõe um hash do cenário (`/v1/meta`), travado nos testes: dá para confirmar que o Fabric recebeu exatamente os dados testados. |
-| **Direct Lake em vez de importação** | O modelo lê as tabelas Delta da gold direto do OneLake: sem cópia dos dados nem agendamento de atualização do modelo. Terminou o orquestrador, o painel já mostra o dado novo. |
-| **Modelo gerado a partir do schema real** | Colunas e tipos vêm de `tools/schema_gold.json`, extraído da gold; um teste falha se a gold mudar e o modelo não acompanhar. Nada de coluna digitada à mão. |
-| **Passagens ligadas à tarefa, não às dimensões** | `fato_passagem_status` se liga à `fato_tarefa`, então filtro de projeto, pessoa ou data chega às duas por um caminho só, sem ambiguidade. Para contar mudanças pela data da mudança, a medida ativa a outra data com `USERELATIONSHIP` e desliga a da criação com `CROSSFILTER`. |
-| **Relatório também é código** | As páginas e os visuais são descritos em Python e viram PBIR. Os testes garantem que todo campo usado existe no modelo, que cada visual cabe na página e que nenhum se sobrepõe a outro. |
-| **Cada medida tem um valor esperado** | `tools/valores_esperados.py` recalcula as 46 medidas em SQL, sem passar pelo DAX, e gera [`docs/valores_esperados.md`](docs/valores_esperados.md). No Power BI, cada cartão tem que bater com essa tabela. |
-| **Segurança por linha (RLS) por equipe** | Um papel por equipe filtra `dim_projeto`, e o filtro chega às tarefas e às passagens pelos relacionamentos. O `nb_04` entra no modelo como cada papel e confere, contra contas em SQL, que ele só enxerga a própria equipe. |
-| **Design desenhado antes de virar código** | O primeiro relatório era funcional e feio. Fiz um diagnóstico (10 problemas), desenhei a proposta no Figma e só então reescrevi o gerador. Detalhes em [Design do relatório](#design-do-relatório). |
-| **Cada cartão com contexto** | Um número sozinho não diz se é muito ou pouco. Cada cartão tem uma linha embaixo (“27% dos ativos”, “restam 831 h”), calculada por medidas que respeitam os filtros e também são conferidas em SQL. |
-| **Notebooks no formato Git do Fabric** | A pasta `fabric/` sincroniza direto com um workspace pela integração com Git: os notebooks são texto, versionados e revisáveis linha a linha. |
-
-## Como sei que funciona
-
-- **Rodou no Fabric de verdade**: o orquestrador completo (bronze → silver → gold, em Delta) terminou com sucesso; o modelo Direct Lake foi publicado e **as 46 medidas, calculadas em DAX no Fabric, bateram com o cálculo independente em SQL**.
-- **Segurança testada, não suposta**: o `nb_04` consulta o modelo como cada um dos 5 papéis de equipe e compara o que ele vê com as contagens por equipe feitas em SQL.
-- **270+ testes automatizados**: simulador (coerência, determinismo, calibração), API (token, paginação, incremental, 429), notebooks (formato, sintaxe), modelo semântico (toda coluna e medida citada no DAX existe, relacionamentos sem ambiguidade) e o pipeline inteiro rodando com Spark, incluindo quarentena e exclusões na fonte.
-- **A gold é conferida contra contas feitas à mão**: status, situação de prazo, retrabalho, bloqueios, horas e projetos atrasados são recalculados em Python puro a partir da API e precisam bater com o que o Spark produziu.
-- **Carga incremental = carga completa**: rodei uma carga completa com os dados de 31/08, depois uma incremental com os de 30/09 (com 30% das chamadas falhando de propósito) e comparei a gold, linha a linha, com uma carga completa direta de 30/09. Todas as tabelas ficaram idênticas.
-- **A própria gold se confere**: antes de terminar, o `nb_03` verifica chaves, uma etapa atual por tarefa, tempos não negativos e cobertura do calendário. Se algo não fechar, a execução falha.
+- `pytest`: simulador, API, notebooks, modelo (toda coluna e medida citada no DAX existe) e relatório (todo campo existe, nenhum visual sobreposto).
+- `pytest -m pipeline`: roda os notebooks do Fabric com Spark local e confere a gold contra contas feitas em Python a partir da API.
+- Carga incremental: uma carga completa em 31/08 seguida de uma incremental em 30/09, com 30% das chamadas falhando, gerou a mesma gold que uma carga completa direto em 30/09.
+- No Fabric, o `nb_04` falha se alguma das 46 medidas não bater com o SQL ou se algum papel de RLS enxergar outra equipe.
 
 ## Como rodar
 
-### 1. Na sua máquina (sem Fabric)
-
-Precisa de Python 3.11+ e, para o pipeline, Java 17+.
+Local (Python 3.11+, Java 17+ para o Spark):
 
 ```bash
-python -m venv .venv && source .venv/bin/activate      # Windows: .venv\Scripts\activate
 pip install -r requirements-dev.txt
-
-pytest                                   # testes rápidos
-pytest -m pipeline                       # pipeline completo com Spark (~1 min)
-
-uvicorn api.app:criar_app --factory      # API em http://127.0.0.1:8000/docs (token: token-demo)
-python tools/rodar_local.py --limpar     # roda os notebooks do Fabric localmente
+pytest
+python tools/rodar_local.py --limpar
+uvicorn api.app:criar_app --factory    # http://127.0.0.1:8000/docs, token: token-demo
 ```
 
-O `rodar_local.py` executa os notebooks **exatamente como estão** na pasta `fabric/`; só troca os caminhos do lakehouse e grava em Parquet, porque o Delta exige bibliotecas que o Fabric já traz.
+O `rodar_local.py` executa os notebooks da pasta `fabric/` sem alteração, gravando em Parquet.
 
-### 2. Publicar a API
+No Fabric:
 
-O Fabric precisa de uma URL pública. O jeito mais simples é o [Render](https://render.com) (plano gratuito):
-
-1. **New → Blueprint** e aponte para este repositório. O `render.yaml` já configura tudo.
-2. Em **Environment**, copie o valor de `API_TOKEN` que o Render gerou.
-3. Teste: `https://<seu-app>.onrender.com/docs`. Em `/v1/meta`, a `impressao_digital` deve ser `f5e3d8e3c86d9d89` (mesmos dados dos testes).
-
-> No plano gratuito a API dorme sem uso e leva cerca de 1 minuto para acordar. A ingestão já espera por isso.
-
-### 3. Guardar o token no Key Vault
-
-Crie um Azure Key Vault (ou use um existente), adicione o segredo `token-api-projetos` com o token do Render e dê à sua conta permissão de leitura de segredos.
-
-### 4. Montar no Fabric
-
-1. Crie um workspace com capacidade Fabric (vale a avaliação gratuita) e um **Lakehouse** chamado `lh_projetos`.
-2. Crie um notebook qualquer e rode **uma linha**: ela instala os 5 notebooks pela API REST do Fabric, já com o `lh_projetos` anexado como lakehouse padrão em cada um.
+1. Publique a API (o `render.yaml` sobe no Render) e guarde o token no Key Vault como `token-api-projetos`.
+2. Crie um workspace com um lakehouse `lh_projetos`.
+3. Num notebook qualquer, instale os notebooks:
    ```python
    import requests; exec(requests.get("https://raw.githubusercontent.com/GuilhermeRostirolla/painel-projetos-fabric/main/tools/instalar_no_fabric.py").text)
    ```
-   (Alternativas: integração Git do workspace com a pasta `fabric/`, que exige um token do GitHub, ou importar os `.ipynb` de `fabric/ipynb/` e anexar o lakehouse em cada um.)
-3. Abra o `nb_00_orquestrador`, preencha `URL_API` e `KEY_VAULT_URL`, troque `MODO` para `completo` e rode.
-4. Rode o `nb_04_publicar_modelo`: ele cria o modelo semântico e o relatório **PainelProjetos** (descobre o SQL endpoint sozinho) e confere as 46 medidas em DAX contra [`docs/valores_esperados.json`](docs/valores_esperados.json).
-5. Volte `MODO` para `incremental` e **agende** o `nb_00` (ex.: todo dia às 6h).
+4. Rode o `nb_00_orquestrador` com `MODO = "completo"`, preenchendo `URL_API` e `KEY_VAULT_URL`.
+5. Rode o `nb_04_publicar_modelo`.
+6. Volte o `MODO` para `incremental` e agende o `nb_00`.
 
-**Rodando só no Fabric, sem API publicada:** o workspace de demonstração tem o notebook `testar_pipeline` **agendado todo dia às 06:00**. Ele sobe a API simulada dentro da própria sessão e roda o orquestrador, sem token nem serviço externo; como o modelo é Direct Lake, o relatório já mostra o resultado.
+Para testar sem publicar a API, o `tools/testar_no_fabric.py` sobe a API dentro da própria sessão do Fabric e roda o orquestrador contra ela.
 
-**Quer testar no Fabric antes de publicar a API?** Num notebook com o `lh_projetos` anexado, rode
-`tools/testar_no_fabric.py` do mesmo jeito: ele sobe a API simulada dentro da própria sessão (em `localhost`, num processo separado) e roda o orquestrador contra ela.
+## Problemas que apareceram no Fabric
 
-### O que a execução real no Fabric ensinou
-
-- **O runtime do Fabric usa Python 3.11**: o numpy 2.5 exige 3.12, então a API fixa o numpy 2.4.6 (a impressão digital confirma que o cenário é o mesmo).
-- **Direct Lake não aceita relacionamento de data com `joinOnDateBehavior`**: a gold grava as datas sem hora e o modelo usa igualdade simples. Um teste impede que isso volte.
-- **Um notebook só chama outro se os dois tiverem o mesmo lakehouse padrão**: por isso o instalador anexa o `lh_projetos` em todos.
-- **Instalar pacotes na sessão pode quebrar bibliotecas que o Fabric já carregou**: a API de teste roda num processo separado, com dependências isoladas.
-- **O SQL endpoint demora a enxergar tabelas novas**: na primeira publicação o modelo não achou a `fato_tarefa`; depois que o endpoint sincronizou, o mesmo notebook passou. Se acontecer, abra o SQL endpoint do lakehouse e rode o `nb_04` de novo.
-- **A capacidade de avaliação aceita poucas sessões Spark ao mesmo tempo**: sessões interativas esquecidas abertas bloqueiam as próximas (erro 430). Pare a sessão no notebook ou pelo hub de Monitoramento.
+- O runtime usa Python 3.11 e o numpy 2.5 exige 3.12. Fixei o numpy 2.4.6 e a API expõe um hash do cenário (`/v1/meta`) para confirmar que os dados são os mesmos dos testes.
+- Direct Lake recusa relacionamento com `joinOnDateBehavior`. A gold grava as datas sem hora e o modelo usa igualdade simples.
+- Um notebook só chama outro se os dois tiverem o mesmo lakehouse padrão (ou com `useRootDefaultLakehouse`).
+- Instalar pacotes na sessão quebrou bibliotecas que o Fabric já tinha carregado; a API de teste roda num processo separado.
+- Logo depois de criar as tabelas, o SQL endpoint ainda não as enxergava e o refresh do modelo falhava. Abrir o endpoint e rodar de novo resolveu.
+- A capacidade de avaliação aceita poucas sessões Spark ao mesmo tempo; sessão esquecida aberta dá erro 430.
+- O raw.githubusercontent.com guarda o `main` em cache por alguns minutos. O instalador e o `nb_04` resolvem o ramo para o SHA do commit antes de baixar os arquivos.
 
 ## Estrutura
 
 ```
-api/                    API FastAPI
-simulador/              simulador: catálogos, máquina de estados, cenário e validação
-fabric/
-  nb_00_orquestrador.Notebook/
-  nb_01_bronze_ingestao.Notebook/
-  nb_02_silver_tratamento.Notebook/
-  nb_03_gold_modelo.Notebook/
-  nb_04_publicar_modelo.Notebook/   publica o modelo e confere as medidas em DAX
-  ipynb/                os mesmos notebooks em .ipynb, para importação manual
-  PainelProjetos.SemanticModel/   modelo semântico Direct Lake (TMDL, gerado)
-  PainelProjetos.Report/          relatório de 4 páginas (PBIR, gerado)
-tools/
-  rodar_local.py        roda os notebooks com Spark local
-  comparar_gold.py      compara duas golds linha a linha
-  exportar_ipynb.py     gera fabric/ipynb a partir dos notebooks
-  gerar_modelo.py       gera o modelo semântico (tabelas, relacionamentos, medidas)
-  gerar_relatorio.py    gera o relatório (páginas e visuais)
-  valores_esperados.py  recalcula as medidas em SQL para conferência
-  instalar_no_fabric.py instala os notebooks num workspace pela API do Fabric
-  testar_no_fabric.py   teste ponta a ponta no Fabric com a API na própria sessão
-docs/valores_esperados.md e .json
+api/          API FastAPI
+simulador/    catálogos, máquina de estados, cenário e validação
+fabric/       notebooks (formato Git do Fabric), modelo semântico e relatório
+fabric/ipynb/ os mesmos notebooks em .ipynb
+tools/        geradores do modelo e do relatório, execução local, instalação no Fabric
+docs/         valores esperados das medidas, capturas e design
 tests/
-Dockerfile, render.yaml publicação da API
 ```
-
-## Próximos passos
-
-- [x] Simulador, API, ingestão e camadas bronze, silver e gold
-- [x] Modelo semântico em **Direct Lake** com 46 medidas e valores esperados para conferência
-- [x] Relatório: portfólio, prazos, fluxo e gargalos, esforço e pessoas
-- [x] Segurança por linha por equipe
 
 ## Como foi construído
 

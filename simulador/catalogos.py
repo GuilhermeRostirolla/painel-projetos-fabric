@@ -20,9 +20,9 @@ class Status:
 @dataclass(frozen=True)
 class TipoTarefa:
     nome: str
-    peso: float                  # chance relativa de sorteio
-    estimativas: tuple[int, ...]  # horas possíveis
-    estouro: float               # mediana de horas reais / estimadas
+    peso: float
+    estimativas: tuple[int, ...]
+    estouro: float
 
 
 EQUIPES = (
@@ -64,7 +64,6 @@ CARGOS = {
     "membro": ("Analista Júnior", "Analista Pleno", "Analista Sênior", "Especialista"),
 }
 
-# (equipe_id, nome do projeto)
 PROJETOS = (
     (1, "Migração do ERP para nuvem"), (1, "Portal do Cliente 2.0"),
     (1, "Autenticação única (SSO)"), (1, "App de vistoria em campo"),
@@ -91,7 +90,6 @@ PROJETOS = (
     (3, "Controle de combustível"), (4, "Expansão para o Nordeste"),
 )
 
-# Modelos de título por tipo de tarefa; {obj} vem de OBJETOS
 TITULOS = {
     "Funcionalidade": ("Criar tela de {obj}", "Implementar cadastro de {obj}",
                        "Desenvolver relatório de {obj}", "Integrar {obj} com o ERP",

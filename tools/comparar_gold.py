@@ -1,10 +1,4 @@
-"""Compara as tabelas gold de dois lakehouses locais linha a linha.
-
-    python tools/comparar_gold.py <pasta_a> <pasta_b>
-
-Sai com erro se alguma tabela diferir. Usado para provar que a carga incremental chega
-ao mesmo resultado que a carga completa.
-"""
+"""python tools/comparar_gold.py <pasta_a> <pasta_b>"""
 import sys
 from pathlib import Path
 
@@ -12,7 +6,7 @@ from pyspark.sql import SparkSession
 
 TABELAS = ("fato_tarefa", "fato_passagem_status", "dim_projeto", "dim_pessoa",
            "dim_status", "dim_data", "ref_parametros", "silver_rejeitados")
-IGNORAR = {"processado_em"}  # muda a cada execução
+IGNORAR = {"processado_em"}
 
 
 def main(a: Path, b: Path) -> int:

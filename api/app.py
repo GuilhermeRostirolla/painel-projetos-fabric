@@ -1,14 +1,6 @@
-"""API REST que imita uma ferramenta de gestão de projetos (estilo Jira/Asana).
+"""API simulada de gestão de projetos.
 
-Os dados vêm do simulador, gerados uma vez quando a API sobe. Comportamentos de uma
-API real que a ingestão precisa tratar:
-  - autenticação por token (cabeçalho Authorization: Bearer <token>)
-  - paginação (pagina, tamanho) com link para a próxima página
-  - carga incremental (atualizado_desde)
-  - limite de requisições: parte das chamadas devolve 429 com Retry-After
-
-Variáveis de ambiente: API_TOKEN, SEMENTE, DATA_REFERENCIA (AAAA-MM-DD), TAXA_FALHA (0 a 1).
-"""
+Env: API_TOKEN, SEMENTE, DATA_REFERENCIA (AAAA-MM-DD), TAXA_FALHA (0 a 1)."""
 import os
 import random
 from datetime import date, datetime

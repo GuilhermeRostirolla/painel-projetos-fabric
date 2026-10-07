@@ -1,11 +1,4 @@
-"""Recalcula cada medida do modelo semântico em SQL, direto na gold, e grava a tabela de conferência.
-
-É uma segunda implementação, independente do DAX: no Power BI, cada cartão tem que bater com
-docs/valores_esperados.md (sem filtros, e no mês indicado para as medidas de período).
-
-    python tools/rodar_local.py --limpar        # gera a gold local
-    python tools/valores_esperados.py           # escreve docs/valores_esperados.md
-"""
+"""Recalcula as medidas em SQL na gold local e grava docs/valores_esperados.md/.json."""
 import argparse
 import sys
 from pathlib import Path
@@ -15,8 +8,8 @@ sys.path.insert(0, str(RAIZ))
 
 from tools.gerar_modelo import MEDIDAS, PAPEIS  # noqa: E402
 
-MES = "2026-09"  # mês usado nas medidas de período
-MES_ANO = "set/26"  # o mesmo mês como aparece em dim_data[mes_ano]
+MES = "2026-09"
+MES_ANO = "set/26"
 FINAIS = "('Concluída', 'Cancelada')"
 SQL = {
     "Projetos": "SELECT count(*) FROM dim_projeto",
@@ -49,7 +42,6 @@ SQL = {
                                  FROM fato_tarefa WHERE status = 'Concluída'""",
     "Ciclo Médio (dias)": "SELECT avg(ciclo_dias) FROM fato_tarefa",
     "Ciclo Mediano (dias)": "SELECT median(ciclo_dias) FROM fato_tarefa",
-    # dias fracionados até o fim do dia de referência (23:59:59), como na gold
     "Idade Média das Abertas (dias)": f"""SELECT avg((unix_timestamp((SELECT timestamp(data_referencia)
                                          + INTERVAL 86399 SECONDS FROM ref_parametros)) - unix_timestamp(criada_em))
                                          / 86400) FROM fato_tarefa WHERE status NOT IN {FINAIS}""",
@@ -76,7 +68,6 @@ SQL = {
                                 AND date_format(data_entrada, 'yyyy-MM') = '{MES}'""",
     "Data de Referência": "SELECT date_format(data_referencia, 'dd/MM/yyyy') FROM ref_parametros",
     "Texto Referência": "SELECT concat('Dados até ', date_format(data_referencia, 'dd/MM/yyyy')) FROM ref_parametros",
-    # contexto dos cartões: o mesmo texto que o DAX monta (sem filtro, todos abaixo de 1.000)
     "Contexto Projetos Ativos": "SELECT concat('de ', count(*), ' no portfólio') FROM dim_projeto",
     "Contexto Projetos Atrasados": """SELECT concat(cast(round(sum(int(situacao_prazo = 'Atrasado')) / count(*) * 100) AS INT),
                                      '% dos ativos') FROM dim_projeto WHERE status IN ('Em Andamento', 'Planejamento')""",
@@ -126,7 +117,6 @@ def calcular(spark) -> tuple[list[tuple[str, str, str, str]], dict]:
 
 
 def por_equipe(spark) -> dict:
-    """O que cada papel de segurança (RLS) deve enxergar: só os projetos da equipe e suas tarefas."""
     linhas = spark.sql(f"""
         SELECT p.equipe,
                count(DISTINCT p.projeto_id) AS projetos,
@@ -145,7 +135,7 @@ def main() -> None:
     from pyspark.sql import SparkSession
     spark = SparkSession.builder.master("local[2]").config("spark.ui.enabled", "false").getOrCreate()
     spark.sparkContext.setLogLevel("ERROR")
-    spark.conf.set("spark.sql.session.timeZone", "UTC")  # igual à gold; senão o fim do dia anda 3 h
+    spark.conf.set("spark.sql.session.timeZone", "UTC")
     for tabela in ("fato_tarefa", "fato_passagem_status", "dim_projeto", "ref_parametros"):
         spark.read.parquet(str(a.pasta / "Tables" / tabela)).createOrReplaceTempView(tabela)
     faltando = {m[0] for ms in MEDIDAS.values() for m in ms} - set(SQL)

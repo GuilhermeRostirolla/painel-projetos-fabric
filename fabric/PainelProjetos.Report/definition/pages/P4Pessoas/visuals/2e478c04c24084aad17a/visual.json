@@ -628,7 +628,7 @@
             "text": {
               "expr": {
                 "Literal": {
-                  "Value": "'Ordenado por tarefas abertas · barras: abertas (azul) e vencidas (vermelho)'"
+                  "Value": "'Ordenado por tarefas abertas; barras: abertas (azul) e vencidas (vermelho)'"
                 }
               }
             },

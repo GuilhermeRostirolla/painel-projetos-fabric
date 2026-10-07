@@ -1,9 +1,4 @@
-"""Máquina de estados de uma tarefa.
-
-Cada tarefa nasce no Backlog e anda pelas etapas com tempos lognormais. Pode ser
-bloqueada, voltar da revisão para retrabalho ou ser cancelada. A simulação para na
-data de referência, então tarefas ainda abertas ficam na etapa em que estavam.
-"""
+"""Máquina de estados de uma tarefa."""
 from dataclasses import dataclass, field
 from datetime import datetime
 
@@ -13,9 +8,8 @@ from simulador.catalogos import (A_FAZER, BACKLOG, BLOQUEADA, CANCELADA, CONCLUI
                                  EM_ANDAMENTO, EM_REVISAO, STATUS_FINAIS)
 from simulador.tempo import avancar
 
-SIGMA = 0.6  # dispersão dos tempos de cada etapa
+SIGMA = 0.6
 
-# Chances de desvio do caminho feliz
 P_CANCELAR_NO_BACKLOG = 0.04
 P_BLOQUEIO = 0.12
 P_RETRABALHO = 0.18
@@ -23,7 +17,6 @@ P_RETRABALHO = 0.18
 
 @dataclass
 class Corte:
-    """Projeto cancelado ou pausado: a partir de `quando`, a tarefa não anda mais."""
     quando: datetime
     cancelar: bool
 
@@ -50,7 +43,6 @@ def _dias(rng: np.random.Generator, mediana: float) -> float:
 
 def _proximo(rng: np.random.Generator, status: str, estimativa: float,
              saude: float, ritmo: float) -> tuple[str, float]:
-    """Sorteia a próxima etapa e quantos dias corridos a tarefa fica na atual."""
     if status == BACKLOG:
         if rng.random() < P_CANCELAR_NO_BACKLOG:
             return CANCELADA, _dias(rng, 10 * saude)
@@ -60,7 +52,6 @@ def _proximo(rng: np.random.Generator, status: str, estimativa: float,
     if status == EM_ANDAMENTO:
         if rng.random() < P_BLOQUEIO * saude:
             return BLOQUEADA, _dias(rng, 2 * saude)
-        # horas estimadas viram dias úteis (6 h produtivas) e depois dias corridos
         return EM_REVISAO, _dias(rng, estimativa / 6 * 1.4 * saude * ritmo)
     if status == BLOQUEADA:
         return EM_ANDAMENTO, _dias(rng, 4 * saude)

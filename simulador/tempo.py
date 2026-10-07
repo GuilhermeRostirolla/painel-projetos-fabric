@@ -3,7 +3,7 @@ from datetime import date, datetime, time, timedelta
 
 import numpy as np
 
-FUSO = "-03:00"  # horário de Brasília; a API devolve as datas com o fuso explícito
+FUSO = "-03:00"
 INICIO_EXPEDIENTE, FIM_EXPEDIENTE = 8, 18
 
 
@@ -23,8 +23,6 @@ def no_expediente(d: date, rng: np.random.Generator) -> datetime:
 
 
 def avancar(anterior: datetime, dias: float, rng: np.random.Generator) -> datetime:
-    """Momento `dias` corridos depois de `anterior`, sempre em dia útil, horário comercial
-    e estritamente depois de `anterior`."""
     candidato = no_expediente(anterior.date() + timedelta(days=int(round(dias))), rng)
     if candidato <= anterior:
         candidato = anterior + timedelta(minutes=int(rng.integers(15, 180)))

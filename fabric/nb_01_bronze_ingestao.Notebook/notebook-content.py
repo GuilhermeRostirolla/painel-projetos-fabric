@@ -11,23 +11,19 @@
 
 # MARKDOWN ********************
 
-# # 01 · Bronze: ingestão da API
+# # 01 - Bronze
 #
-# Busca os dados da API de projetos e grava **cada página exatamente como chegou** (JSON bruto) em `Files/bronze`.
-# Nada é tratado aqui: se a regra da silver mudar, dá para reprocessar tudo a partir do bronze sem chamar a API de novo.
-#
-# - **Incremental:** guarda a última data vista de cada recurso (marca d'água) e na próxima execução só pede o que mudou.
-# - **Resiliente:** tenta de novo quando a API devolve 429 (limite de requisições), erro 5xx ou demora para acordar.
-# - **Atômico:** a marca d'água só avança se todos os recursos forem gravados; se algo falhar no meio, a próxima execução repete a janela.
+# Ingestão da API. Grava cada página como veio (JSON) em Files/bronze, com marca d'água por recurso para a carga incremental.
+# A marca só avança no fim, quando todos os recursos foram gravados.
 
 # PARAMETERS CELL ********************
 
-URL_API = "https://api-projetos-demo.onrender.com"   # troque pela URL onde a API foi publicada
-TOKEN_API = ""                  # vazio = busca no Key Vault (recomendado)
-KEY_VAULT_URL = ""              # ex.: https://kv-projetos.vault.azure.net/
+URL_API = "https://api-projetos-demo.onrender.com"
+TOKEN_API = ""
+KEY_VAULT_URL = ""
 NOME_SEGREDO = "token-api-projetos"
-MODO = "incremental"            # incremental | completo
-PASTA_ARQUIVOS = "/lakehouse/default/Files"   # caminho do lakehouse padrão montado no notebook
+MODO = "incremental"
+PASTA_ARQUIVOS = "/lakehouse/default/Files"
 TAMANHO_PAGINA = 500
 
 # METADATA ********************
@@ -46,7 +42,6 @@ from datetime import datetime, timedelta, timezone
 
 import requests
 
-# recurso -> campo de data usado no filtro incremental (None = sempre carga completa, são cadastros pequenos)
 RECURSOS = {
     "equipes": None,
     "pessoas": None,
@@ -54,7 +49,7 @@ RECURSOS = {
     "tarefas": "atualizado_em",
     "historico": "ocorrido_em",
 }
-SOBREPOSICAO = timedelta(minutes=5)   # relê um pouco antes da marca d'água; a silver remove duplicados
+SOBREPOSICAO = timedelta(minutes=5)
 MAX_TENTATIVAS = 8
 
 if not os.path.isdir(PASTA_ARQUIVOS):
@@ -68,7 +63,7 @@ ARQ_MARCA = os.path.join(CONTROLE, "marca_dagua.json")
 agora = datetime.now(timezone.utc)
 EXECUCAO = agora.strftime("%Y%m%dT%H%M%SZ")
 DATA_CARGA = agora.strftime("%Y-%m-%d")
-print(f"execução {EXECUCAO} · modo {MODO} · API {URL_API}")
+print(f"execução {EXECUCAO} | modo {MODO} | API {URL_API}")
 
 # METADATA ********************
 
@@ -92,10 +87,8 @@ sessao.headers.update({"Authorization": f"Bearer {obter_token()}", "Accept": "ap
 
 
 def chamar(url: str, params: dict | None = None) -> dict:
-    """GET com novas tentativas para 429, 5xx e falhas de rede (espera exponencial)."""
     for tentativa in range(1, MAX_TENTATIVAS + 1):
         try:
-            # timeout alto: no plano gratuito a API dorme e leva ~1 min para acordar
             r = sessao.get(url, params=params, timeout=90)
         except (requests.ConnectionError, requests.Timeout) as erro:
             espera, motivo = 2 ** tentativa, type(erro).__name__
@@ -115,7 +108,6 @@ def chamar(url: str, params: dict | None = None) -> dict:
 
 
 def gravar_json(caminho: str, conteudo: dict) -> None:
-    """Grava num arquivo temporário e renomeia: quem lê nunca vê arquivo pela metade."""
     os.makedirs(os.path.dirname(caminho), exist_ok=True)
     temporario = caminho + ".tmp"
     with open(temporario, "w", encoding="utf-8") as f:
@@ -184,14 +176,13 @@ for recurso, campo_data in RECURSOS.items():
 
 # CELL ********************
 
-# Só chega aqui se todos os recursos foram gravados: agora a marca d'água pode avançar.
 gravar_json(os.path.join(CONTROLE, "execucoes", f"{EXECUCAO}.json"),
             {"execucao": EXECUCAO, "url_api": URL_API, "modo": MODO,
              "data_referencia": meta["data_referencia"], "recursos": resumo})
 gravar_json(ARQ_MARCA, marca_nova)
 
 total = sum(r["registros"] for r in resumo)
-print(f"ok: {total} registros gravados no bronze · marca d'água: {marca_nova}")
+print(f"ok: {total} registros gravados no bronze, marca d'água: {marca_nova}")
 notebookutils.notebook.exit(json.dumps({"execucao": EXECUCAO, "registros": total}))
 
 # METADATA ********************

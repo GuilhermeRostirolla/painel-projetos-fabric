@@ -511,7 +511,7 @@
             "text": {
               "expr": {
                 "Literal": {
-                  "Value": "'Cinza: estimado · azul: apontado'"
+                  "Value": "'Cinza: estimado, azul: apontado'"
                 }
               }
             },

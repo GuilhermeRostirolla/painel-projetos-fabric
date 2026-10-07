@@ -1,9 +1,4 @@
-"""Gera o HTML do redesign (6 quadros) que foi enviado ao Figma: diagnóstico, as 4 páginas e o guia de estilo.
-
-    python tools/design/mockup_redesign.py      # escreve docs/design/redesign.html
-
-Os números do mockup vêm de dados_mockup.json (agregados da gold local de 30/09/2026).
-"""
+"""Gera docs/design/redesign.html (mockup enviado ao Figma)."""
 import json
 from pathlib import Path
 
@@ -26,7 +21,6 @@ def mes(m):
     return f"{MES[m[5:]]}/{m[2:4]}"
 
 
-# ---------- primitivas ----------
 def header(titulo, sub, ativo):
     abas = ["Visão geral", "Projetos", "Fluxo e gargalos", "Pessoas e esforço"]
     tabs = "".join(f'<div class="tab{" on" if a == ativo else ""}">{a}</div>' for a in abas)
@@ -54,7 +48,6 @@ def card(x, y, w, h, titulo, sub, corpo):
 
 
 def hbars(itens, w, h, cores, fmt=lambda v: br(v), lab=150, pad_top=0):
-    """itens: [(rótulo, valor)] · barras horizontais com rótulo direto, sem eixo."""
     n = len(itens)
     mx = max(v for _, v in itens)
     passo = (h - pad_top) / n
@@ -72,7 +65,6 @@ def hbars(itens, w, h, cores, fmt=lambda v: br(v), lab=150, pad_top=0):
 
 
 def hbars2(itens, w, h, c1, c2, n1, n2, lab=130, fmt=lambda v: br(v)):
-    """duas séries agrupadas horizontais; itens: [(rótulo, v1, v2)]"""
     n = len(itens)
     mx = max(max(a, b) for _, a, b in itens)
     top = 26
@@ -93,7 +85,6 @@ def hbars2(itens, w, h, c1, c2, n1, n2, lab=130, fmt=lambda v: br(v)):
 
 
 def linhas(series, w, h, rotulos, ticks=4, legenda=True):
-    """series: [(nome, valores, cor, destaque)] · linha 2px, grade leve, rótulo direto no último ponto."""
     L, R, top, bot = 36, 70, 30 if legenda else 10, 22
     mx = max(max(v) for _, v, _, _ in series)
     passo = 10 ** len(str(int(mx))) / 10
@@ -146,7 +137,6 @@ def colunas(rotulos, v, w, h, cor, destaque=0):
 
 
 def tabela(cab, linhas_, larg, barras=None):
-    """barras: {índice_coluna: (cor, máximo)} → barra de dados atrás do número"""
     barras = barras or {}
     th = "".join(f'<th style="width:{l}px;text-align:{"right" if i in barras or a == "r" else "left"}">{c}</th>'
                  for i, ((c, a), l) in enumerate(zip(cab, larg)))
@@ -172,7 +162,6 @@ def tabela(cab, linhas_, larg, barras=None):
 PRAZO = {"Atrasado": T["crit"], "Concluído com atraso": T["warn"], "Concluído no prazo": T["good"],
          "No prazo": T["blue"], "Pausado": T["muted"], "Cancelado": T["muted"]}
 
-# ---------- páginas ----------
 def p1():
     meses = [m for m, _ in D["criadas"]]
     ent = dict(D["entregues"])

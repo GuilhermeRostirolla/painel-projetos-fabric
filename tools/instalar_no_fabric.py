@@ -1,16 +1,6 @@
-"""Instala (ou atualiza) os notebooks deste repositório num workspace do Fabric.
+"""Instala/atualiza os notebooks no workspace do Fabric. Rodar numa célula de notebook:
 
-Roda DENTRO de um notebook do Fabric, no workspace de destino. Numa célula:
-
-    import requests; exec(requests.get("https://raw.githubusercontent.com/GuilhermeRostirolla/painel-projetos-fabric/main/tools/instalar_no_fabric.py").text)
-
-O que faz:
-  - baixa fabric/ipynb/*.ipynb do GitHub
-  - já anexa o lakehouse (lh_projetos) como padrão de cada notebook
-  - cria cada notebook pela API REST do Fabric, ou atualiza se já existir com o mesmo nome
-
-Alternativa sem script: integração Git do workspace com a pasta fabric/ (exige token do GitHub).
-"""
+    import requests; exec(requests.get("https://raw.githubusercontent.com/GuilhermeRostirolla/painel-projetos-fabric/main/tools/instalar_no_fabric.py").text)"""
 import base64
 import json
 import time
@@ -24,7 +14,6 @@ NOME_LAKEHOUSE = globals().get("NOME_LAKEHOUSE", "lh_projetos")
 NOTEBOOKS = ["nb_00_orquestrador", "nb_01_bronze_ingestao", "nb_02_silver_tratamento",
              "nb_03_gold_modelo", "nb_04_publicar_modelo"]
 
-# fixa o commit: o raw.githubusercontent.com guarda o ramo em cache por alguns minutos
 _COMMIT = requests.get(f"https://api.github.com/repos/{REPOSITORIO}/commits/{RAMO}", timeout=60).json()["sha"]
 print(f"instalando a partir do commit {_COMMIT[:7]} ({RAMO})")
 
@@ -76,10 +65,7 @@ for _nome in NOTEBOOKS:
 
 print(f"\n{len(NOTEBOOKS)} notebooks prontos, todos com {NOME_LAKEHOUSE} como lakehouse padrão")
 
-# Atenção: não deixe estes notebooks abertos no navegador enquanto instala. O editor guarda um
-# rascunho em cache e o salvamento automático grava esse rascunho por cima da versão nova.
 if globals().get("PUBLICAR", False):
     print("\nrodando nb_04_publicar_modelo (modelo, relatório, medidas e segurança)...")
-    # useRootDefaultLakehouse: o notebook chamado pode ter outro lakehouse padrão (ou este não ter nenhum)
     print(notebookutils.notebook.run("nb_04_publicar_modelo", 3600,  # noqa: F821
                                      {"useRootDefaultLakehouse": True, "RAMO": _COMMIT}))

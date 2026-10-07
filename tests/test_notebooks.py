@@ -34,7 +34,6 @@ def test_codigo_compila(pasta):
 
 @pytest.mark.parametrize("pasta", NOTEBOOKS, ids=lambda p: p.name)
 def test_ipynb_em_dia(pasta):
-    """fabric/ipynb é gerado: se falhar, rode python tools/exportar_ipynb.py"""
     nome = pasta.name.removesuffix(".Notebook")
     gerado = json.loads((RAIZ / "fabric" / "ipynb" / f"{nome}.ipynb").read_text(encoding="utf-8"))
     esperado = [celula(t, l) for t, l in blocos((pasta / "notebook-content.py").read_text(encoding="utf-8"))]

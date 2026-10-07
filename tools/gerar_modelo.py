@@ -1,15 +1,6 @@
-"""Gera o modelo semântico Direct Lake (TMDL) em fabric/PainelProjetos.SemanticModel.
+"""Gera o modelo semântico (TMDL) em fabric/PainelProjetos.SemanticModel.
 
-Fonte da verdade:
-  - colunas e tipos: tools/schema_gold.json (o schema real da gold; um teste garante que não envelheceu)
-  - relacionamentos, formatação e medidas: definidos aqui embaixo
-
-    python tools/gerar_modelo.py
-
-O modelo lê as tabelas da gold pelo SQL analytics endpoint do lakehouse. Os dois valores do
-endpoint ficam em fabric/PainelProjetos.SemanticModel/definition/expressions.tmdl
-(ou use --endpoint e --endpoint-id para já gerar preenchido).
-"""
+    python tools/gerar_modelo.py [--endpoint ... --endpoint-id ...]"""
 import argparse
 import json
 import uuid
@@ -27,7 +18,7 @@ FORMATOS = {"date": "dd/MM/yyyy", "timestamp": "dd/MM/yyyy HH:mm", "double": "#,
 
 TABELAS = ["fato_tarefa", "fato_passagem_status", "dim_projeto", "dim_pessoa",
            "dim_status", "dim_data", "ref_parametros"]
-OCULTAS = {  # chaves e colunas técnicas: o usuário filtra pelas dimensões
+OCULTAS = {
     "fato_tarefa": {"tarefa_id", "projeto_id", "responsavel_id", "status", "data_criacao", "data_conclusao"},
     "fato_passagem_status": {"passagem_id", "tarefa_id", "projeto_id", "pessoa_id", "ordem_etapa", "sequencia"},
     "dim_projeto": {"projeto_id"},
@@ -40,21 +31,19 @@ ORDENAR_POR = {("dim_data", "mes_ano"): "ano_mes", ("dim_data", "dia_semana_nome
                ("dim_status", "status"): "ordem", ("fato_passagem_status", "status"): "ordem_etapa"}
 FORMATO_COLUNA = {("dim_projeto", "percentual_prazo_decorrido"): "0%", ("dim_data", "ano"): "0"}
 
-# (de, para, ativo). Filtros de projeto, pessoa e data chegam às passagens através da fato_tarefa.
 RELACIONAMENTOS = [
     ("fato_tarefa.projeto_id", "dim_projeto.projeto_id", True),
     ("fato_tarefa.responsavel_id", "dim_pessoa.pessoa_id", True),
     ("fato_tarefa.status", "dim_status.status", True),
     ("fato_tarefa.data_criacao", "dim_data.data", True),
-    ("fato_tarefa.data_conclusao", "dim_data.data", False),       # USERELATIONSHIP em "Tarefas Entregues"
+    ("fato_tarefa.data_conclusao", "dim_data.data", False),
     ("fato_passagem_status.tarefa_id", "fato_tarefa.tarefa_id", True),
-    ("fato_passagem_status.data_entrada", "dim_data.data", False),  # "Mudanças de Status"
+    ("fato_passagem_status.data_entrada", "dim_data.data", False),
 ]
 
 INT, PCT, DIAS, HORAS = "#,0", "0.0%", "#,0.0", "#,0"
 REF = "MAX ( ref_parametros[data_referencia] )"
 
-# tabela -> [(nome, pasta, formato, DAX)]
 MEDIDAS = {
     "dim_projeto": [
         ("Projetos", "Portfólio", INT, "COUNTROWS ( dim_projeto )"),
@@ -121,7 +110,6 @@ MEDIDAS = {
     "ref_parametros": [
         ("Data de Referência", "Referência", "dd/MM/yyyy", REF),
         ("Texto Referência", "Referência", None, f'"Dados até " & FORMAT ( {REF}, "dd/MM/yyyy" )'),
-        # linha de contexto embaixo de cada cartão: o número sozinho não diz se é muito ou pouco
         ("Contexto Projetos Ativos", "Contexto dos cartões", None,
          '"de " & FORMAT ( [Projetos] + 0, "#,0" ) & " no portfólio"'),
         ("Contexto Projetos Atrasados", "Contexto dos cartões", None,
@@ -157,7 +145,6 @@ def nome_tmdl(nome: str) -> str:
 def bloco_dax(dax: str, recuo: str) -> str:
     if "\n" not in dax:
         return " " + dax
-    # mesmo recuo do modelo do Painel de Ideias: corpo dois níveis abaixo da medida
     linhas = "\n".join(recuo + "\t\t" + l for l in dax.splitlines())
     return f" ```\n{linhas}\n{recuo}\t\t```"
 
@@ -192,20 +179,15 @@ def tabela(nome: str, colunas: list[list[str]]) -> str:
 
 
 def relacionamentos(schema: dict) -> str:
-    tipos = {f"{t}.{c}": tp for t, cols in schema.items() for c, tp in cols}
     saida = []
     for de, para, ativo in RELACIONAMENTOS:
         saida.append(f"relationship {tag('rel', de, para)}")
         if not ativo:
             saida.append("\tisActive: false")
-        # sem joinOnDateBehavior: Direct Lake não aceita relacionamento "datetime-to-date";
-        # a gold já grava essas colunas como data pura, então a igualdade simples basta
         saida += [f"\tfromColumn: {de}", f"\ttoColumn: {para}", ""]
     return "\n".join(saida)
 
 
-# Segurança por linha: um papel por equipe. O filtro em dim_projeto chega às tarefas e às passagens
-# pelos relacionamentos; no Power BI Service basta colocar cada pessoa no papel da sua equipe.
 PAPEIS = {"Tecnologia": "Tecnologia", "DadosBI": "Dados & BI", "Operacoes": "Operações",
           "Comercial": "Comercial", "PessoasCultura": "Pessoas & Cultura"}
 
