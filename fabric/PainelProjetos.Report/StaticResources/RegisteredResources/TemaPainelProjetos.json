@@ -1,0 +1,33 @@
+{
+  "name": "TemaPainelProjetos",
+  "dataColors": [
+    "#1F5A96",
+    "#1E8A6E",
+    "#D9822B",
+    "#C2413A",
+    "#6B5CA5",
+    "#9AA3AF"
+  ],
+  "foreground": "#1B2430",
+  "foregroundNeutralSecondary": "#5B6573",
+  "background": "#FFFFFF",
+  "backgroundLight": "#F4F6F9",
+  "tableAccent": "#1F5A96",
+  "good": "#1E8A6E",
+  "neutral": "#D9822B",
+  "bad": "#C2413A",
+  "textClasses": {
+    "callout": {
+      "fontFace": "Segoe UI Semibold",
+      "color": "#1B2430"
+    },
+    "title": {
+      "fontFace": "Segoe UI Semibold",
+      "color": "#1B2430"
+    },
+    "label": {
+      "fontFace": "Segoe UI",
+      "color": "#5B6573"
+    }
+  }
+}

@@ -11,13 +11,14 @@
 
 # MARKDOWN ********************
 
-# # 04 · Publicar e conferir o modelo semântico
+# # 04 · Publicar o modelo semântico e o relatório
 #
 # Cria (ou atualiza) o modelo semântico **PainelProjetos** neste workspace pela API REST do Fabric e depois confere cada medida.
 #
 # 1. Descobre sozinho o **SQL analytics endpoint** do lakehouse: ninguém precisa copiar endereço nem GUID.
 # 2. Baixa o TMDL do repositório no GitHub e troca os dois valores do endpoint.
 # 3. Publica a definição e enquadra o modelo (refresh do Direct Lake).
+# 3b. Publica o **relatório** (4 páginas, formato PBIR) ligado ao modelo.
 # 4. **Roda as 37 medidas em DAX** e compara com `docs/valores_esperados.json`, que foi calculado em SQL sem passar pelo DAX.
 #    Se alguma não bater, o notebook falha e mostra qual.
 #
@@ -131,6 +132,43 @@ try:
     print(fabric.list_refresh_requests(NOME_MODELO, workspace=WORKSPACE).head(1).to_string())
 except Exception as erro:  # só informativo
     print(f"não consegui listar o refresh ({erro}); seguindo para a conferência")
+
+# METADATA ********************
+
+# META {
+# META   "language": "python",
+# META   "language_group": "synapse_pyspark"
+# META }
+
+# CELL ********************
+
+# 3b. Relatório (PBIR do repositório), ligado ao modelo deste workspace
+PASTA_RELATORIO = f"fabric/{NOME_MODELO}.Report/"
+modelo_id = next(m["id"] for m in cliente.get(f"v1/workspaces/{WORKSPACE}/semanticModels").json()["value"]
+                 if m["displayName"] == NOME_MODELO)
+partes_relatorio = []
+for caminho in [i["path"] for i in arvore.json()["tree"] if i["type"] == "blob"
+                and i["path"].startswith(PASTA_RELATORIO) and not i["path"].endswith(".platform")]:
+    conteudo = requests.get(f"https://raw.githubusercontent.com/{REPOSITORIO}/{RAMO}/{caminho}", timeout=60).content
+    if caminho.endswith("definition.pbir"):
+        # no repositório o relatório aponta para a pasta do modelo; aqui, para o modelo publicado
+        pbir = json.loads(conteudo)
+        pbir["datasetReference"] = {"byConnection": {"connectionString": f"semanticmodelid={modelo_id}"}}
+        conteudo = json.dumps(pbir).encode("utf-8")
+    partes_relatorio.append({"path": caminho[len(PASTA_RELATORIO):],
+                             "payload": base64.b64encode(conteudo).decode(), "payloadType": "InlineBase64"})
+
+relatorios = cliente.get(f"v1/workspaces/{WORKSPACE}/reports").json()["value"]
+relatorio = next((r for r in relatorios if r["displayName"] == NOME_MODELO), None)
+definicao_relatorio = {"definition": {"format": "PBIR", "parts": partes_relatorio}}
+if relatorio:
+    esperar(cliente.post(f"v1/workspaces/{WORKSPACE}/reports/{relatorio['id']}/updateDefinition",
+                         json=definicao_relatorio), "atualizar o relatório")
+    print(f"relatório {NOME_MODELO} atualizado ({len(partes_relatorio)} arquivos)")
+else:
+    esperar(cliente.post(f"v1/workspaces/{WORKSPACE}/reports",
+                         json={"displayName": NOME_MODELO, **definicao_relatorio}), "criar o relatório")
+    print(f"relatório {NOME_MODELO} criado ({len(partes_relatorio)} arquivos)")
 
 # METADATA ********************
 
