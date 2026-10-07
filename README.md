@@ -1,25 +1,28 @@
 # Painel de Projetos - API + Microsoft Fabric + Power BI
 
-Pipeline que busca dados de uma ferramenta de gestão de projetos por API, trata no Microsoft Fabric (bronze, silver e gold) e entrega um modelo semântico em Direct Lake com um relatório de 4 páginas no Power BI. Modelo e relatório são gerados por código e publicados por notebook.
+Pipeline que busca dados de uma ferramenta de gestão de projetos por API, trata no Microsoft Fabric (bronze, silver e gold) e entrega um modelo semântico em Direct Lake com um relatório executivo de 3 páginas no Power BI. Modelo e relatório são gerados por código e publicados por notebook.
 
-É a continuação do [Painel de Ideias](https://github.com/GuilhermeRostirolla/painel-ideias-powerbi). Lá o dado vinha de um SQL Server; aqui vem de uma API, como num Jira ou ClickUp, então a ingestão precisa lidar com token, paginação, carga incremental e limite de requisições.
+É a continuação do [Painel de Ideias](https://github.com/GuilhermeRostirolla/painel-ideias-powerbi). Lá o dado vinha de um SQL Server; aqui vem de uma API no formato da Central de Iniciativas da AEVO (portfólios, projetos, tarefas e movimentações), então a ingestão precisa lidar com token, paginação, carga incremental e limite de requisições.
 
-![Visão geral](docs/img/visao_geral.png)
+![Portfólio](docs/img/portfolio.png)
 
 ## O que o painel responde
 
-- Quais projetos estão atrasados, quanto e de quem são
-- Quantas tarefas estão vencidas e quanto tempo levam do início ao fim (lead time e ciclo)
-- Em que etapa as tarefas ficam paradas e quanto voltam da revisão
-- Horas estimadas x apontadas por projeto, equipe e pessoa
+- Como está a saúde do portfólio (farol verde, amarelo, vermelho) e em que etapa estão os projetos
+- Quais projetos estão atrasados, quanto e de qual portfólio são
+- Quanto do orçamento já foi consumido e quantos projetos vieram de ideias
+- Quantas tarefas estão vencidas ou impedidas e quanto tempo levam do início ao fim
+- Como projetos e tarefas se distribuem no tempo (Gantt)
 
 ## Dados
 
 Os dados são fictícios: informação de projeto e de desempenho de pessoas é sensível, então montei uma API simulada que se comporta como a de uma ferramenta real (token, paginação, filtro incremental e respostas 429 de vez em quando).
 
-Por trás dela tem um simulador em Python em que cada tarefa passa por uma máquina de estados (Backlog, A Fazer, Em Andamento, Em Revisão, Concluída), com bloqueios, retrabalho e cancelamentos. Cada projeto tem uma "saúde" e um prazo que o gestor prometeu, às vezes otimista demais.
+Os campos seguem a Central de Iniciativas da AEVO: projetos com etapa do portfólio (Planejamento, Execução, Implantação, Concluído), situação (Ativo, Concluído, Arquivado), farol, origem (Ideia, Startup ou direto), gerente, orçamento e etiquetas como "Em espera"; tarefas no kanban Backlog, A fazer, Fazendo, Impedido, Em revisão, Concluído e Arquivada.
 
-Cenário em 30/09/2026: 45 projetos de 5 equipes, 59 pessoas, 1.435 tarefas e 7.633 mudanças de status desde jan/2025. 7 projetos atrasados, 39 tarefas vencidas e esforço 34% acima do estimado.
+Por trás da API tem um simulador em Python em que cada tarefa passa por essa máquina de estados, com impedimentos, retrabalho e arquivamentos. Cada projeto tem uma "saúde" e um prazo que o gerente prometeu, às vezes otimista demais.
+
+Cenário em 30/09/2026: 8 portfólios, 122 projetos, 147 pessoas, 4.467 tarefas e 24.424 movimentações desde jan/2024. 42 projetos ativos, 12 atrasados, 50 tarefas vencidas, R$ 10,3 mi de orçamento e 48 projetos nascidos de ideias.
 
 ## Arquitetura
 
@@ -43,37 +46,33 @@ flowchart LR
 
 - **Bronze (`nb_01`)**: grava cada página da API como veio, com marca d'água por recurso. A marca só avança se todos os recursos forem gravados, então uma falha no meio faz a próxima execução repetir a janela. 429 e 5xx têm nova tentativa respeitando o `Retry-After`. O token fica no Key Vault.
 - **Silver (`nb_02`)**: schema fixo por recurso, textos e datas padronizados, uma linha por registro. Registro com status desconhecido ou chave órfã vai para `silver_rejeitados` com o motivo.
-- **Gold (`nb_03`)**: `fato_tarefa`, `fato_passagem_status` e as dimensões. Ciclo, tempo bloqueado e retrabalho saem do histórico de status. Tudo é medido contra a data de referência gravada nos dados, não contra `TODAY()`, para os números não mudarem sozinhos.
-- **Modelo (`PainelProjetos.SemanticModel`)**: Direct Lake, 7 tabelas, 46 medidas e um papel de RLS por equipe. O TMDL é gerado por `tools/gerar_modelo.py` a partir do schema da gold.
-- **Relatório (`PainelProjetos.Report`)**: PBIR gerado por `tools/gerar_relatorio.py`.
+- **Gold (`nb_03`)**: `fato_tarefa`, `fato_passagem_status` e as dimensões. Ciclo, tempo impedido e retrabalho saem do histórico de movimentações. Tudo é medido contra a data de referência gravada nos dados, não contra `TODAY()`, para os números não mudarem sozinhos.
+- **Modelo (`PainelProjetos.SemanticModel`)**: Direct Lake, 7 tabelas, 54 medidas e um papel de RLS por portfólio (8). O TMDL é gerado por `tools/gerar_modelo.py` a partir do schema da gold.
+- **Relatório (`PainelProjetos.Report`)**: PBIR gerado por `tools/gerar_relatorio.py`, sobre fundos desenhados em HTML (`tools/design`).
 - **Publicação (`nb_04`)**: cria ou atualiza modelo e relatório pela API REST do Fabric, roda as medidas em DAX e compara com valores calculados em SQL (`docs/valores_esperados.json`), e consulta o modelo como cada papel de RLS para conferir o filtro.
 
 ## Páginas
 
-| Projetos | Fluxo e gargalos |
-|---|---|
-| ![Projetos](docs/img/projetos.png) | ![Fluxo e gargalos](docs/img/fluxo.png) |
+- **Portfólio**: visão executiva com farol, entregas x demanda, projetos em risco, desempenho por portfólio e kanban de etapas.
+- **Projetos e tarefas**: andamento de cada projeto e onde as tarefas estão paradas.
+- **Cronograma**: Gantt de projetos que abre nas tarefas, colorido por situação.
 
-| Pessoas e esforço |
-|---|
-| ![Pessoas e esforço](docs/img/pessoas.png) |
+| Projetos e tarefas | Cronograma |
+|---|---|
+| ![Projetos e tarefas](docs/img/projetos_tarefas.png) | ![Cronograma](docs/img/cronograma.png) |
 
 ## Design
 
-A primeira versão do relatório funcionava, mas era feia: tudo no mesmo azul, filtros ocupando uma linha inteira, números soltos e rótulos cortados nas colunas. Antes de mexer no gerador, listei os problemas e desenhei a proposta no Figma (mockup em [`docs/design/`](docs/design/)).
+O relatório é pensado para diretoria: tema escuro, quatro indicadores por página com uma linha de contexto ("29% dos ativos", "103% das horas orçadas já usadas"), cor só com significado (azul para volume, vermelho para atraso, âmbar para impedimento, verde para prazo cumprido) e navegação lateral entre as três páginas.
 
-O que mudou: cabeçalho com título e filtros, cartões com uma linha de contexto ("27% dos ativos", "restam 831 h"), cor só com significado (azul para volume, cinza para referência, vermelho e âmbar para atraso), barras horizontais no lugar de colunas com nomes longos e barras de dados nas tabelas.
-
-| Antes | Proposta |
-|---|---|
-| ![Antes](docs/design/antes_visao_geral.png) | ![Proposta](docs/design/proposta_visao_geral.png) |
+Os cartões, ícones e a grade ficam numa imagem de fundo por página, gerada de um HTML (`tools/design/mockup_redesign.py` e `renderizar_fundos.js`). Os visuais do Power BI são transparentes e posicionados pela mesma grade (`tools/design/layout.py`), então mockup e relatório não se desalinham. O mockup completo está em [`docs/design/redesign.html`](docs/design/redesign.html).
 
 ## Testes
 
 - `pytest`: simulador, API, notebooks, modelo (toda coluna e medida citada no DAX existe) e relatório (todo campo existe, nenhum visual sobreposto).
 - `pytest -m pipeline`: roda os notebooks do Fabric com Spark local e confere a gold contra contas feitas em Python a partir da API.
 - Carga incremental: uma carga completa em 31/08 seguida de uma incremental em 30/09, com 30% das chamadas falhando, gerou a mesma gold que uma carga completa direto em 30/09.
-- No Fabric, o `nb_04` falha se alguma das 46 medidas não bater com o SQL ou se algum papel de RLS enxergar outra equipe.
+- No Fabric, o `nb_04` falha se alguma das medidas não bater com o SQL ou se algum papel de RLS enxergar outro portfólio.
 
 ## Como rodar
 

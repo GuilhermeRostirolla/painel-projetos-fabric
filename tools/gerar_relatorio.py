@@ -173,9 +173,8 @@ class Pagina:
             },
             "visualContainerObjects": {
                 **sem_moldura(),
-                "visualTooltip": [{"properties": {"show": lit(True), "text": lit(rotulo)}}],
                 "visualLink": [{"properties": {"show": lit(True), "type": lit("PageNavigation"),
-                                               "navigationSection": lit(destino)}}],
+                                               "navigationSection": lit(destino), "tooltip": lit(rotulo)}}],
             },
             "drillFilterOtherVisuals": True})
 
