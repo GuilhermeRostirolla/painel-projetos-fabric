@@ -71,3 +71,9 @@ for _nome in NOTEBOOKS:
         print(f"criado      {_nome}")
 
 print(f"\n{len(NOTEBOOKS)} notebooks prontos, todos com {NOME_LAKEHOUSE} como lakehouse padrão")
+
+# Atenção: não deixe estes notebooks abertos no navegador enquanto instala. O editor guarda um
+# rascunho em cache e o salvamento automático grava esse rascunho por cima da versão nova.
+if globals().get("PUBLICAR", False):
+    print("\nrodando nb_04_publicar_modelo (modelo, relatório, medidas e segurança)...")
+    print(notebookutils.notebook.run("nb_04_publicar_modelo", 3600))  # noqa: F821
