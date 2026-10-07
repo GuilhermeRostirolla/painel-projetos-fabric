@@ -110,21 +110,6 @@
                 "Measure": {
                   "Expression": {
                     "SourceRef": {
-                      "Entity": "fato_tarefa"
-                    }
-                  },
-                  "Property": "Tarefas Abertas"
-                }
-              },
-              "queryRef": "fato_tarefa.Tarefas Abertas",
-              "nativeQueryRef": "Abertas",
-              "displayName": "Abertas"
-            },
-            {
-              "field": {
-                "Measure": {
-                  "Expression": {
-                    "SourceRef": {
                       "Entity": "dim_projeto"
                     }
                   },
