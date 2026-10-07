@@ -2,7 +2,7 @@
 
 > **Todo gestor sabe quantos projetos tem. Poucos sabem, sem abrir dez telas, quais estão atrasados, onde as tarefas travam e quanto do orçamento de horas já foi.**
 
-Este projeto busca os dados de uma ferramenta de gestão de projetos **por API**, trata tudo no **Microsoft Fabric** em camadas (bronze, silver e gold) e entrega um **modelo semântico em Direct Lake**, com 37 medidas, pronto para o painel no Power BI.
+Este projeto busca os dados de uma ferramenta de gestão de projetos **por API**, trata tudo no **Microsoft Fabric** em camadas (bronze, silver e gold) e entrega um **modelo semântico em Direct Lake** com 37 medidas e um **relatório do Power BI com 4 páginas**, tudo publicado por código.
 
 É a continuação do [Painel de Ideias](https://github.com/GuilhermeRostirolla/painel-ideias-powerbi): lá o dado nascia num banco SQL Server; aqui ele vem de uma API, como acontece com Jira, Asana, ClickUp e companhia, e o pipeline precisa lidar com tudo que uma API real faz: token, paginação, carga incremental e limite de requisições.
 
@@ -54,6 +54,7 @@ flowchart LR
 | **Silver** (`nb_02`) | Aplica o contrato de dados (schema fixo por recurso), padroniza textos e datas, deixa uma linha por registro e manda o que quebra regra para a quarentena. |
 | **Gold** (`nb_03`) | Star schema para Direct Lake: `fato_tarefa`, `fato_passagem_status`, `dim_projeto`, `dim_pessoa`, `dim_status`, `dim_data` e `ref_parametros`. Confere as próprias contas antes de terminar. |
 | **Orquestrador** (`nb_00`) | Roda as três etapas em sequência. É ele que fica agendado. |
+| **Relatório** (`PainelProjetos.Report`) | 4 páginas em PBIR: Visão Geral, Projetos, Fluxo e gargalos, Pessoas e esforço. Gerado por `tools/gerar_relatorio.py` e publicado pelo `nb_04`. |
 | **Modelo semântico** (`PainelProjetos.SemanticModel`) | Direct Lake sobre a gold: 7 tabelas, 7 relacionamentos e 37 medidas em pastas (Portfólio, Prazo, Tarefas, Tempo, Fluxo, Esforço, Período). Gerado em TMDL por `tools/gerar_modelo.py`. |
 
 ## Decisões que tomei
@@ -77,13 +78,14 @@ flowchart LR
 | **Direct Lake em vez de importação** | O modelo lê as tabelas Delta da gold direto do OneLake: sem cópia dos dados nem agendamento de atualização do modelo. Terminou o orquestrador, o painel já mostra o dado novo. |
 | **Modelo gerado a partir do schema real** | Colunas e tipos vêm de `tools/schema_gold.json`, extraído da gold; um teste falha se a gold mudar e o modelo não acompanhar. Nada de coluna digitada à mão. |
 | **Passagens ligadas à tarefa, não às dimensões** | `fato_passagem_status` se liga à `fato_tarefa`, então filtro de projeto, pessoa ou data chega às duas por um caminho só, sem ambiguidade. Para contar mudanças pela data da mudança, a medida ativa a outra data com `USERELATIONSHIP` e desliga a da criação com `CROSSFILTER`. |
+| **Relatório também é código** | As páginas e os visuais são descritos em Python e viram PBIR. Os testes garantem que todo campo usado existe no modelo, que cada visual cabe na página e que nenhum se sobrepõe a outro. |
 | **Cada medida tem um valor esperado** | `tools/valores_esperados.py` recalcula as 37 medidas em SQL, sem passar pelo DAX, e gera [`docs/valores_esperados.md`](docs/valores_esperados.md). No Power BI, cada cartão tem que bater com essa tabela. |
 | **Notebooks no formato Git do Fabric** | A pasta `fabric/` sincroniza direto com um workspace pela integração com Git: os notebooks são texto, versionados e revisáveis linha a linha. |
 
 ## Como sei que funciona
 
-- **Rodou no Fabric de verdade**: o orquestrador completo (bronze → silver → gold, em Delta) terminou com sucesso, com as conferências da gold passando.
-- **101 testes automatizados**: simulador (coerência, determinismo, calibração), API (token, paginação, incremental, 429), notebooks (formato, sintaxe), modelo semântico (toda coluna e medida citada no DAX existe, relacionamentos sem ambiguidade) e o pipeline inteiro rodando com Spark, incluindo quarentena e exclusões na fonte.
+- **Rodou no Fabric de verdade**: o orquestrador completo (bronze → silver → gold, em Delta) terminou com sucesso; o modelo Direct Lake foi publicado e **as 37 medidas, calculadas em DAX no Fabric, bateram com o cálculo independente em SQL**.
+- **162 testes automatizados**: simulador (coerência, determinismo, calibração), API (token, paginação, incremental, 429), notebooks (formato, sintaxe), modelo semântico (toda coluna e medida citada no DAX existe, relacionamentos sem ambiguidade) e o pipeline inteiro rodando com Spark, incluindo quarentena e exclusões na fonte.
 - **A gold é conferida contra contas feitas à mão**: status, situação de prazo, retrabalho, bloqueios, horas e projetos atrasados são recalculados em Python puro a partir da API e precisam bater com o que o Spark produziu.
 - **Carga incremental = carga completa**: rodei uma carga completa com os dados de 31/08, depois uma incremental com os de 30/09 (com 30% das chamadas falhando de propósito) e comparei a gold, linha a linha, com uma carga completa direta de 30/09. Todas as tabelas ficaram idênticas.
 - **A própria gold se confere**: antes de terminar, o `nb_03` verifica chaves, uma etapa atual por tarefa, tempos não negativos e cobertura do calendário. Se algo não fechar, a execução falha.
@@ -130,7 +132,7 @@ Crie um Azure Key Vault (ou use um existente), adicione o segredo `token-api-pro
    ```
    (Alternativas: integração Git do workspace com a pasta `fabric/`, que exige um token do GitHub, ou importar os `.ipynb` de `fabric/ipynb/` e anexar o lakehouse em cada um.)
 3. Abra o `nb_00_orquestrador`, preencha `URL_API` e `KEY_VAULT_URL`, troque `MODO` para `completo` e rode.
-4. Rode o `nb_04_publicar_modelo`: ele cria o modelo semântico **PainelProjetos** (descobre o SQL endpoint sozinho) e confere as 37 medidas em DAX contra [`docs/valores_esperados.json`](docs/valores_esperados.json).
+4. Rode o `nb_04_publicar_modelo`: ele cria o modelo semântico e o relatório **PainelProjetos** (descobre o SQL endpoint sozinho) e confere as 37 medidas em DAX contra [`docs/valores_esperados.json`](docs/valores_esperados.json).
 5. Volte `MODO` para `incremental` e **agende** o `nb_00` (ex.: todo dia às 6h).
 
 **Quer testar no Fabric antes de publicar a API?** Num notebook com o `lh_projetos` anexado, rode
@@ -142,6 +144,8 @@ Crie um Azure Key Vault (ou use um existente), adicione o segredo `token-api-pro
 - **Direct Lake não aceita relacionamento de data com `joinOnDateBehavior`**: a gold grava as datas sem hora e o modelo usa igualdade simples. Um teste impede que isso volte.
 - **Um notebook só chama outro se os dois tiverem o mesmo lakehouse padrão**: por isso o instalador anexa o `lh_projetos` em todos.
 - **Instalar pacotes na sessão pode quebrar bibliotecas que o Fabric já carregou**: a API de teste roda num processo separado, com dependências isoladas.
+- **O SQL endpoint demora a enxergar tabelas novas**: na primeira publicação o modelo não achou a `fato_tarefa`; depois que o endpoint sincronizou, o mesmo notebook passou. Se acontecer, abra o SQL endpoint do lakehouse e rode o `nb_04` de novo.
+- **A capacidade de avaliação aceita poucas sessões Spark ao mesmo tempo**: sessões interativas esquecidas abertas bloqueiam as próximas (erro 430). Pare a sessão no notebook ou pelo hub de Monitoramento.
 
 ## Estrutura
 
@@ -156,11 +160,13 @@ fabric/
   nb_04_publicar_modelo.Notebook/   publica o modelo e confere as medidas em DAX
   ipynb/                os mesmos notebooks em .ipynb, para importação manual
   PainelProjetos.SemanticModel/   modelo semântico Direct Lake (TMDL, gerado)
+  PainelProjetos.Report/          relatório de 4 páginas (PBIR, gerado)
 tools/
   rodar_local.py        roda os notebooks com Spark local
   comparar_gold.py      compara duas golds linha a linha
   exportar_ipynb.py     gera fabric/ipynb a partir dos notebooks
   gerar_modelo.py       gera o modelo semântico (tabelas, relacionamentos, medidas)
+  gerar_relatorio.py    gera o relatório (páginas e visuais)
   valores_esperados.py  recalcula as medidas em SQL para conferência
   instalar_no_fabric.py instala os notebooks num workspace pela API do Fabric
   testar_no_fabric.py   teste ponta a ponta no Fabric com a API na própria sessão
@@ -173,7 +179,7 @@ Dockerfile, render.yaml publicação da API
 
 - [x] Simulador, API, ingestão e camadas bronze, silver e gold
 - [x] Modelo semântico em **Direct Lake** com 37 medidas e valores esperados para conferência
-- [ ] Relatório: portfólio, prazos, fluxo e gargalos, esforço e pessoas
+- [x] Relatório: portfólio, prazos, fluxo e gargalos, esforço e pessoas
 - [ ] Segurança por linha por equipe
 
 ## Como foi construído

@@ -82,7 +82,7 @@ def ordenar(ref: str, decrescente: bool = True) -> dict:
     return {"sort": [{"field": campo(ref), "direction": "Descending" if decrescente else "Ascending"}]}
 
 
-def moldura(titulo: str | None, fundo: bool = True) -> dict:
+def moldura(titulo: str | None, fundo: bool = True, respiro: float = 8.0) -> dict:
     objetos = {
         "title": [{"properties": {"show": lit(bool(titulo)), **({"text": lit(titulo), "fontColor": cor(COR["texto"]),
                                                                   "fontSize": lit(11.0), "bold": lit(True)}
@@ -92,7 +92,7 @@ def moldura(titulo: str | None, fundo: bool = True) -> dict:
         "border": [{"properties": {"show": lit(fundo), "color": cor("#E3E7ED"), "radius": lit(8.0)}}],
         "dropShadow": [{"properties": {"show": lit(False)}}],
         "visualHeader": [{"properties": {"show": lit(False)}}],
-        "padding": [{"properties": {k: lit(8.0) for k in ("top", "bottom", "left", "right")}}],
+        "padding": [{"properties": {k: lit(respiro) for k in ("top", "bottom", "left", "right")}}],
     }
     return objetos
 
@@ -103,8 +103,8 @@ class Pagina:
     def __init__(self, nome: str, titulo: str, subtitulo: str):
         self.nome, self.titulo = nome, titulo
         self.visuais: list[dict] = []
-        self.texto(titulo, 24, 12, 760, 36, 20, COR["texto"], negrito=True)
-        self.texto(subtitulo, 24, 50, 900, 22, 10.5, COR["suave"])
+        self.texto(titulo, 24, 8, 760, 42, 20, COR["texto"], negrito=True)
+        self.texto(subtitulo, 24, 52, 900, 24, 10.5, COR["suave"])
         self.cartao("Texto Referência", 1036, 18, 220, 46, rotulo=False, tamanho=11.0, cor_valor=COR["suave"],
                     fundo=False)
         self.segmentacao("dim_projeto.equipe", "Equipe", 24, 82, 220, 52)
@@ -129,7 +129,7 @@ class Pagina:
             "visualType": "textbox",
             "objects": {"general": [{"properties": {"paragraphs": [
                 {"textRuns": [{"value": conteudo, "textStyle": estilo}], "horizontalTextAlignment": "left"}]}}]},
-            "visualContainerObjects": moldura(None, fundo=False),
+            "visualContainerObjects": moldura(None, fundo=False, respiro=0.0),
             "drillFilterOtherVisuals": True})
 
     def cartao(self, medida, x, y, w=190, h=96, rotulo=True, tamanho=22.0, cor_valor=None, fundo=True):
@@ -137,7 +137,8 @@ class Pagina:
             "visualType": "card",
             "query": {"queryState": {"Values": {"projections": campos([medida])}}},
             "objects": {
-                "labels": [{"properties": {"fontSize": lit(tamanho), "color": cor(cor_valor or COR["texto"])}}],
+                "labels": [{"properties": {"fontSize": lit(tamanho), "color": cor(cor_valor or COR["texto"]),
+                                           "labelDisplayUnits": lit(1.0)}}],
                 "categoryLabels": [{"properties": {"show": lit(rotulo), "fontSize": lit(9.0),
                                                    "color": cor(COR["suave"])}}],
             },
@@ -156,11 +157,14 @@ class Pagina:
 
     def grafico(self, tipo, titulo, categoria, medidas, x, y, w, h, cores=None, ordem=None,
                 ordem_crescente=False, legenda=True):
-        objetos = {"categoryAxis": [{"properties": {"fontSize": lit(9.0), "labelColor": cor(COR["suave"])}}],
-                   "valueAxis": [{"properties": {"fontSize": lit(9.0), "labelColor": cor(COR["suave"])}}],
+        objetos = {"categoryAxis": [{"properties": {"fontSize": lit(9.0), "labelColor": cor(COR["suave"]),
+                                                    "showAxisTitle": lit(False)}}],
+                   "valueAxis": [{"properties": {"fontSize": lit(9.0), "labelColor": cor(COR["suave"]),
+                                                 "showAxisTitle": lit(False), "labelDisplayUnits": lit(1.0)}}],
                    "legend": [{"properties": {"show": lit(legenda and len(medidas) > 1), "position": lit("Top"),
                                               "fontSize": lit(9.0)}}],
-                   "labels": [{"properties": {"show": lit(tipo != "lineChart"), "fontSize": lit(9.0)}}]}
+                   "labels": [{"properties": {"show": lit(tipo != "lineChart"), "fontSize": lit(9.0),
+                                              "labelDisplayUnits": lit(1.0)}}]}
         if cores:
             objetos["dataPoint"] = [
                 {"properties": {"fill": cor(c)}, "selector": {"metadata": projecao(m)["queryRef"]}}
@@ -206,11 +210,11 @@ def paginas() -> list[Pagina]:
                   [("Tarefas Criadas", "Criadas"), ("Tarefas Entregues", "Entregues")],
                   24, y2, round(meia, 1), 452, cores=[COR["azul"], COR["verde"]], ordem="dim_data.mes_ano",
                   ordem_crescente=True)
-    geral.grafico("clusteredBarChart", "Projetos ativos e atrasados por equipe", "dim_projeto.equipe",
+    geral.grafico("clusteredColumnChart", "Projetos ativos e atrasados por equipe", "dim_projeto.equipe",
                   [("Projetos Ativos", "Ativos"), ("Projetos Atrasados", "Atrasados")],
                   round(36 + meia, 1), y2, round(meia, 1), 220, cores=[COR["azul"], COR["vermelho"]],
                   ordem="Projetos Ativos")
-    geral.grafico("clusteredBarChart", "Situação de prazo dos projetos", "dim_projeto.situacao_prazo",
+    geral.grafico("clusteredColumnChart", "Situação de prazo dos projetos", "dim_projeto.situacao_prazo",
                   ["Projetos"], round(36 + meia, 1), y3, round(meia, 1), 220, cores=[COR["roxo"]],
                   ordem="Projetos", legenda=False)
 
@@ -236,10 +240,12 @@ def paginas() -> list[Pagina]:
                   ["Tarefas Paradas na Etapa"], round(36 + meia, 1), y2, round(meia, 1), 220,
                   cores=[COR["laranja"]], ordem="fato_passagem_status.status", ordem_crescente=True,
                   legenda=False)
-    fluxo.grafico("lineChart", "Mudanças de status e bloqueios por mês", "dim_data.mes_ano",
-                  [("Mudanças de Status", "Mudanças"), ("Bloqueios no Período", "Bloqueios")],
-                  24, y3, LARGURA - 48, 220, cores=[COR["azul"], COR["vermelho"]], ordem="dim_data.mes_ano",
-                  ordem_crescente=True)
+    fluxo.grafico("lineChart", "Mudanças de status por mês", "dim_data.mes_ano",
+                  [("Mudanças de Status", "Mudanças")], 24, y3, round(meia, 1), 220, cores=[COR["azul"]],
+                  ordem="dim_data.mes_ano", ordem_crescente=True, legenda=False)
+    fluxo.grafico("clusteredColumnChart", "Bloqueios por mês", "dim_data.mes_ano",
+                  [("Bloqueios no Período", "Bloqueios")], round(36 + meia, 1), y3, round(meia, 1), 220,
+                  cores=[COR["vermelho"]], ordem="dim_data.mes_ano", ordem_crescente=True, legenda=False)
 
     pessoas = Pagina("P4Pessoas", "Pessoas e esforço",
                      "Carga de cada pessoa e horas apontadas contra o estimado")
