@@ -24,6 +24,10 @@ NOME_LAKEHOUSE = globals().get("NOME_LAKEHOUSE", "lh_projetos")
 NOTEBOOKS = ["nb_00_orquestrador", "nb_01_bronze_ingestao", "nb_02_silver_tratamento",
              "nb_03_gold_modelo", "nb_04_publicar_modelo"]
 
+# fixa o commit: o raw.githubusercontent.com guarda o ramo em cache por alguns minutos
+_COMMIT = requests.get(f"https://api.github.com/repos/{REPOSITORIO}/commits/{RAMO}", timeout=60).json()["sha"]
+print(f"instalando a partir do commit {_COMMIT[:7]} ({RAMO})")
+
 _cliente = FabricRestClient()
 _ws = notebookutils.runtime.context["currentWorkspaceId"]  # noqa: F821 (existe no Fabric)
 
@@ -49,7 +53,7 @@ _lakehouse = next(l for l in _cliente.get(f"v1/workspaces/{_ws}/lakehouses").jso
 _existentes = {n["displayName"]: n["id"] for n in _cliente.get(f"v1/workspaces/{_ws}/notebooks").json()["value"]}
 
 for _nome in NOTEBOOKS:
-    _url = f"https://raw.githubusercontent.com/{REPOSITORIO}/{RAMO}/fabric/ipynb/{_nome}.ipynb"
+    _url = f"https://raw.githubusercontent.com/{REPOSITORIO}/{_COMMIT}/fabric/ipynb/{_nome}.ipynb"
     _nb = requests.get(_url, timeout=60).json()
     _nb["metadata"]["dependencies"] = {"lakehouse": {
         "default_lakehouse": _lakehouse["id"],
@@ -78,4 +82,4 @@ if globals().get("PUBLICAR", False):
     print("\nrodando nb_04_publicar_modelo (modelo, relatório, medidas e segurança)...")
     # useRootDefaultLakehouse: o notebook chamado pode ter outro lakehouse padrão (ou este não ter nenhum)
     print(notebookutils.notebook.run("nb_04_publicar_modelo", 3600,  # noqa: F821
-                                     {"useRootDefaultLakehouse": True}))
+                                     {"useRootDefaultLakehouse": True, "RAMO": _COMMIT}))

@@ -98,13 +98,17 @@ print(f"SQL endpoint: {endpoint['connectionString']} ({endpoint['id']})")
 # CELL ********************
 
 # 2. TMDL do GitHub (repositório público: sem token)
-arvore = requests.get(f"https://api.github.com/repos/{REPOSITORIO}/git/trees/{RAMO}?recursive=1", timeout=60)
+# fixa o commit: o raw.githubusercontent.com guarda o ramo em cache por alguns minutos, e publicar
+# logo depois de um push traria arquivos da versão anterior
+COMMIT = requests.get(f"https://api.github.com/repos/{REPOSITORIO}/commits/{RAMO}", timeout=60).json()["sha"]
+print(f"publicando a partir do commit {COMMIT[:7]} ({RAMO})")
+arvore = requests.get(f"https://api.github.com/repos/{REPOSITORIO}/git/trees/{COMMIT}?recursive=1", timeout=60)
 arvore.raise_for_status()
 caminhos = [i["path"] for i in arvore.json()["tree"]
             if i["type"] == "blob" and i["path"].startswith(PASTA_MODELO) and not i["path"].endswith(".platform")]
 partes = []
 for caminho in caminhos:
-    texto = requests.get(f"https://raw.githubusercontent.com/{REPOSITORIO}/{RAMO}/{caminho}", timeout=60).text
+    texto = requests.get(f"https://raw.githubusercontent.com/{REPOSITORIO}/{COMMIT}/{caminho}", timeout=60).text
     if caminho.endswith("expressions.tmdl"):
         texto = re.sub(r'Sql\.Database\("[^"]*", "[^"]*"\)',
                        f'Sql.Database("{endpoint["connectionString"]}", "{endpoint["id"]}")', texto)
@@ -150,7 +154,7 @@ modelo_id = next(m["id"] for m in cliente.get(f"v1/workspaces/{WORKSPACE}/semant
 partes_relatorio = []
 for caminho in [i["path"] for i in arvore.json()["tree"] if i["type"] == "blob"
                 and i["path"].startswith(PASTA_RELATORIO) and not i["path"].endswith(".platform")]:
-    conteudo = requests.get(f"https://raw.githubusercontent.com/{REPOSITORIO}/{RAMO}/{caminho}", timeout=60).content
+    conteudo = requests.get(f"https://raw.githubusercontent.com/{REPOSITORIO}/{COMMIT}/{caminho}", timeout=60).content
     if caminho.endswith("definition.pbir"):
         # no repositório o relatório aponta para a pasta do modelo; aqui, para o modelo publicado
         pbir = json.loads(conteudo)
@@ -182,7 +186,7 @@ else:
 
 # 4. Cada medida em DAX x valor calculado em SQL
 if CONFERIR_MEDIDAS:
-    url = f"https://raw.githubusercontent.com/{REPOSITORIO}/{RAMO}/docs/valores_esperados.json"
+    url = f"https://raw.githubusercontent.com/{REPOSITORIO}/{COMMIT}/docs/valores_esperados.json"
     esperado = requests.get(url, timeout=60).json()
 
     def avaliar(nomes: list[str], filtro: str | None) -> dict:
