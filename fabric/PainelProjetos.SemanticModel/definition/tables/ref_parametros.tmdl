@@ -54,13 +54,6 @@ table ref_parametros
 		displayFolder: Contexto dos cartões
 		lineageTag: d98cb9fb-7280-5cb6-bc33-6c445f81f386
 
-	measure 'Contexto Orçamento' = ```
-			VAR saldo = [Horas Orçadas] - [Horas Apontadas]
-			RETURN IF ( saldo >= 0, "restam ", "estourou em " ) & FORMAT ( ABS ( saldo ), "#,0" ) & " h"
-			```
-		displayFolder: Contexto dos cartões
-		lineageTag: b2cd1b28-2ef1-5291-bde6-56ec65351399
-
 	column data_referencia
 		dataType: dateTime
 		formatString: dd/MM/yyyy
