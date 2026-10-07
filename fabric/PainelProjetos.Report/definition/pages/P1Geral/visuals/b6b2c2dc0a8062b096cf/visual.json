@@ -3,9 +3,9 @@
   "name": "b6b2c2dc0a8062b096cf",
   "position": {
     "x": 41.0,
-    "y": 158,
+    "y": 156,
     "z": 1000,
-    "height": 22,
+    "height": 26,
     "width": 169.3,
     "tabOrder": 1000
   },
@@ -35,6 +35,37 @@
     },
     "objects": {
       "dataLabels": [
+        {
+          "properties": {
+            "fontSize": {
+              "expr": {
+                "Literal": {
+                  "Value": "9.0D"
+                }
+              }
+            },
+            "color": {
+              "solid": {
+                "color": {
+                  "expr": {
+                    "Literal": {
+                      "Value": "'#5A6472'"
+                    }
+                  }
+                }
+              }
+            },
+            "fontFamily": {
+              "expr": {
+                "Literal": {
+                  "Value": "'Segoe UI'"
+                }
+              }
+            }
+          }
+        }
+      ],
+      "cardTitle": [
         {
           "properties": {
             "fontSize": {

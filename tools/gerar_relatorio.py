@@ -145,9 +145,9 @@ class Pagina:
         self.painel(0, 0, LARGURA, 76, COR["cabecalho"], borda=False, raio=0.0)
         self.texto(titulo, 24, 8, 560, 34, 17, "#FFFFFF", negrito=True)
         self.texto(subtitulo, 24, 42, 560, 24, 9.5, COR["cabecalho_texto"])
-        self.segmentacao("dim_projeto.equipe", "Equipe", 860, 16, 128, 44)
-        self.segmentacao("dim_projeto.status", "Status do projeto", 996, 16, 128, 44)
-        self.valor("Texto Referência", 1134, 26, 130, 26, 9.0, COR["cabecalho_texto"])
+        self.segmentacao("dim_projeto.equipe", "Equipe", 860, 12, 128, 52)
+        self.segmentacao("dim_projeto.status", "Status do projeto", 996, 12, 128, 52)
+        self.cartao_simples("Texto Referência", 1132, 22, 136, 32, 9.0, COR["cabecalho_texto"])
 
     def _id(self) -> str:
         return hashlib.sha1(f"{self.nome}/{len(self.visuais)}".encode()).hexdigest()[:20]
@@ -192,11 +192,24 @@ class Pagina:
             "objects": {
                 "dataLabels": [{"properties": {"fontSize": lit(float(tamanho)), "color": cor(cor_valor),
                                                "fontFamily": lit("Segoe UI Semibold" if negrito else "Segoe UI")}}],
+                # medida de texto aparece como título do cartão, que tem estilo próprio (azul por padrão)
+                "cardTitle": [{"properties": {"fontSize": lit(float(tamanho)), "color": cor(cor_valor),
+                                              "fontFamily": lit("Segoe UI Semibold" if negrito else "Segoe UI")}}],
                 "categoryLabels": [{"properties": {"show": lit(False)}}],
                 "card": [{"properties": {"barShow": lit(False), "outline": lit("None"),
                                          "cardPadding": lit(0.0), "cardBackground": cor("#FFFFFF"),
                                          "cardBackgroundTransparency": lit(100.0)}}],
             },
+            "visualContainerObjects": moldura(fundo=None, borda=False, respiro=0.0),
+            "drillFilterOtherVisuals": True})
+
+    def cartao_simples(self, medida, x, y, w, h, tamanho, cor_valor):
+        """cartão clássico sem rótulo nem fundo (centralizado): usado na data de referência"""
+        self._add(x, y, w, h, {
+            "visualType": "card",
+            "query": {"queryState": {"Values": {"projections": campos([medida])}}},
+            "objects": {"labels": [{"properties": {"fontSize": lit(float(tamanho)), "color": cor(cor_valor)}}],
+                        "categoryLabels": [{"properties": {"show": lit(False)}}]},
             "visualContainerObjects": moldura(fundo=None, borda=False, respiro=0.0),
             "drillFilterOtherVisuals": True})
 
@@ -206,9 +219,9 @@ class Pagina:
         self.painel(x, y, w, h, COR["cartao"])
         self.painel(x + 10, y + 14, 3, h - 28, barra, borda=False, raio=2.0)
         self.texto(rotulo.upper(), x + 20, y + 10, w - 28, 20, 8, COR["suave"], negrito=True)
-        self.valor(medida, x + 17, y + 30, w - 26, 36, 20, COR["texto"], negrito=True)
+        self.valor(medida, x + 17, y + 30, w - 26, 34, 20, COR["texto"], negrito=True)
         if contexto in TABELA_DA_MEDIDA:
-            self.valor(contexto, x + 17, y + 66, w - 26, 22, 9, cor_contexto)
+            self.valor(contexto, x + 17, y + 64, w - 26, 26, 9, cor_contexto)
         else:
             self.texto(contexto, x + 20, y + 66, w - 28, 22, 9, cor_contexto)
 
@@ -239,13 +252,14 @@ class Pagina:
         objetos = {
             "categoryAxis": [{"properties": {"show": lit(True), "fontSize": lit(9.0 if horizontal else 8.0),
                                              "labelColor": cor(COR["texto"] if horizontal else COR["apagado"]),
-                                             "showAxisTitle": lit(False), "innerPadding": lit(28.0 if barras else 0.0)}}],
+                                             "showAxisTitle": lit(False), "innerPadding": lit(28.0 if barras else 0.0),
+                                             "maxMarginFactor": lit(45 if horizontal else 25)}}],
             # barras: sem eixo de valor nem grade (o rótulo na ponta já diz o número); linha: grade bem clara
             "valueAxis": [{"properties": {"show": lit(not barras), "fontSize": lit(8.0),
                                           "labelColor": cor(COR["apagado"]), "showAxisTitle": lit(False),
                                           "labelDisplayUnits": lit(1.0), "gridlineShow": lit(not barras),
                                           "gridlineColor": cor(COR["grade"]), "gridlineStyle": lit("solid")}}],
-            "legend": [{"properties": {"show": lit(len(medidas) > 1), "position": lit("TopLeft"),
+            "legend": [{"properties": {"show": lit(len(medidas) > 1), "position": lit("Top"),
                                        "fontSize": lit(8.0), "labelColor": cor(COR["suave"])}}],
             "labels": [{"properties": {"show": lit(barras), "fontSize": lit(8.5), "color": cor(COR["texto"]),
                                        "labelDisplayUnits": lit(1.0)}}],
@@ -254,8 +268,11 @@ class Pagina:
             objetos["lineStyles"] = [{"properties": {"strokeWidth": lit(2.0), "showMarker": lit(False)}}]
         pontos = []
         nomes = [m if isinstance(m, str) else m[0] for m in medidas]
-        for m, c in zip(nomes, cores or []):
-            pontos.append({"properties": {"fill": cor(c)}, "selector": {"metadata": projecao(m)["queryRef"]}})
+        if len(nomes) == 1 and cores:
+            pontos.append({"properties": {"defaultColor": cor(cores[0])}})
+        else:
+            for m, c in zip(nomes, cores or []):
+                pontos.append({"properties": {"fill": cor(c)}, "selector": {"metadata": projecao(m)["queryRef"]}})
         for valor_categoria, c in (destaques or {}).items():
             pontos.append({"properties": {"fill": cor(c)}, "selector": quando(categoria, valor_categoria)})
         if pontos:
