@@ -6,7 +6,7 @@
     "y": 486,
     "z": 1300,
     "height": 220,
-    "width": 1232,
+    "width": 610.0,
     "tabOrder": 1300
   },
   "visual": {
@@ -48,21 +48,6 @@
               "queryRef": "fato_passagem_status.Mudanças de Status",
               "nativeQueryRef": "Mudanças",
               "displayName": "Mudanças"
-            },
-            {
-              "field": {
-                "Measure": {
-                  "Expression": {
-                    "SourceRef": {
-                      "Entity": "fato_passagem_status"
-                    }
-                  },
-                  "Property": "Bloqueios no Período"
-                }
-              },
-              "queryRef": "fato_passagem_status.Bloqueios no Período",
-              "nativeQueryRef": "Bloqueios",
-              "displayName": "Bloqueios"
             }
           ]
         }
@@ -106,6 +91,13 @@
                   }
                 }
               }
+            },
+            "showAxisTitle": {
+              "expr": {
+                "Literal": {
+                  "Value": "false"
+                }
+              }
             }
           }
         }
@@ -130,6 +122,20 @@
                   }
                 }
               }
+            },
+            "showAxisTitle": {
+              "expr": {
+                "Literal": {
+                  "Value": "false"
+                }
+              }
+            },
+            "labelDisplayUnits": {
+              "expr": {
+                "Literal": {
+                  "Value": "1.0D"
+                }
+              }
             }
           }
         }
@@ -140,7 +146,7 @@
             "show": {
               "expr": {
                 "Literal": {
-                  "Value": "true"
+                  "Value": "false"
                 }
               }
             },
@@ -177,6 +183,13 @@
                   "Value": "9.0D"
                 }
               }
+            },
+            "labelDisplayUnits": {
+              "expr": {
+                "Literal": {
+                  "Value": "1.0D"
+                }
+              }
             }
           }
         }
@@ -199,24 +212,6 @@
           "selector": {
             "metadata": "fato_passagem_status.Mudanças de Status"
           }
-        },
-        {
-          "properties": {
-            "fill": {
-              "solid": {
-                "color": {
-                  "expr": {
-                    "Literal": {
-                      "Value": "'#C2413A'"
-                    }
-                  }
-                }
-              }
-            }
-          },
-          "selector": {
-            "metadata": "fato_passagem_status.Bloqueios no Período"
-          }
         }
       ]
     },
@@ -234,7 +229,7 @@
             "text": {
               "expr": {
                 "Literal": {
-                  "Value": "'Mudanças de status e bloqueios por mês'"
+                  "Value": "'Mudanças de status por mês'"
                 }
               }
             },
