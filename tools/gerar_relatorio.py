@@ -81,14 +81,19 @@ def quando(ref: str, valor: str) -> dict:
                                                  "Right": {"Literal": {"Value": "'" + valor + "'"}}}}}]}
 
 
-def filtro_igual(ref: str, valor: str, nome: str) -> dict:
+def literal(v) -> str:
+    return f"{v}L" if isinstance(v, int) else "'" + str(v) + "'"
+
+
+def filtro_igual(ref: str, valor, nome: str) -> dict:
     tabela, col = ref.split(".", 1)
+    valores = valor if isinstance(valor, list) else [valor]
     return {"filters": [{
         "name": nome, "field": campo(ref), "type": "Categorical",
         "filter": {"Version": 2, "From": [{"Name": "t", "Entity": tabela, "Type": 0}],
                    "Where": [{"Condition": {"In": {
                        "Expressions": [{"Column": {"Expression": {"SourceRef": {"Source": "t"}}, "Property": col}}],
-                       "Values": [[{"Literal": {"Value": "'" + valor + "'"}}]]}}}]},
+                       "Values": [[{"Literal": {"Value": literal(v)}}] for v in valores]}}}]},
         "howCreated": "User"}]}
 
 
@@ -225,10 +230,11 @@ class Pagina:
                                                    "fontColor": cor(COR["apagado"]), "textSize": lit(7.5)}}],
                         "items": [{"properties": {"fontColor": cor(COR["texto"]), "background": cor(COR["campo"]),
                                                   "textSize": lit(9.5), "outlineColor": cor(COR["campo"])}}]},
-            "visualContainerObjects": moldura(fundo=None, borda=False, respiro=4.0),
+            "visualContainerObjects": moldura(fundo=None, borda=False, respiro=2.0),
             "drillFilterOtherVisuals": True})
 
-    def grafico(self, tipo, chave, categoria, medidas, cores=None, destaques=None, ordem=None, ordem_crescente=False):
+    def grafico(self, tipo, chave, categoria, medidas, cores=None, destaques=None, ordem=None, ordem_crescente=False,
+                filtro=None):
         x, y, w, h = self.area(chave)
         barras = tipo not in ("lineChart", "donutChart")
         horizontal = tipo == "clusteredBarChart"
@@ -242,16 +248,16 @@ class Pagina:
                                           "labelColor": cor(COR["apagado"]), "showAxisTitle": lit(False),
                                           "labelDisplayUnits": lit(1.0), "gridlineShow": lit(not barras),
                                           "gridlineColor": cor(COR["grade"]), "gridlineStyle": lit("solid")}}],
-            "legend": [{"properties": {"show": lit(len(medidas) > 1 or tipo == "donutChart"),
-                                       "position": lit("Right" if tipo == "donutChart" else "TopLeft"),
-                                       "fontSize": lit(8.5), "labelColor": cor(COR["suave"])}}],
+            "legend": [{"properties": {"show": lit(len(medidas) > 1), "position": lit("Top"),
+                                       "showTitle": lit(False), "fontSize": lit(8.5),
+                                       "labelColor": cor(COR["suave"])}}],
             "labels": [{"properties": {"show": lit(barras), "fontSize": lit(8.5), "color": cor(COR["texto"]),
                                        "labelDisplayUnits": lit(1.0)}}],
         }
         if tipo == "donutChart":
             objetos = {
                 "legend": objetos["legend"],
-                "labels": [{"properties": {"show": lit(True), "labelStyle": lit("Data value"),
+                "labels": [{"properties": {"show": lit(True), "labelStyle": lit("Category, data value"),
                                            "color": cor(COR["texto"]), "fontSize": lit(9.0),
                                            "labelDisplayUnits": lit(1.0)}}],
                 "slices": [{"properties": {"innerRadiusRatio": lit(72)}}],
@@ -273,8 +279,10 @@ class Pagina:
                                 "Y": {"projections": campos(medidas)}}}
         if ordem:
             query["sortDefinition"] = ordenar(ordem, not ordem_crescente)
+        extra = {"filterConfig": filtro_igual(*filtro, nome=hashlib.sha1(f"{self.nome}/{chave}".encode())
+                                              .hexdigest()[:20])} if filtro else None
         self._add(x, y, w, h, {"visualType": tipo, "query": query, "objects": objetos,
-                               "visualContainerObjects": sem_moldura(), "drillFilterOtherVisuals": True})
+                               "visualContainerObjects": sem_moldura(), "drillFilterOtherVisuals": True}, extra)
 
     def _estilo_tabela(self):
         return {
@@ -355,7 +363,8 @@ def paginas() -> list[Pagina]:
     portfolio.grafico("donutChart", "saude", "dim_projeto.farol", ["Projetos"], destaques=FAROL, ordem="Projetos")
     portfolio.grafico("lineChart", "entregas", "dim_data.mes_ano",
                       [("Tarefas Criadas", "Criadas"), ("Tarefas Entregues", "Entregues")],
-                      cores=[COR["concluido"], COR["azul"]], ordem="dim_data.mes_ano", ordem_crescente=True)
+                      cores=[COR["concluido"], COR["azul"]], ordem="dim_data.mes_ano", ordem_crescente=True,
+                      filtro=("dim_data.ano", [2025, 2026]))
     portfolio.tabela("risco", [("dim_projeto.projeto", "Projeto"), ("dim_projeto.dias_atraso", "Dias")],
                      ordem="dim_projeto.dias_atraso", barras={"dim_projeto.dias_atraso": COR["barra_vermelha"]},
                      filtro=("dim_projeto.situacao_prazo", "Atrasado"))

@@ -110,7 +110,7 @@ MEDIDAS = {
          'CALCULATE ( AVERAGE ( dim_projeto[dias_atraso] ), dim_projeto[situacao_prazo] IN { "Atrasado", "Concluído com atraso" } )'),
         ("Horas Orçadas", "Esforço", HORAS, "SUM ( dim_projeto[horas_orcadas] )"),
         ("% Orçamento Consumido", "Esforço", PCT, "DIVIDE ( [Horas Apontadas], [Horas Orçadas] )"),
-        ("Orçamento", "Portfólio", '"R$" #,0', "SUM ( dim_projeto[orcamento] )"),
+        ("Orçamento", "Portfólio", '"R$" #,0.0,, " mi"', "SUM ( dim_projeto[orcamento] )"),
         ("Projetos Farol Vermelho", "Portfólio", INT, 'CALCULATE ( [Projetos], dim_projeto[farol] = "Vermelho" )'),
         ("Projetos de Ideias", "Portfólio", INT, 'CALCULATE ( [Projetos], dim_projeto[origem] = "Ideia" )'),
     ],
