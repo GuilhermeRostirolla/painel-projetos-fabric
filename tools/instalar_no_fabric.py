@@ -76,4 +76,6 @@ print(f"\n{len(NOTEBOOKS)} notebooks prontos, todos com {NOME_LAKEHOUSE} como la
 # rascunho em cache e o salvamento automático grava esse rascunho por cima da versão nova.
 if globals().get("PUBLICAR", False):
     print("\nrodando nb_04_publicar_modelo (modelo, relatório, medidas e segurança)...")
-    print(notebookutils.notebook.run("nb_04_publicar_modelo", 3600))  # noqa: F821
+    # useRootDefaultLakehouse: o notebook chamado pode ter outro lakehouse padrão (ou este não ter nenhum)
+    print(notebookutils.notebook.run("nb_04_publicar_modelo", 3600,  # noqa: F821
+                                     {"useRootDefaultLakehouse": True}))
