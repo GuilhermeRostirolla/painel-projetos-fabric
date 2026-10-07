@@ -83,7 +83,11 @@ A primeira versão do relatório funcionava, mas era genérica: tudo no mesmo az
 | Colunas com nomes longos quebrando em duas linhas | Barras horizontais, sem eixo de valor: o rótulo na ponta já diz o número |
 | Tabelas cruas | Barras de dados nos dias de atraso e nas horas, e um bloco “Precisam de atenção” na visão geral |
 
-![Proposta no Figma](docs/design/proposta_visao_geral.png)
+| Antes | Proposta no Figma |
+|---|---|
+| ![Antes](docs/design/antes_visao_geral.png) | ![Proposta no Figma](docs/design/proposta_visao_geral.png) |
+
+O resultado publicado no Fabric é a imagem do topo deste README. O arquivo do Figma tem também o diagnóstico completo e o guia de estilo (cores, tipografia e regras), e o mockup em HTML que gerou o Figma está em [`docs/design/redesign.html`](docs/design/redesign.html).
 
 ## Decisões que tomei
 
