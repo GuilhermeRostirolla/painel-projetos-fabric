@@ -111,6 +111,68 @@ table fato_tarefa
 		displayFolder: Período
 		lineageTag: e15e9703-7ff8-50cd-a6e1-c0d9cd29e5ef
 
+	measure '% Tarefas Concluídas' = DIVIDE ( [Tarefas Concluídas], [Tarefas] )
+		formatString: 0.0%
+		displayFolder: Tarefas
+		lineageTag: d61690e2-ac9b-5e51-a144-de8e76b3869b
+
+	measure 'Cronograma Cor' = ```
+			VAR ini = MIN ( dim_data[data] )
+			VAR fim = MAX ( dim_data[data] )
+			VAR ref = MAX ( ref_parametros[data_referencia] )
+			RETURN
+			    IF (
+			        ISINSCOPE ( fato_tarefa[titulo] ),
+			        VAR t_ini = CALCULATE ( MIN ( fato_tarefa[data_criacao] ), REMOVEFILTERS ( dim_data ) )
+			        VAR t_fim = CALCULATE ( MAX ( fato_tarefa[data_conclusao] ), REMOVEFILTERS ( dim_data ) )
+			        VAR situacao = CALCULATE ( MAX ( fato_tarefa[status] ), REMOVEFILTERS ( dim_data ) )
+			        VAR prazo = CALCULATE ( MAX ( fato_tarefa[situacao_prazo] ), REMOVEFILTERS ( dim_data ) )
+			        VAR ate = IF ( ISBLANK ( t_fim ), ref, t_fim )
+			        RETURN
+			            IF (
+			                NOT ISBLANK ( t_ini ) && t_ini <= fim && ate >= ini,
+			                SWITCH (
+			                    TRUE (),
+			                    situacao = "Concluída", "#A9C1DF",
+			                    situacao = "Cancelada", "#D5DAE1",
+			                    situacao = "Bloqueada", "#D29B00",
+			                    prazo = "Vencida", "#C2362F",
+			                    "#2F6DB5"
+			                )
+			            ),
+			        IF (
+			            HASONEVALUE ( dim_projeto[projeto] ),
+			            VAR p_ini = MAX ( dim_projeto[data_inicio] )
+			            VAR p_status = MAX ( dim_projeto[status] )
+			            VAR p_fim =
+			                SWITCH (
+			                    TRUE (),
+			                    NOT ISBLANK ( MAX ( dim_projeto[data_conclusao] ) ), MAX ( dim_projeto[data_conclusao] ),
+			                    p_status = "Cancelado", MAX ( dim_projeto[data_fim_planejada] ),
+			                    MAX ( MAX ( dim_projeto[data_fim_planejada] ), ref )
+			                )
+			            RETURN
+			                IF (
+			                    p_ini <= fim && p_fim >= ini,
+			                    SWITCH (
+			                        TRUE (),
+			                        MAX ( dim_projeto[situacao_prazo] ) = "Atrasado", "#C2362F",
+			                        p_status = "Cancelado", "#D5DAE1",
+			                        p_status = "Concluído", "#A9C1DF",
+			                        p_status = "Pausado", "#C6CFDB",
+			                        "#2F6DB5"
+			                    )
+			                )
+			        )
+			    )
+			```
+		displayFolder: Cronograma
+		lineageTag: d61716e9-2c71-5d26-ae57-ef01654d44e2
+
+	measure Cronograma = IF ( NOT ISBLANK ( [Cronograma Cor] ), " " )
+		displayFolder: Cronograma
+		lineageTag: cfb723ca-37af-514f-a60e-86b637aa5c50
+
 	column tarefa_id
 		dataType: string
 		isHidden

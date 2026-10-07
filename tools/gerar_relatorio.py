@@ -17,13 +17,10 @@ SCHEMA = "https://developer.microsoft.com/json-schemas/fabric/item/report/defini
 TEMA_BASE = "CY26SU04"
 TEMA = "TemaPainelProjetos.json"
 
-COR = {"texto": "#17212B", "suave": "#5A6472", "apagado": "#8A93A0", "fundo": "#F3F5F8", "cartao": "#FFFFFF",
-       "borda": "#E4E8EE", "grade": "#EDF0F4", "cabecalho": "#0F2A44", "cabecalho2": "#1C3A5A",
-       "cabecalho_texto": "#B9C6D6", "azul": "#2F6DB5", "referencia": "#A3ACB9", "neutro": "#B8C4D3",
-       "bom": "#1F8A5B", "atencao": "#D29B00", "atencao_texto": "#9A7000", "critico": "#C2362F",
-       "barra_azul": "#C9DAEE", "barra_vermelha": "#F2C9C6"}
-TOM = {"neutro": (COR["azul"], COR["suave"]), "critico": (COR["critico"], COR["critico"]),
-       "atencao": (COR["atencao"], COR["atencao_texto"]), "bom": (COR["bom"], COR["bom"])}
+COR = {"texto": "#1A202C", "suave": "#5F6B7A", "apagado": "#98A2B3", "fundo": "#F7F8FA", "cartao": "#FFFFFF",
+       "borda": "#ECEEF2", "grade": "#F1F3F5", "azul": "#2F6DB5", "azul_suave": "#EAF1FA", "neutro": "#C6CFDB",
+       "bom": "#1F8A5B", "atencao": "#D29B00", "critico": "#C2362F", "concluido": "#A9C1DF",
+       "cancelado": "#D5DAE1", "barra_azul": "#DCE7F5", "barra_vermelha": "#F6D9D6"}
 
 TABELA_DA_MEDIDA = {m[0]: tabela for tabela, medidas in MEDIDAS.items() for m in medidas}
 
@@ -93,7 +90,7 @@ def filtro_igual(ref: str, valor: str, nome: str) -> dict:
 
 
 def moldura(titulo: str | None = None, subtitulo: str | None = None, fundo: str | None = COR["cartao"],
-            borda: bool = True, raio: float = 10.0, respiro: float = 12.0) -> dict:
+            borda: bool = True, raio: float = 12.0, respiro: float = 12.0) -> dict:
     objetos = {
         "title": [{"properties": {"show": lit(bool(titulo)), **({"text": lit(titulo), "fontColor": cor(COR["texto"]),
                                                                   "fontSize": lit(12.0), "bold": lit(False),
@@ -114,19 +111,28 @@ def moldura(titulo: str | None = None, subtitulo: str | None = None, fundo: str 
 
 class Pagina:
 
-    Y_KPI, H_KPI = 92, 96
-    Y2, Y3, H_LINHA = 204, 460, 244
+    X0, W = 224, 1032
+    Y_KPI, H_KPI = 80, 80
+    Y2 = 176
+    PAGINAS = [("P1Portfolio", "Portfólio"), ("P2ProjetosTarefas", "Projetos e tarefas"), ("P3Cronograma", "Cronograma")]
 
     def __init__(self, nome: str, titulo: str, subtitulo: str):
         self.nome, self.titulo = nome, titulo
         self.visuais: list[dict] = []
         self.fundos: set[str] = set()
-        self.painel(0, 0, LARGURA, 76, COR["cabecalho"], borda=False, raio=0.0)
-        self.texto(titulo, 24, 8, 560, 34, 17, "#FFFFFF", negrito=True)
-        self.texto(subtitulo, 24, 42, 560, 24, 9.5, COR["cabecalho_texto"])
-        self.segmentacao("dim_projeto.equipe", "Equipe", 860, 8, 128, 60)
-        self.segmentacao("dim_projeto.status", "Status do projeto", 996, 8, 128, 60)
-        self.cartao_simples("Texto Referência", 1132, 22, 136, 32, 9.0, COR["cabecalho_texto"])
+        self.cartoes: list[tuple[str, str]] = []
+        self.lateral()
+        self.texto(titulo, self.X0, 14, 380, 32, 16, COR["texto"], negrito=True)
+        self.texto(subtitulo, self.X0, 46, 700, 22, 9, COR["suave"])
+
+    def lateral(self):
+        self.painel(0, 0, 200, ALTURA, COR["cartao"], borda=False, raio=0.0)
+        self.texto("Painel de Projetos", 18, 16, 170, 32, 12, COR["texto"], negrito=True)
+        for i, (destino, rotulo) in enumerate(self.PAGINAS):
+            self.botao(rotulo, destino, 14, 64 + i * 40, 172, 34, ativo=destino == self.nome)
+        self.segmentacao("dim_projeto.equipe", "Equipe", 14, 200, 172, 58)
+        self.segmentacao("dim_projeto.status", "Status do projeto", 14, 266, 172, 58)
+        self.cartao_simples("Texto Referência", 14, 668, 172, 30, 8.0, COR["apagado"])
 
     def _id(self) -> str:
         return hashlib.sha1(f"{self.nome}/{len(self.visuais)}".encode()).hexdigest()[:20]
@@ -144,7 +150,7 @@ class Pagina:
         })
         return nome
 
-    def painel(self, x, y, w, h, fundo, borda=True, raio=10.0):
+    def painel(self, x, y, w, h, fundo, borda=True, raio=12.0):
         nome = self._add(x, y, w, h, {
             "visualType": "textbox",
             "objects": {"general": [{"properties": {"paragraphs": [{"textRuns": [{"value": ""}]}]}}]},
@@ -160,6 +166,41 @@ class Pagina:
             "objects": {"general": [{"properties": {"paragraphs": [
                 {"textRuns": [{"value": conteudo, "textStyle": estilo}], "horizontalTextAlignment": "left"}]}}]},
             "visualContainerObjects": moldura(fundo=None, borda=False, respiro=0.0),
+            "drillFilterOtherVisuals": True})
+
+    def legenda(self, itens, x, y, w, h):
+        runs = []
+        for rotulo, c in itens:
+            runs.append({"value": "■ ", "textStyle": {"fontSize": "11pt", "color": c}})
+            runs.append({"value": rotulo + "     ", "textStyle": {"fontFamily": "Segoe UI", "fontSize": "8.5pt",
+                                                                 "color": COR["suave"]}})
+        self._add(x, y, w, h, {
+            "visualType": "textbox",
+            "objects": {"general": [{"properties": {"paragraphs": [
+                {"textRuns": runs, "horizontalTextAlignment": "right"}]}}]},
+            "visualContainerObjects": moldura(fundo=None, borda=False, respiro=0.0),
+            "drillFilterOtherVisuals": True})
+
+    def botao(self, rotulo, destino, x, y, w, h, ativo=False):
+        padrao = {"id": "default"}
+        self._add(x, y, w, h, {
+            "visualType": "actionButton",
+            "objects": {
+                "icon": [{"properties": {"show": lit(False)}, "selector": padrao}],
+                "text": [{"properties": {"show": lit(True), "text": lit(rotulo), "fontSize": lit(10.0),
+                                         "fontColor": cor(COR["azul"] if ativo else COR["suave"]),
+                                         "fontFamily": lit("Segoe UI Semibold" if ativo else "Segoe UI"),
+                                         "horizontalAlignment": lit("left"), "leftMargin": lit(10.0)},
+                          "selector": padrao}],
+                "fill": [{"properties": {"show": lit(ativo), "fillColor": cor(COR["azul_suave"]),
+                                         "transparency": lit(0.0)}, "selector": padrao}],
+                "outline": [{"properties": {"show": lit(False)}, "selector": padrao}],
+            },
+            "visualContainerObjects": {
+                **moldura(fundo=None, borda=False, respiro=0.0),
+                "visualLink": [{"properties": {"show": lit(True), "type": lit("PageNavigation"),
+                                               "navigationSection": lit(destino)}}],
+            },
             "drillFilterOtherVisuals": True})
 
     def valor(self, medida, x, y, w, h, tamanho, cor_valor, negrito=False):
@@ -188,22 +229,23 @@ class Pagina:
             "visualContainerObjects": moldura(fundo=None, borda=False, respiro=0.0),
             "drillFilterOtherVisuals": True})
 
-    def kpi(self, medida, rotulo, contexto, tom, x, y, w, h):
-        barra, cor_contexto = TOM[tom]
-        self.painel(x, y, w, h, COR["cartao"])
-        self.painel(x + 10, y + 14, 3, h - 28, barra, borda=False, raio=2.0)
-        self.texto(rotulo.upper(), x + 20, y + 8, w - 28, 18, 8, COR["suave"], negrito=True)
-        self.valor(medida, x + 17, y + 26, w - 26, 42, 20, COR["texto"], negrito=True)
-        if contexto in TABELA_DA_MEDIDA:
-            self.valor(contexto, x + 17, y + 68, w - 26, 24, 9, cor_contexto)
-        else:
-            self.texto(contexto, x + 20, y + 68, w - 28, 22, 9, cor_contexto)
-
-    def linha_de_cartoes(self, itens):
-        n, espaco = len(itens), 12
-        w = (LARGURA - 48 - espaco * (n - 1)) / n
-        for i, item in enumerate(itens):
-            self.kpi(*item, 24 + i * (w + espaco), self.Y_KPI, w, self.H_KPI)
+    def faixa_de_cartoes(self, itens):
+        """itens: (medida, rótulo, contexto, alerta). Uma faixa branca dividida em colunas."""
+        x0, y, h = self.X0, self.Y_KPI, self.H_KPI
+        self.painel(x0, y, self.W, h, COR["cartao"])
+        w = self.W / len(itens)
+        for i, (medida, rotulo, contexto, alerta) in enumerate(itens):
+            x = x0 + i * w
+            if i:
+                self.painel(x, y + 16, 1, h - 32, COR["borda"], borda=False, raio=0.0)
+            self.texto(rotulo, x + 18, y + 8, w - 30, 18, 8.5, COR["suave"])
+            self.valor(medida, x + 15, y + 26, w - 26, 32, 18, COR["critico"] if alerta else COR["texto"],
+                       negrito=True)
+            if contexto in TABELA_DA_MEDIDA:
+                self.valor(contexto, x + 15, y + 58, w - 26, 20, 8, COR["apagado"])
+            else:
+                self.texto(contexto, x + 18, y + 58, w - 30, 20, 8, COR["apagado"])
+            self.cartoes.append((medida, contexto))
 
     def segmentacao(self, col, titulo, x, y, w, h):
         self._add(x, y, w, h, {
@@ -211,10 +253,10 @@ class Pagina:
             "query": {"queryState": {"Values": {"projections": campos([col])}}},
             "objects": {"data": [{"properties": {"mode": lit("Dropdown")}}],
                         "header": [{"properties": {"show": lit(True), "text": lit(titulo),
-                                                   "fontColor": cor(COR["cabecalho_texto"]), "textSize": lit(8.0)}}],
-                        "items": [{"properties": {"fontColor": cor("#FFFFFF"), "background": cor(COR["cabecalho2"]),
-                                                  "textSize": lit(10.0)}}]},
-            "visualContainerObjects": moldura(fundo=COR["cabecalho2"], borda=False, raio=6.0, respiro=2.0),
+                                                   "fontColor": cor(COR["apagado"]), "textSize": lit(8.0)}}],
+                        "items": [{"properties": {"fontColor": cor(COR["texto"]), "background": cor(COR["cartao"]),
+                                                  "textSize": lit(9.5), "outlineColor": cor(COR["borda"])}}]},
+            "visualContainerObjects": moldura(fundo=None, borda=False, respiro=2.0),
             "drillFilterOtherVisuals": True})
 
     def grafico(self, tipo, titulo, subtitulo, categoria, medidas, x, y, w, h, cores=None, destaques=None,
@@ -224,7 +266,7 @@ class Pagina:
         objetos = {
             "categoryAxis": [{"properties": {"show": lit(True), "fontSize": lit(9.0 if horizontal else 8.0),
                                              "labelColor": cor(COR["texto"] if horizontal else COR["apagado"]),
-                                             "showAxisTitle": lit(False), "innerPadding": lit(28.0 if barras else 0.0),
+                                             "showAxisTitle": lit(False), "innerPadding": lit(30.0 if barras else 0.0),
                                              "maxMarginFactor": lit(45 if horizontal else 25)}}],
             "valueAxis": [{"properties": {"show": lit(not barras), "fontSize": lit(8.0),
                                           "labelColor": cor(COR["apagado"]), "showAxisTitle": lit(False),
@@ -255,10 +297,10 @@ class Pagina:
         self._add(x, y, w, h, {"visualType": tipo, "query": query, "objects": objetos,
                                "visualContainerObjects": moldura(titulo, subtitulo), "drillFilterOtherVisuals": True})
 
-    def tabela(self, titulo, subtitulo, colunas_, x, y, w, h, ordem, crescente=False, barras=None, filtro=None):
-        objetos = {
-            "columnHeaders": [{"properties": {"fontColor": cor(COR["suave"]), "bold": lit(True),
-                                              "backColor": cor(COR["cartao"]), "fontSize": lit(8.5),
+    def _estilo_tabela(self):
+        return {
+            "columnHeaders": [{"properties": {"fontColor": cor(COR["apagado"]), "bold": lit(True),
+                                              "backColor": cor(COR["cartao"]), "fontSize": lit(8.0),
                                               "outline": lit("BottomOnly")}}],
             "values": [{"properties": {"fontSize": lit(9.0), "fontColorPrimary": cor(COR["texto"]),
                                        "fontColorSecondary": cor(COR["texto"]),
@@ -267,8 +309,10 @@ class Pagina:
             "grid": [{"properties": {"gridHorizontal": lit(True), "gridHorizontalColor": cor(COR["grade"]),
                                      "gridVertical": lit(False), "outlineColor": cor(COR["borda"]),
                                      "rowPadding": lit(6)}}],
-            "total": [{"properties": {"totals": lit(False)}}],
         }
+
+    def tabela(self, titulo, subtitulo, colunas_, x, y, w, h, ordem, crescente=False, barras=None, filtro=None):
+        objetos = {**self._estilo_tabela(), "total": [{"properties": {"totals": lit(False)}}]}
         if barras:
             objetos["columnFormatting"] = [
                 {"properties": {"dataBars": {"positiveColor": cor(c), "negativeColor": cor(COR["barra_vermelha"]),
@@ -286,115 +330,109 @@ class Pagina:
             "visualContainerObjects": moldura(titulo, subtitulo),
             "drillFilterOtherVisuals": True}, extra)
 
+    def gantt(self, x, y, w, h):
+        """Matriz projeto > tarefa × mês; a célula é pintada pela medida Cronograma Cor."""
+        celula = projecao("Cronograma")
+        cor_da_medida = {"solid": {"color": {"expr": campo("Cronograma Cor")}}}
+        todas = {"data": [{"dataViewWildcard": {"matchingOption": 1}}], "metadata": celula["queryRef"]}
+        objetos = {
+            **self._estilo_tabela(),
+            "rowHeaders": [{"properties": {"fontSize": lit(9.0), "fontColor": cor(COR["texto"]),
+                                           "showExpandCollapseButtons": lit(True), "wordWrap": lit(False)}}],
+            "columnHeaders": [{"properties": {"fontColor": cor(COR["apagado"]), "fontSize": lit(8.0),
+                                              "backColor": cor(COR["cartao"]), "alignment": lit("Center"),
+                                              "outline": lit("BottomOnly")}}],
+            "values": [{"properties": {"fontSize": lit(8.0), "backColorPrimary": cor(COR["cartao"]),
+                                       "backColorSecondary": cor(COR["cartao"])}},
+                       {"properties": {"backColor": cor_da_medida, "fontColor": cor_da_medida},
+                        "selector": todas}],
+            "grid": [{"properties": {"gridHorizontal": lit(True), "gridHorizontalColor": cor(COR["grade"]),
+                                     "gridVertical": lit(False), "rowPadding": lit(5)}}],
+            "subTotals": [{"properties": {"rowSubtotals": lit(False), "columnSubtotals": lit(False)}}],
+            "total": [{"properties": {"totals": lit(False)}}],
+        }
+        self._add(x, y, w, h, {
+            "visualType": "pivotTable",
+            "query": {"queryState": {
+                "Rows": {"projections": [projecao("dim_projeto.projeto", "Projeto", ativo=True),
+                                         projecao("fato_tarefa.titulo", "Tarefa")]},
+                "Columns": {"projections": [projecao("dim_data.mes_ano", "Mês", ativo=True)]},
+                "Values": {"projections": [celula]}},
+                "sortDefinition": ordenar("dim_projeto.projeto", decrescente=False)},
+            "objects": objetos,
+            "visualContainerObjects": moldura(None),
+            "drillFilterOtherVisuals": True})
+
 
 SITUACAO = {"Atrasado": COR["critico"], "Concluído com atraso": COR["atencao"]}
+ETAPAS_ABERTAS = {"Bloqueada": COR["critico"]}
 
 
 def paginas() -> list[Pagina]:
-    y2, y3, h = Pagina.Y2, Pagina.Y3, Pagina.H_LINHA
-    alto = y3 + h - y2
+    x0, W, y2 = Pagina.X0, Pagina.W, Pagina.Y2
+    meia = (W - 16) / 2
+    alto = ALTURA - 16 - y2
 
-    geral = Pagina("P1Geral", "Painel de Projetos", "Portfólio, prazos e entregas - dados simulados de uma "
-                                                     "ferramenta de gestão de projetos")
-    geral.linha_de_cartoes([
-        ("Projetos Ativos", "Projetos ativos", "Contexto Projetos Ativos", "neutro"),
-        ("Projetos Atrasados", "Projetos atrasados", "Contexto Projetos Atrasados", "critico"),
-        ("Tarefas Abertas", "Tarefas abertas", "Contexto Tarefas Abertas", "neutro"),
-        ("Tarefas Vencidas", "Tarefas vencidas", "Contexto Tarefas Vencidas", "critico"),
-        ("% Entregues no Prazo", "Entregues no prazo", "das tarefas concluídas", "neutro"),
-        ("Desvio de Esforço %", "Desvio de esforço", "horas apontadas vs. estimadas", "atencao")])
-    geral.grafico("lineChart", "Tarefas criadas × entregues por mês",
-                  "Entregas (azul) acompanhando a demanda (cinza)", "dim_data.mes_ano",
-                  [("Tarefas Criadas", "Criadas"), ("Tarefas Entregues", "Entregues")],
-                  24, y2, 760, h, cores=[COR["referencia"], COR["azul"]], ordem="dim_data.mes_ano",
-                  ordem_crescente=True)
-    geral.grafico("clusteredBarChart", "Projetos ativos e atrasados por equipe",
-                  "Vermelho: já passaram do fim planejado", "dim_projeto.equipe",
-                  [("Projetos Ativos", "Ativos"), ("Projetos Atrasados", "Atrasados")],
-                  796, y2, 460, h, cores=[COR["azul"], COR["critico"]], ordem="Projetos Ativos")
-    geral.grafico("clusteredBarChart", "Situação de prazo do portfólio",
-                  "Vermelho e âmbar pedem ação", "dim_projeto.situacao_prazo", ["Projetos"],
-                  24, y3, 460, h, cores=[COR["neutro"]], destaques=SITUACAO, ordem="Projetos")
-    geral.tabela("Precisam de atenção", "Projetos em andamento que já passaram do fim planejado",
-                 [("dim_projeto.projeto", "Projeto"), ("dim_projeto.equipe", "Equipe"),
-                  ("dim_projeto.gestor", "Gestor"), ("dim_projeto.data_fim_planejada", "Fim planejado"),
-                  ("dim_projeto.dias_atraso", "Dias de atraso")],
-                 496, y3, 760, h, ordem="dim_projeto.dias_atraso",
-                 barras={"dim_projeto.dias_atraso": COR["barra_vermelha"]},
-                 filtro=("dim_projeto.situacao_prazo", "Atrasado"))
+    portfolio = Pagina("P1Portfolio", "Portfólio", "Situação dos projetos por equipe, prazo e esforço")
+    portfolio.faixa_de_cartoes([
+        ("Projetos Ativos", "Projetos ativos", "Contexto Projetos Ativos", False),
+        ("Projetos Atrasados", "Projetos atrasados", "Contexto Projetos Atrasados", True),
+        ("% Entregues no Prazo", "Entregues no prazo", "das tarefas concluídas", False),
+        ("% Orçamento Consumido", "Orçamento consumido", "Contexto Orçamento", False),
+        ("Desvio de Esforço %", "Desvio de esforço", "apontado vs. estimado", False)])
+    linha2 = 260
+    y3 = y2 + linha2 + 16
+    portfolio.grafico("clusteredBarChart", "Situação de prazo", "Projetos por situação",
+                      "dim_projeto.situacao_prazo", ["Projetos"], x0, y2, meia, linha2, cores=[COR["neutro"]],
+                      destaques=SITUACAO, ordem="Projetos")
+    portfolio.grafico("clusteredBarChart", "Projetos por equipe", "Ativos e atrasados", "dim_projeto.equipe",
+                      [("Projetos Ativos", "Ativos"), ("Projetos Atrasados", "Atrasados")],
+                      x0 + meia + 16, y2, meia, linha2, cores=[COR["azul"], COR["critico"]], ordem="Projetos Ativos")
+    portfolio.grafico("lineChart", "Tarefas criadas e entregues", "Por mês", "dim_data.mes_ano",
+                      [("Tarefas Criadas", "Criadas"), ("Tarefas Entregues", "Entregues")],
+                      x0, y3, meia, ALTURA - 16 - y3, cores=[COR["neutro"], COR["azul"]], ordem="dim_data.mes_ano",
+                      ordem_crescente=True)
+    portfolio.grafico("clusteredBarChart", "Horas por equipe", "Estimadas e apontadas", "dim_pessoa.equipe",
+                      [("Horas Estimadas", "Estimadas"), ("Horas Apontadas", "Apontadas")],
+                      x0 + meia + 16, y3, meia, ALTURA - 16 - y3, cores=[COR["neutro"], COR["azul"]],
+                      ordem="Horas Apontadas")
 
-    projetos = Pagina("P2Projetos", "Projetos", "Quem está atrasado, quanto, e quanto do orçamento de horas já foi")
-    projetos.linha_de_cartoes([
-        ("Projetos", "Projetos", "no portfólio", "neutro"),
-        ("Projetos em Andamento", "Em andamento", "em execução agora", "neutro"),
-        ("Projetos Concluídos", "Concluídos", "já entregues", "bom"),
-        ("% Projetos Atrasados", "% atrasados", "Contexto Atrasados de Ativos", "critico"),
-        ("% Projetos Entregues no Prazo", "Entregues no prazo", "Contexto Entregues no Prazo", "critico"),
-        ("Atraso Médio dos Projetos (dias)", "Atraso médio (dias)", "entre os projetos atrasados", "atencao")])
-    projetos.grafico("clusteredBarChart", "Orçamento de horas consumido",
-                     "% das horas orçadas já apontadas, por equipe", "dim_projeto.equipe",
-                     [("% Orçamento Consumido", "% consumido")], 24, y2, 380, h, cores=[COR["azul"]],
-                     ordem="% Orçamento Consumido")
-    projetos.grafico("clusteredBarChart", "Situação de prazo", "Projetos por situação",
-                     "dim_projeto.situacao_prazo", ["Projetos"], 24, y3, 380, h, cores=[COR["neutro"]],
-                     destaques=SITUACAO, ordem="Projetos")
-    projetos.tabela("Todos os projetos, do maior atraso para o menor",
-                    "Clique numa linha para filtrar o resto da página",
-                    [("dim_projeto.projeto", "Projeto"), ("dim_projeto.equipe", "Equipe"),
-                     ("dim_projeto.situacao_prazo", "Prazo"),
-                     ("dim_projeto.data_fim_planejada", "Fim planejado"), ("dim_projeto.dias_atraso", "Dias de atraso"),
-                     ("% Orçamento Consumido", "% orçamento")],
-                    416, y2, 840, alto, ordem="dim_projeto.dias_atraso",
-                    barras={"dim_projeto.dias_atraso": COR["barra_vermelha"],
-                            "% Orçamento Consumido": COR["barra_azul"]})
+    tarefas = Pagina("P2ProjetosTarefas", "Projetos e tarefas", "Clique num projeto para ver as tarefas dele")
+    tarefas.faixa_de_cartoes([
+        ("Tarefas Abertas", "Tarefas abertas", "Contexto Tarefas Abertas", False),
+        ("Tarefas Vencidas", "Vencidas", "Contexto Tarefas Vencidas", True),
+        ("% Tarefas Concluídas", "Concluídas", "do total de tarefas", False),
+        ("Lead Time Médio (dias)", "Lead time médio (dias)", "da criação à conclusão", False),
+        ("% Concluídas com Retrabalho", "Com retrabalho", "voltaram da revisão", False)])
+    esquerda = 620
+    direita = W - esquerda - 16
+    tarefas.tabela("Projetos", "Do maior atraso para o menor",
+                   [("dim_projeto.projeto", "Projeto"), ("dim_projeto.equipe", "Equipe"),
+                    ("dim_projeto.situacao_prazo", "Prazo"), ("% Tarefas Concluídas", "Concluído"),
+                    ("dim_projeto.dias_atraso", "Dias de atraso")],
+                   x0, y2, esquerda, alto, ordem="dim_projeto.dias_atraso",
+                   barras={"% Tarefas Concluídas": COR["barra_azul"], "dim_projeto.dias_atraso": COR["barra_vermelha"]})
+    tarefas.grafico("clusteredBarChart", "Tarefas abertas por etapa", "Onde estão paradas agora",
+                    "fato_passagem_status.status", ["Tarefas Paradas na Etapa"], x0 + esquerda + 16, y2, direita, 250,
+                    cores=[COR["azul"]], destaques=ETAPAS_ABERTAS, ordem="fato_passagem_status.status",
+                    ordem_crescente=True)
+    tarefas.tabela("Tarefas vencidas", "Mais atrasadas primeiro",
+                   [("fato_tarefa.titulo", "Tarefa"), ("dim_pessoa.pessoa", "Responsável"),
+                    ("fato_tarefa.dias_atraso", "Dias")],
+                   x0 + esquerda + 16, y2 + 266, direita, alto - 266, ordem="fato_tarefa.dias_atraso",
+                   filtro=("fato_tarefa.situacao_prazo", "Vencida"))
 
-    fluxo = Pagina("P3Fluxo", "Fluxo e gargalos", "Tempo em cada etapa, onde as tarefas travam e quanto voltam")
-    fluxo.linha_de_cartoes([
-        ("Lead Time Médio (dias)", "Lead time médio (dias)", "da criação à conclusão", "neutro"),
-        ("Ciclo Médio (dias)", "Ciclo médio (dias)", "do início à conclusão", "neutro"),
-        ("Ciclo Mediano (dias)", "Ciclo mediano (dias)", "metade termina antes disso", "neutro"),
-        ("% Concluídas com Retrabalho", "Com retrabalho", "voltaram da revisão", "atencao"),
-        ("Tarefas Bloqueadas", "Bloqueadas", "tarefas travadas agora", "critico"),
-        ("Paradas há mais de 15 dias", "Paradas > 15 dias", "sem mudar de etapa", "atencao")])
-    bloqueada = {"Bloqueada": COR["critico"]}
-    fluxo.grafico("clusteredBarChart", "Tempo médio em cada etapa (dias)", "Na ordem do fluxo; vermelho: bloqueio",
-                  "fato_passagem_status.status", ["Tempo Médio na Etapa (dias)"], 24, y2, 610, h,
-                  cores=[COR["azul"]], destaques=bloqueada, ordem="fato_passagem_status.status", ordem_crescente=True)
-    fluxo.grafico("clusteredBarChart", "Onde as tarefas estão paradas agora", "Tarefas abertas por etapa atual",
-                  "fato_passagem_status.status", ["Tarefas Paradas na Etapa"], 646, y2, 610, h,
-                  cores=[COR["azul"]], destaques=bloqueada, ordem="fato_passagem_status.status", ordem_crescente=True)
-    fluxo.grafico("lineChart", "Mudanças de status por mês", "Ritmo de trabalho do portfólio", "dim_data.mes_ano",
-                  [("Mudanças de Status", "Mudanças")], 24, y3, 610, h, cores=[COR["azul"]],
-                  ordem="dim_data.mes_ano", ordem_crescente=True)
-    fluxo.grafico("clusteredColumnChart", "Bloqueios por mês", "Tarefas que entraram em bloqueio",
-                  "dim_data.mes_ano", [("Bloqueios no Período", "Bloqueios")], 646, y3, 610, h,
-                  cores=[COR["critico"]], ordem="dim_data.mes_ano", ordem_crescente=True)
-
-    pessoas = Pagina("P4Pessoas", "Pessoas e esforço", "Carga de cada pessoa e horas apontadas contra o estimado")
-    pessoas.linha_de_cartoes([
-        ("Horas Orçadas", "Horas orçadas", "para todo o portfólio", "neutro"),
-        ("Horas Estimadas", "Horas estimadas", "soma das tarefas", "neutro"),
-        ("Horas Apontadas", "Horas apontadas", "Contexto Horas Apontadas", "atencao"),
-        ("% Orçamento Consumido", "Orçamento consumido", "Contexto Orçamento", "atencao"),
-        ("Tarefas Concluídas", "Tarefas concluídas", "Contexto Tarefas Concluídas", "bom"),
-        ("Idade Média das Abertas (dias)", "Idade das abertas (dias)", "média desde a criação", "neutro")])
-    pessoas.grafico("clusteredBarChart", "Horas estimadas × apontadas por equipe",
-                    "Cinza: estimado, azul: apontado", "dim_pessoa.equipe",
-                    [("Horas Estimadas", "Estimadas"), ("Horas Apontadas", "Apontadas")],
-                    24, y2, 460, alto, cores=[COR["referencia"], COR["azul"]], ordem="Horas Apontadas")
-    pessoas.tabela("Carga por pessoa", "Ordenado por tarefas abertas; barras: abertas (azul) e vencidas (vermelho)",
-                   [("dim_pessoa.pessoa", "Pessoa"), ("dim_pessoa.equipe", "Equipe"), ("dim_pessoa.cargo", "Cargo"),
-                    ("Tarefas Abertas", "Abertas"), ("Tarefas Vencidas", "Vencidas"),
-                    ("Tarefas Concluídas", "Concluídas"), ("Horas Apontadas", "Horas"),
-                    ("Desvio de Esforço %", "Desvio")],
-                   496, y2, LARGURA - 496 - 24, alto, ordem="Tarefas Abertas",
-                   barras={"Tarefas Abertas": COR["barra_azul"], "Tarefas Vencidas": COR["barra_vermelha"]})
-    return [geral, projetos, fluxo, pessoas]
+    cronograma = Pagina("P3Cronograma", "Cronograma", "Projetos e tarefas no tempo; use o + para abrir as tarefas")
+    cronograma.legenda([("Em andamento", COR["azul"]), ("Atrasado ou vencida", COR["critico"]),
+                        ("Bloqueada", COR["atencao"]), ("Concluído", COR["concluido"]),
+                        ("Cancelado", COR["cancelado"])], x0 + 400, 18, W - 400, 26)
+    cronograma.gantt(x0, 80, W, ALTURA - 16 - 80)
+    return [portfolio, tarefas, cronograma]
 
 
 def tema() -> dict:
     return {"name": "TemaPainelProjetos",
-            "dataColors": [COR[c] for c in ("azul", "referencia", "bom", "atencao", "critico", "neutro")],
+            "dataColors": [COR[c] for c in ("azul", "neutro", "bom", "atencao", "critico", "concluido")],
             "foreground": COR["texto"], "foregroundNeutralSecondary": COR["suave"],
             "foregroundNeutralTertiary": COR["apagado"], "background": COR["cartao"],
             "backgroundLight": COR["fundo"], "backgroundNeutral": COR["borda"], "tableAccent": COR["azul"],

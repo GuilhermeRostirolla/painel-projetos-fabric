@@ -76,15 +76,21 @@ def test_cabe_na_pagina_e_nao_sobrepoe(pagina):
         assert painel["position"]["z"] < dentro["position"]["z"]
 
 
-@pytest.mark.parametrize("pagina", PAGINAS, ids=lambda p: p.nome)
-def test_cartoes_tem_contexto(pagina):
-    cartoes = [v for v in pagina.visuais if v["visual"]["visualType"] == "multiRowCard"
-               and v["position"]["y"] >= 92 and v["position"]["height"] >= 30]
-    assert len(cartoes) == 6
-    for c in cartoes:
-        embaixo = [v for v in pagina.visuais if abs(v["position"]["x"] - c["position"]["x"]) < 5
-                   and 0 < v["position"]["y"] - c["position"]["y"] < 50 and v["name"] not in pagina.fundos]
-        assert embaixo, f"cartão sem contexto em {pagina.nome}"
+def test_cartoes_tem_contexto():
+    for pagina in PAGINAS[:2]:
+        assert len(pagina.cartoes) == 5, pagina.nome
+        for medida, contexto in pagina.cartoes:
+            assert contexto, f"{medida} sem linha de contexto em {pagina.nome}"
+
+
+def test_tres_paginas_com_navegacao():
+    nomes = [p.nome for p in PAGINAS]
+    assert len(nomes) == 3
+    for pagina in PAGINAS:
+        destinos = [v["visual"]["visualContainerObjects"]["visualLink"][0]["properties"]["navigationSection"]
+                    ["expr"]["Literal"]["Value"].strip("'")
+                    for v in pagina.visuais if v["visual"]["visualType"] == "actionButton"]
+        assert destinos == nomes
 
 
 def test_relatorio_gerado_esta_em_dia(tmp_path):

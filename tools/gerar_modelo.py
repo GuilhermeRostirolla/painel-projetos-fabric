@@ -44,6 +44,57 @@ RELACIONAMENTOS = [
 INT, PCT, DIAS, HORAS = "#,0", "0.0%", "#,0.0", "#,0"
 REF = "MAX ( ref_parametros[data_referencia] )"
 
+CRONOGRAMA_COR = """VAR ini = MIN ( dim_data[data] )
+VAR fim = MAX ( dim_data[data] )
+VAR ref = MAX ( ref_parametros[data_referencia] )
+RETURN
+    IF (
+        ISINSCOPE ( fato_tarefa[titulo] ),
+        VAR t_ini = CALCULATE ( MIN ( fato_tarefa[data_criacao] ), REMOVEFILTERS ( dim_data ) )
+        VAR t_fim = CALCULATE ( MAX ( fato_tarefa[data_conclusao] ), REMOVEFILTERS ( dim_data ) )
+        VAR situacao = CALCULATE ( MAX ( fato_tarefa[status] ), REMOVEFILTERS ( dim_data ) )
+        VAR prazo = CALCULATE ( MAX ( fato_tarefa[situacao_prazo] ), REMOVEFILTERS ( dim_data ) )
+        VAR ate = IF ( ISBLANK ( t_fim ), ref, t_fim )
+        RETURN
+            IF (
+                NOT ISBLANK ( t_ini ) && t_ini <= fim && ate >= ini,
+                SWITCH (
+                    TRUE (),
+                    situacao = "Concluída", "#A9C1DF",
+                    situacao = "Cancelada", "#D5DAE1",
+                    situacao = "Bloqueada", "#D29B00",
+                    prazo = "Vencida", "#C2362F",
+                    "#2F6DB5"
+                )
+            ),
+        IF (
+            HASONEVALUE ( dim_projeto[projeto] ),
+            VAR p_ini = MAX ( dim_projeto[data_inicio] )
+            VAR p_status = MAX ( dim_projeto[status] )
+            VAR p_fim =
+                SWITCH (
+                    TRUE (),
+                    NOT ISBLANK ( MAX ( dim_projeto[data_conclusao] ) ), MAX ( dim_projeto[data_conclusao] ),
+                    p_status = "Cancelado", MAX ( dim_projeto[data_fim_planejada] ),
+                    MAX ( MAX ( dim_projeto[data_fim_planejada] ), ref )
+                )
+            RETURN
+                IF (
+                    p_ini <= fim && p_fim >= ini,
+                    SWITCH (
+                        TRUE (),
+                        MAX ( dim_projeto[situacao_prazo] ) = "Atrasado", "#C2362F",
+                        p_status = "Cancelado", "#D5DAE1",
+                        p_status = "Concluído", "#A9C1DF",
+                        p_status = "Pausado", "#C6CFDB",
+                        "#2F6DB5"
+                    )
+                )
+        )
+    )"""
+
+SEM_CONFERENCIA = {"Cronograma"}
+
 MEDIDAS = {
     "dim_projeto": [
         ("Projetos", "Portfólio", INT, "COUNTROWS ( dim_projeto )"),
@@ -90,6 +141,9 @@ MEDIDAS = {
         ("Tarefas Entregues", "Período", INT,
          "CALCULATE ( [Tarefas Concluídas], USERELATIONSHIP ( fato_tarefa[data_conclusao], dim_data[data] ) )"),
         ("Saldo do Período", "Período", "+#,0;-#,0;0", "[Tarefas Criadas] - [Tarefas Entregues]"),
+        ("% Tarefas Concluídas", "Tarefas", PCT, "DIVIDE ( [Tarefas Concluídas], [Tarefas] )"),
+        ("Cronograma Cor", "Cronograma", None, CRONOGRAMA_COR),
+        ("Cronograma", "Cronograma", None, 'IF ( NOT ISBLANK ( [Cronograma Cor] ), " " )'),
     ],
     "fato_passagem_status": [
         ("Tempo Médio na Etapa (dias)", "Fluxo", DIAS,

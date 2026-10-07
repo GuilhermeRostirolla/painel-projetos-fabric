@@ -36,6 +36,7 @@ As medidas de período usam o mês **09/2026** num filtro de `dim_data[mes_ano]`
 | Período | Tarefas Criadas | 167 | mês 09/2026 |
 | Período | Tarefas Entregues | 175 | mês 09/2026 |
 | Período | Saldo do Período | -8 | mês 09/2026 |
+| Tarefas | % Tarefas Concluídas | 86,1% | sem filtro |
 | Fluxo | Tempo Médio na Etapa (dias) | 4,4 | sem filtro |
 | Fluxo | Tarefas Paradas na Etapa | 140 | sem filtro |
 | Fluxo | Paradas há mais de 15 dias | 27 | sem filtro |
