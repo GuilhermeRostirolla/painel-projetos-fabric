@@ -92,10 +92,6 @@ SQL = {
     "Contexto Horas Apontadas": """SELECT concat(CASE WHEN r >= 0 THEN '+' ELSE '-' END, cast(abs(round(r * 100)) AS INT),
                                   '% vs. o estimado')
                                   FROM (SELECT sum(horas_apontadas) / sum(estimativa_horas) - 1 AS r FROM fato_tarefa)""",
-    "Contexto Orçamento": """SELECT concat(CASE WHEN s >= 0 THEN 'restam ' ELSE 'estourou em ' END,
-                            cast(round(abs(s)) AS BIGINT), ' h')
-                            FROM (SELECT (SELECT sum(horas_orcadas) FROM dim_projeto)
-                                       - (SELECT sum(horas_apontadas) FROM fato_tarefa) AS s)""",
 }
 PERIODO = {"Tarefas Criadas", "Tarefas Entregues", "Saldo do Período", "Mudanças de Status", "Bloqueios no Período"}
 

@@ -188,9 +188,6 @@ MEDIDAS = {
          'FORMAT ( [% Orçamento Consumido] + 0, "0%" ) & " das horas orçadas já usadas"'),
         ("Contexto Projetos de Ideias", "Contexto dos cartões", None,
          'FORMAT ( [Projetos de Ideias] + 0, "#,0" ) & " vieram de ideias"'),
-        ("Contexto Orçamento", "Contexto dos cartões", None,
-         'VAR saldo = [Horas Orçadas] - [Horas Apontadas]\n'
-         'RETURN IF ( saldo >= 0, "restam ", "estourou em " ) & FORMAT ( ABS ( saldo ), "#,0" ) & " h"'),
     ],
 }
 

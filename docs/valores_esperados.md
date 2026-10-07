@@ -57,4 +57,3 @@ As medidas de período usam o mês **09/2026** num filtro de `dim_data[mes_ano]`
 | Contexto dos cartões | Contexto Horas Apontadas | +21% vs. o estimado | sem filtro |
 | Contexto dos cartões | Contexto Orçamento Consumido | 103% das horas orçadas já usadas | sem filtro |
 | Contexto dos cartões | Contexto Projetos de Ideias | 48 vieram de ideias | sem filtro |
-| Contexto dos cartões | Contexto Orçamento | estourou em 1884 h | sem filtro |
