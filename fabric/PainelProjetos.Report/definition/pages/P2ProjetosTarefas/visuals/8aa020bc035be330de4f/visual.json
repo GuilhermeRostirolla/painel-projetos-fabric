@@ -195,26 +195,6 @@
           }
         }
       ],
-      "visualTooltip": [
-        {
-          "properties": {
-            "show": {
-              "expr": {
-                "Literal": {
-                  "Value": "true"
-                }
-              }
-            },
-            "text": {
-              "expr": {
-                "Literal": {
-                  "Value": "'Projetos e tarefas'"
-                }
-              }
-            }
-          }
-        }
-      ],
       "visualLink": [
         {
           "properties": {
@@ -236,6 +216,13 @@
               "expr": {
                 "Literal": {
                   "Value": "'P2ProjetosTarefas'"
+                }
+              }
+            },
+            "tooltip": {
+              "expr": {
+                "Literal": {
+                  "Value": "'Projetos e tarefas'"
                 }
               }
             }
