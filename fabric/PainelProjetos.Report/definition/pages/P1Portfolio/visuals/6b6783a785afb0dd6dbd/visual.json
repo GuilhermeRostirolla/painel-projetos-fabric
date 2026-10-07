@@ -23,11 +23,11 @@
                       "Entity": "dim_projeto"
                     }
                   },
-                  "Property": "situacao_prazo"
+                  "Property": "farol"
                 }
               },
-              "queryRef": "dim_projeto.situacao_prazo",
-              "nativeQueryRef": "situacao_prazo",
+              "queryRef": "dim_projeto.farol",
+              "nativeQueryRef": "farol",
               "active": true
             }
           ]
@@ -174,7 +174,7 @@
                 "color": {
                   "expr": {
                     "Literal": {
-                      "Value": "'#4682F5'"
+                      "Value": "'#1D9A74'"
                     }
                   }
                 }
@@ -194,12 +194,12 @@
                             "Entity": "dim_projeto"
                           }
                         },
-                        "Property": "situacao_prazo"
+                        "Property": "farol"
                       }
                     },
                     "Right": {
                       "Literal": {
-                        "Value": "'No prazo'"
+                        "Value": "'Verde'"
                       }
                     }
                   }
@@ -235,12 +235,12 @@
                             "Entity": "dim_projeto"
                           }
                         },
-                        "Property": "situacao_prazo"
+                        "Property": "farol"
                       }
                     },
                     "Right": {
                       "Literal": {
-                        "Value": "'Concluído com atraso'"
+                        "Value": "'Amarelo'"
                       }
                     }
                   }
@@ -276,94 +276,12 @@
                             "Entity": "dim_projeto"
                           }
                         },
-                        "Property": "situacao_prazo"
+                        "Property": "farol"
                       }
                     },
                     "Right": {
                       "Literal": {
-                        "Value": "'Atrasado'"
-                      }
-                    }
-                  }
-                }
-              }
-            ]
-          }
-        },
-        {
-          "properties": {
-            "fill": {
-              "solid": {
-                "color": {
-                  "expr": {
-                    "Literal": {
-                      "Value": "'#1D9A74'"
-                    }
-                  }
-                }
-              }
-            }
-          },
-          "selector": {
-            "data": [
-              {
-                "scopeId": {
-                  "Comparison": {
-                    "ComparisonKind": 0,
-                    "Left": {
-                      "Column": {
-                        "Expression": {
-                          "SourceRef": {
-                            "Entity": "dim_projeto"
-                          }
-                        },
-                        "Property": "situacao_prazo"
-                      }
-                    },
-                    "Right": {
-                      "Literal": {
-                        "Value": "'Concluído no prazo'"
-                      }
-                    }
-                  }
-                }
-              }
-            ]
-          }
-        },
-        {
-          "properties": {
-            "fill": {
-              "solid": {
-                "color": {
-                  "expr": {
-                    "Literal": {
-                      "Value": "'#5D7398'"
-                    }
-                  }
-                }
-              }
-            }
-          },
-          "selector": {
-            "data": [
-              {
-                "scopeId": {
-                  "Comparison": {
-                    "ComparisonKind": 0,
-                    "Left": {
-                      "Column": {
-                        "Expression": {
-                          "SourceRef": {
-                            "Entity": "dim_projeto"
-                          }
-                        },
-                        "Property": "situacao_prazo"
-                      }
-                    },
-                    "Right": {
-                      "Literal": {
-                        "Value": "'Pausado'"
+                        "Value": "'Vermelho'"
                       }
                     }
                   }
@@ -399,12 +317,12 @@
                             "Entity": "dim_projeto"
                           }
                         },
-                        "Property": "situacao_prazo"
+                        "Property": "farol"
                       }
                     },
                     "Right": {
                       "Literal": {
-                        "Value": "'Cancelado'"
+                        "Value": "'Encerrado'"
                       }
                     }
                   }

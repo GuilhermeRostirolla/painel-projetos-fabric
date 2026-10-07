@@ -25,7 +25,7 @@ def test_exige_token(cliente, cabecalho):
 def test_meta(cliente):
     meta = cliente.get("/v1/meta", headers=AUTH).json()
     assert meta["data_referencia"] == "2026-09-30" and meta["totais"]["tarefas"] > 1000
-    assert meta["impressao_digital"] == "f5e3d8e3c86d9d89"
+    assert meta["impressao_digital"] == "28e6c08d8addd5f4"
 
 
 def test_paginacao_percorre_tudo_sem_repetir(cliente):
@@ -55,19 +55,19 @@ def test_incremental_exige_fuso(cliente):
 
 
 def test_incremental_recusado_em_cadastro_sem_data(cliente):
-    r = cliente.get("/v1/pessoas", params={"atualizado_desde": "2026-09-01T00:00:00-03:00"},
+    r = cliente.get("/v1/usuarios", params={"atualizado_desde": "2026-09-01T00:00:00-03:00"},
                     headers=AUTH)
     assert r.status_code == 400
 
 
 def test_proxima_preserva_filtro(cliente):
-    corpo = cliente.get("/v1/historico", params={"atualizado_desde": "2026-01-01T00:00:00-03:00",
+    corpo = cliente.get("/v1/movimentacoes", params={"atualizado_desde": "2026-01-01T00:00:00-03:00",
                                                  "tamanho": 50}, headers=AUTH).json()
     assert "atualizado_desde" in corpo["proxima"] and "pagina=2" in corpo["proxima"]
 
 
 def test_limite_de_requisicoes():
     cliente = TestClient(criar_app(Config(), token=TOKEN, taxa_falha=1.0))
-    r = cliente.get("/v1/equipes", headers=AUTH)
+    r = cliente.get("/v1/portfolios", headers=AUTH)
     assert r.status_code == 429 and r.headers["Retry-After"] == "1"
     assert cliente.get("/saude").status_code == 200

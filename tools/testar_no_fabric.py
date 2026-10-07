@@ -13,6 +13,7 @@ import requests
 REPOSITORIO = globals().get("REPOSITORIO", "GuilhermeRostirolla/painel-projetos-fabric")
 RAMO = globals().get("RAMO", "main")
 MODO = globals().get("MODO", "completo")
+RECOMECAR = globals().get("RECOMECAR", False)
 PORTA = 8765
 TOKEN_TESTE = "token-teste-local"
 
@@ -43,9 +44,16 @@ for _ in range(60):
 else:
     raise RuntimeError("a API de teste não subiu")
 _meta = requests.get(f"{URL}/v1/meta", headers={"Authorization": f"Bearer {TOKEN_TESTE}"}, timeout=10).json()
-print(f"API de teste no ar em {URL}, impressão digital {_meta['impressao_digital']} (esperado f5e3d8e3c86d9d89)")
+print(f"API de teste no ar em {URL}, impressão digital {_meta['impressao_digital']} (esperado 28e6c08d8addd5f4)")
 
 try:
+    if RECOMECAR:
+        for _pasta in ("Files/bronze",):
+            try:
+                notebookutils.fs.rm(_pasta, True)  # noqa: F821
+                print(f"apagado {_pasta}")
+            except Exception as _erro:
+                print(f"{_pasta} não existia ({type(_erro).__name__})")
     _retorno = notebookutils.notebook.run("nb_00_orquestrador", 3600, {  # noqa: F821
         "URL_API": URL, "TOKEN_API": TOKEN_TESTE, "MODO": MODO})
     print(f"orquestrador terminou: {_retorno}")

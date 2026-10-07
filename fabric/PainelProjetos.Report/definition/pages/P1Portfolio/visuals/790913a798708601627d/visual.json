@@ -23,11 +23,11 @@
                       "Entity": "dim_projeto"
                     }
                   },
-                  "Property": "% Orçamento Consumido"
+                  "Property": "Orçamento"
                 }
               },
-              "queryRef": "dim_projeto.% Orçamento Consumido",
-              "nativeQueryRef": "% Orçamento Consumido"
+              "queryRef": "dim_projeto.Orçamento",
+              "nativeQueryRef": "Orçamento"
             }
           ]
         }

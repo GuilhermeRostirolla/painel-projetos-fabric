@@ -1,0 +1,7 @@
+role TransformacaoDigital
+	modelPermission: read
+
+	tablePermission dim_projeto = [portfolio] = "Transformação Digital"
+
+	annotation PBI_Id = 039368de739c56a891bcca082948581a
+

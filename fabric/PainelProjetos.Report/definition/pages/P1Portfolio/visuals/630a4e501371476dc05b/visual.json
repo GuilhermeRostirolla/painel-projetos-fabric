@@ -20,14 +20,14 @@
                 "Column": {
                   "Expression": {
                     "SourceRef": {
-                      "Entity": "dim_pessoa"
+                      "Entity": "dim_projeto"
                     }
                   },
-                  "Property": "equipe"
+                  "Property": "etapa"
                 }
               },
-              "queryRef": "dim_pessoa.equipe",
-              "nativeQueryRef": "equipe",
+              "queryRef": "dim_projeto.etapa",
+              "nativeQueryRef": "etapa",
               "active": true
             }
           ]
@@ -39,30 +39,14 @@
                 "Measure": {
                   "Expression": {
                     "SourceRef": {
-                      "Entity": "fato_tarefa"
+                      "Entity": "dim_projeto"
                     }
                   },
-                  "Property": "Horas Estimadas"
+                  "Property": "Projetos"
                 }
               },
-              "queryRef": "fato_tarefa.Horas Estimadas",
-              "nativeQueryRef": "Estimadas",
-              "displayName": "Estimadas"
-            },
-            {
-              "field": {
-                "Measure": {
-                  "Expression": {
-                    "SourceRef": {
-                      "Entity": "fato_tarefa"
-                    }
-                  },
-                  "Property": "Horas Apontadas"
-                }
-              },
-              "queryRef": "fato_tarefa.Horas Apontadas",
-              "nativeQueryRef": "Apontadas",
-              "displayName": "Apontadas"
+              "queryRef": "dim_projeto.Projetos",
+              "nativeQueryRef": "Projetos"
             }
           ]
         }
@@ -74,10 +58,10 @@
               "Measure": {
                 "Expression": {
                   "SourceRef": {
-                    "Entity": "fato_tarefa"
+                    "Entity": "dim_projeto"
                   }
                 },
-                "Property": "Horas Apontadas"
+                "Property": "Projetos"
               }
             },
             "direction": "Descending"
@@ -221,7 +205,7 @@
             "show": {
               "expr": {
                 "Literal": {
-                  "Value": "true"
+                  "Value": "false"
                 }
               }
             },
@@ -294,25 +278,7 @@
       "dataPoint": [
         {
           "properties": {
-            "fill": {
-              "solid": {
-                "color": {
-                  "expr": {
-                    "Literal": {
-                      "Value": "'#33415E'"
-                    }
-                  }
-                }
-              }
-            }
-          },
-          "selector": {
-            "metadata": "fato_tarefa.Horas Estimadas"
-          }
-        },
-        {
-          "properties": {
-            "fill": {
+            "defaultColor": {
               "solid": {
                 "color": {
                   "expr": {
@@ -323,9 +289,47 @@
                 }
               }
             }
+          }
+        },
+        {
+          "properties": {
+            "fill": {
+              "solid": {
+                "color": {
+                  "expr": {
+                    "Literal": {
+                      "Value": "'#5D7398'"
+                    }
+                  }
+                }
+              }
+            }
           },
           "selector": {
-            "metadata": "fato_tarefa.Horas Apontadas"
+            "data": [
+              {
+                "scopeId": {
+                  "Comparison": {
+                    "ComparisonKind": 0,
+                    "Left": {
+                      "Column": {
+                        "Expression": {
+                          "SourceRef": {
+                            "Entity": "dim_projeto"
+                          }
+                        },
+                        "Property": "etapa"
+                      }
+                    },
+                    "Right": {
+                      "Literal": {
+                        "Value": "'Concluído'"
+                      }
+                    }
+                  }
+                }
+              }
+            ]
           }
         }
       ]

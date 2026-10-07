@@ -12,9 +12,12 @@ ref table dim_status
 ref table dim_data
 ref table ref_parametros
 
-ref role Tecnologia
-ref role DadosBI
-ref role Operacoes
-ref role Comercial
+ref role TransformacaoDigital
+ref role DadosAnalytics
+ref role ExcelenciaOperacional
+ref role CrescimentoComercial
 ref role PessoasCultura
+ref role ExperienciaCliente
+ref role SustentabilidadeESG
+ref role InovacaoAberta
 

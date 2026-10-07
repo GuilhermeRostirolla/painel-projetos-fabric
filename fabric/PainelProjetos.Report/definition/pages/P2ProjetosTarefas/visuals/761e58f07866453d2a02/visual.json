@@ -38,12 +38,12 @@
                       "Entity": "dim_projeto"
                     }
                   },
-                  "Property": "equipe"
+                  "Property": "portfolio"
                 }
               },
-              "queryRef": "dim_projeto.equipe",
-              "nativeQueryRef": "Equipe",
-              "displayName": "Equipe"
+              "queryRef": "dim_projeto.portfolio",
+              "nativeQueryRef": "Portfólio",
+              "displayName": "Portfólio"
             },
             {
               "field": {
@@ -53,12 +53,27 @@
                       "Entity": "dim_projeto"
                     }
                   },
-                  "Property": "situacao_prazo"
+                  "Property": "etapa"
                 }
               },
-              "queryRef": "dim_projeto.situacao_prazo",
-              "nativeQueryRef": "Prazo",
-              "displayName": "Prazo"
+              "queryRef": "dim_projeto.etapa",
+              "nativeQueryRef": "Etapa",
+              "displayName": "Etapa"
+            },
+            {
+              "field": {
+                "Column": {
+                  "Expression": {
+                    "SourceRef": {
+                      "Entity": "dim_projeto"
+                    }
+                  },
+                  "Property": "farol"
+                }
+              },
+              "queryRef": "dim_projeto.farol",
+              "nativeQueryRef": "Farol",
+              "displayName": "Farol"
             },
             {
               "field": {

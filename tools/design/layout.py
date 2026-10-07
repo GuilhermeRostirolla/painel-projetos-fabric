@@ -11,11 +11,11 @@ COR = {
     "ambar": "#C4851A", "verde": "#1D9A74", "concluido": "#5D7398", "cancelado": "#364259", "neutro": "#33415E",
 }
 
-PAGINAS = [("P1Portfolio", "Portfólio", "Visão executiva do portfólio de projetos"),
+PAGINAS = [("P1Portfolio", "Portfólio", "Visão executiva da Central de Iniciativas da AEVO"),
            ("P2ProjetosTarefas", "Projetos e tarefas", "Andamento de cada projeto e o que está travando as entregas"),
            ("P3Cronograma", "Cronograma", "Projetos e tarefas no tempo")]
 
-SLICERS = [("dim_projeto.equipe", "Equipe", 888, 20, 180, 46),
+SLICERS = [("dim_projeto.portfolio", "Portfólio", 888, 20, 180, 46),
            ("dim_projeto.status", "Status do projeto", 1084, 20, 180, 46)]
 DATA_REF = (660, 30, 210, 26)
 
@@ -27,11 +27,11 @@ def kpis(n):
 
 CARTOES = {
     "P1Portfolio": {
-        "saude": (88, 200, 360, 252, "Saúde do portfólio", "Projetos por situação de prazo"),
+        "saude": (88, 200, 360, 252, "Saúde do portfólio", "Farol dos projetos"),
         "entregas": (464, 200, 500, 252, "Entregas x demanda", "Tarefas criadas e entregues por mês"),
         "risco": (980, 200, 284, 252, "Projetos em risco", "Atrasados, por dias de atraso"),
-        "equipes": (88, 468, 580, 236, "Desempenho por equipe", "Projetos ativos e atrasados"),
-        "esforco": (684, 468, 580, 236, "Esforço por equipe", "Horas estimadas e apontadas"),
+        "equipes": (88, 468, 580, 236, "Desempenho por portfólio", "Projetos ativos e atrasados"),
+        "esforco": (684, 468, 580, 236, "Projetos por etapa", "Kanban do portfólio"),
     },
     "P2ProjetosTarefas": {
         "projetos": (88, 200, 700, 504, "Projetos", "Do maior atraso para o menor; clique para filtrar"),
@@ -45,10 +45,10 @@ CARTOES = {
 
 KPIS = {
     "P1Portfolio": [
-        ("Projetos ativos", "Projetos Ativos", "Contexto Projetos Ativos", "azul", "pasta"),
+        ("Projetos ativos", "Projetos Ativos", "Contexto Projetos de Ideias", "azul", "pasta"),
         ("Projetos atrasados", "Projetos Atrasados", "Contexto Projetos Atrasados", "vermelho", "alerta"),
         ("Entregues no prazo", "% Entregues no Prazo", "das tarefas concluídas", "verde", "check"),
-        ("Orçamento consumido", "% Orçamento Consumido", "Contexto Orçamento", "ambar", "relogio"),
+        ("Orçamento do portfólio", "Orçamento", "Contexto Orçamento Consumido", "ambar", "relogio"),
     ],
     "P2ProjetosTarefas": [
         ("Tarefas abertas", "Tarefas Abertas", "Contexto Tarefas Abertas", "azul", "lista"),
@@ -58,8 +58,8 @@ KPIS = {
     ],
 }
 
-LEGENDA_GANTT = [("Em andamento", "azul"), ("Atrasado ou vencida", "vermelho"), ("Bloqueada", "ambar"),
-                 ("Concluído", "concluido"), ("Cancelado", "cancelado")]
+LEGENDA_GANTT = [("Em andamento", "azul"), ("Atrasado ou vencida", "vermelho"), ("Impedido", "ambar"),
+                 ("Concluído", "concluido"), ("Arquivado", "cancelado")]
 
 
 def area(caixa):

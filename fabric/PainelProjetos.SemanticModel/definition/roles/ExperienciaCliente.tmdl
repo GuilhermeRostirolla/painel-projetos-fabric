@@ -1,0 +1,7 @@
+role ExperienciaCliente
+	modelPermission: read
+
+	tablePermission dim_projeto = [portfolio] = "Experiência do Cliente"
+
+	annotation PBI_Id = 8107ca58e6b55d9fa0abc4d6ebdc1dbc
+

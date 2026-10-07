@@ -13,7 +13,7 @@
 
 # # 01 - Bronze
 #
-# Ingestão da API. Grava cada página como veio (JSON) em Files/bronze, com marca d'água por recurso para a carga incremental.
+# Ingestão da API da AEVO (Central de Iniciativas). Grava cada página como veio (JSON) em Files/bronze, com marca d'água por recurso para a carga incremental.
 # A marca só avança no fim, quando todos os recursos foram gravados.
 
 # PARAMETERS CELL ********************
@@ -43,11 +43,11 @@ from datetime import datetime, timedelta, timezone
 import requests
 
 RECURSOS = {
-    "equipes": None,
-    "pessoas": None,
+    "portfolios": None,
+    "usuarios": None,
     "projetos": "atualizado_em",
     "tarefas": "atualizado_em",
-    "historico": "ocorrido_em",
+    "movimentacoes": "ocorrido_em",
 }
 SOBREPOSICAO = timedelta(minutes=5)
 MAX_TENTATIVAS = 8

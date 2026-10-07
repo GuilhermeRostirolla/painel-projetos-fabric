@@ -41,8 +41,9 @@ spark.conf.set("spark.sql.session.timeZone", "UTC")
 BRONZE = f"{PASTA_ARQUIVOS_SPARK}/bronze"
 
 PRIORIDADES = ["Baixa", "Média", "Alta", "Crítica"]
-STATUS_TAREFA = ["Backlog", "A Fazer", "Em Andamento", "Bloqueada", "Em Revisão", "Concluída", "Cancelada"]
-STATUS_PROJETO = ["Planejamento", "Em Andamento", "Pausado", "Cancelado", "Concluído"]
+ETAPAS_TAREFA = ["Backlog", "A fazer", "Fazendo", "Impedido", "Em revisão", "Concluído", "Arquivada"]
+SITUACOES_PROJETO = ["Ativo", "Concluído", "Arquivado"]
+FAROIS = ["Verde", "Amarelo", "Vermelho", "Encerrado"]
 
 
 def campos(*definicoes: tuple[str, object]) -> StructType:
@@ -51,17 +52,19 @@ def campos(*definicoes: tuple[str, object]) -> StructType:
 
 S, I, D = StringType(), IntegerType(), DoubleType()
 CONTRATOS = {
-    "equipes": campos(("id", I), ("nome", S), ("sigla", S), ("gestor_id", S)),
-    "pessoas": campos(("id", S), ("nome", S), ("email", S), ("equipe_id", I), ("cargo", S),
-                      ("data_admissao", S), ("ativo", BooleanType())),
-    "projetos": campos(("id", S), ("nome", S), ("equipe_id", I), ("gestor_id", S), ("prioridade", S),
-                       ("status", S), ("data_inicio", S), ("data_fim_planejada", S), ("data_conclusao", S),
-                       ("horas_orcadas", I), ("criado_em", S), ("atualizado_em", S)),
-    "tarefas": campos(("id", S), ("projeto_id", S), ("titulo", S), ("tipo", S), ("prioridade", S),
-                      ("responsavel_id", S), ("estimativa_horas", D), ("horas_apontadas", D), ("status", S),
-                      ("criada_em", S), ("prazo", S), ("concluida_em", S), ("atualizado_em", S)),
-    "historico": campos(("id", S), ("tarefa_id", S), ("status_anterior", S), ("status_novo", S),
-                        ("pessoa_id", S), ("ocorrido_em", S)),
+    "portfolios": campos(("id", I), ("nome", S), ("sigla", S), ("dono_id", S), ("etapas", ArrayType(S))),
+    "usuarios": campos(("id", S), ("nome", S), ("email", S), ("portfolio_id", I), ("cargo", S),
+                       ("data_admissao", S), ("ativo", BooleanType())),
+    "projetos": campos(("id", S), ("portfolio_id", I), ("nome", S), ("etapa", S), ("situacao", S),
+                       ("etiquetas", ArrayType(S)), ("farol", S), ("origem", S), ("origem_id", S),
+                       ("gerente_id", S), ("prioridade", S), ("inicio", S), ("limite", S), ("concluido_em", S),
+                       ("horas_orcadas", I), ("orcamento", D), ("criado_em", S), ("atualizado_em", S)),
+    "tarefas": campos(("id", S), ("projeto_id", S), ("titulo", S), ("etapa", S), ("situacao", S),
+                      ("etiquetas", ArrayType(S)), ("responsavel_id", S), ("prioridade", S), ("tipo", S),
+                      ("estimativa_horas", D), ("horas_apontadas", D), ("criada_em", S), ("limite", S),
+                      ("concluida_em", S), ("atualizado_em", S)),
+    "movimentacoes": campos(("id", S), ("tarefa_id", S), ("etapa_anterior", S), ("etapa_nova", S),
+                            ("usuario_id", S), ("ocorrido_em", S)),
     "meta": campos(("versao", S), ("data_referencia", S), ("semente", LongType())),
 }
 
@@ -109,31 +112,33 @@ def prioridade(coluna: str):
 
 # CELL ********************
 
-equipes = mais_recente(ultima_foto(ler_bronze("equipes")), [F.desc("_execucao")]).select(
-    "id", texto("nome").alias("nome"), F.upper(texto("sigla")).alias("sigla"), "gestor_id")
+portfolios = mais_recente(ultima_foto(ler_bronze("portfolios")), [F.desc("_execucao")]).select(
+    "id", texto("nome").alias("nome"), F.upper(texto("sigla")).alias("sigla"), "dono_id", "etapas")
 
-pessoas = mais_recente(ultima_foto(ler_bronze("pessoas")), [F.desc("_execucao")]).select(
-    "id", texto("nome").alias("nome"), F.lower(texto("email")).alias("email"), "equipe_id",
+usuarios = mais_recente(ultima_foto(ler_bronze("usuarios")), [F.desc("_execucao")]).select(
+    "id", texto("nome").alias("nome"), F.lower(texto("email")).alias("email"), "portfolio_id",
     texto("cargo").alias("cargo"), F.to_date("data_admissao").alias("data_admissao"),
     F.coalesce("ativo", F.lit(True)).alias("ativo"))
 
 projetos = mais_recente(ler_bronze("projetos"), [F.desc(instante("atualizado_em")), F.desc("_execucao")]).select(
-    "id", texto("nome").alias("nome"), "equipe_id", "gestor_id",
-    prioridade("prioridade").alias("prioridade"), texto("status").alias("status"),
-    F.to_date("data_inicio").alias("data_inicio"), F.to_date("data_fim_planejada").alias("data_fim_planejada"),
-    F.to_date("data_conclusao").alias("data_conclusao"), "horas_orcadas",
-    instante("criado_em").alias("criado_em"), instante("atualizado_em").alias("atualizado_em"))
+    "id", "portfolio_id", texto("nome").alias("nome"), texto("etapa").alias("etapa"),
+    texto("situacao").alias("situacao"), F.coalesce("etiquetas", F.array().cast("array<string>")).alias("etiquetas"),
+    F.initcap(texto("farol")).alias("farol"), texto("origem").alias("origem"), "origem_id", "gerente_id",
+    prioridade("prioridade").alias("prioridade"), F.to_date("inicio").alias("inicio"),
+    F.to_date("limite").alias("limite"), F.to_date("concluido_em").alias("concluido_em"), "horas_orcadas",
+    "orcamento", instante("criado_em").alias("criado_em"), instante("atualizado_em").alias("atualizado_em"))
 
 tarefas = mais_recente(ler_bronze("tarefas"), [F.desc(instante("atualizado_em")), F.desc("_execucao")]).select(
     "id", "projeto_id", texto("titulo").alias("titulo"), texto("tipo").alias("tipo"),
     prioridade("prioridade").alias("prioridade"), "responsavel_id",
-    "estimativa_horas", "horas_apontadas", texto("status").alias("status"),
-    instante("criada_em").alias("criada_em"), F.to_date("prazo").alias("prazo"),
+    "estimativa_horas", "horas_apontadas", texto("etapa").alias("etapa"), texto("situacao").alias("situacao"),
+    F.coalesce("etiquetas", F.array().cast("array<string>")).alias("etiquetas"),
+    instante("criada_em").alias("criada_em"), F.to_date("limite").alias("limite"),
     instante("concluida_em").alias("concluida_em"), instante("atualizado_em").alias("atualizado_em"))
 
-historico = mais_recente(ler_bronze("historico"), [F.desc("_execucao")]).select(
-    "id", "tarefa_id", texto("status_anterior").alias("status_anterior"),
-    texto("status_novo").alias("status_novo"), "pessoa_id", instante("ocorrido_em").alias("ocorrido_em"))
+movimentacoes = mais_recente(ler_bronze("movimentacoes"), [F.desc("_execucao")]).select(
+    "id", "tarefa_id", texto("etapa_anterior").alias("etapa_anterior"),
+    texto("etapa_nova").alias("etapa_nova"), "usuario_id", instante("ocorrido_em").alias("ocorrido_em"))
 
 meta = (ler_bronze("meta").orderBy(F.desc("_arquivo")).limit(1)
         .select(F.to_date("data_referencia").alias("data_referencia"), "versao", "semente",
@@ -151,25 +156,26 @@ meta = (ler_bronze("meta").orderBy(F.desc("_arquivo")).limit(1)
 ids = lambda df: df.select(F.col("id").alias("_ref"))
 regras = {
     "projetos": [
-        (~F.col("status").isin(STATUS_PROJETO) | F.col("status").isNull(), "status de projeto desconhecido"),
-        (F.col("data_fim_planejada") < F.col("data_inicio"), "fim planejado antes do início"),
+        (~F.col("situacao").isin(SITUACOES_PROJETO) | F.col("situacao").isNull(), "situação de projeto desconhecida"),
+        (~F.col("farol").isin(FAROIS), "farol desconhecido"),
+        (F.col("limite") < F.col("inicio"), "limite antes do início"),
     ],
     "tarefas": [
-        (~F.col("status").isin(STATUS_TAREFA) | F.col("status").isNull(), "status de tarefa desconhecido"),
+        (~F.col("etapa").isin(ETAPAS_TAREFA) | F.col("etapa").isNull(), "etapa de tarefa desconhecida"),
         (F.col("estimativa_horas") < 0, "estimativa negativa"),
         (F.col("horas_apontadas") < 0, "horas negativas"),
     ],
-    "historico": [
-        (~F.col("status_novo").isin(STATUS_TAREFA) | F.col("status_novo").isNull(), "status desconhecido"),
+    "movimentacoes": [
+        (~F.col("etapa_nova").isin(ETAPAS_TAREFA) | F.col("etapa_nova").isNull(), "etapa desconhecida"),
     ],
 }
-chaves = [("pessoas", "equipe_id", "equipes"), ("projetos", "equipe_id", "equipes"),
-          ("projetos", "gestor_id", "pessoas"), ("tarefas", "projeto_id", "projetos"),
-          ("tarefas", "responsavel_id", "pessoas"), ("historico", "tarefa_id", "tarefas"),
-          ("historico", "pessoa_id", "pessoas")]
+chaves = [("usuarios", "portfolio_id", "portfolios"), ("projetos", "portfolio_id", "portfolios"),
+          ("projetos", "gerente_id", "usuarios"), ("tarefas", "projeto_id", "projetos"),
+          ("tarefas", "responsavel_id", "usuarios"), ("movimentacoes", "tarefa_id", "tarefas"),
+          ("movimentacoes", "usuario_id", "usuarios")]
 
-tabelas = {"equipes": equipes, "pessoas": pessoas, "projetos": projetos,
-           "tarefas": tarefas, "historico": historico}
+tabelas = {"portfolios": portfolios, "usuarios": usuarios, "projetos": projetos,
+           "tarefas": tarefas, "movimentacoes": movimentacoes}
 rejeitados = []
 
 

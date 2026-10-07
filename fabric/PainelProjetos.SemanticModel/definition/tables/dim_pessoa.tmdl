@@ -21,12 +21,12 @@ table dim_pessoa
 
 		annotation SummarizationSetBy = Automatic
 
-	column equipe
+	column portfolio
 		dataType: string
-		lineageTag: 805be2b6-6828-59e5-97b3-f803a22d10a6
-		sourceLineageTag: equipe
+		lineageTag: f7322dde-dfe5-5a00-aa97-35b7d852a449
+		sourceLineageTag: portfolio
 		summarizeBy: none
-		sourceColumn: equipe
+		sourceColumn: portfolio
 
 		annotation SummarizationSetBy = Automatic
 

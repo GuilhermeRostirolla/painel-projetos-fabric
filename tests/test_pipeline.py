@@ -12,7 +12,7 @@ from simulador.cenario import Config, gerar  # noqa: E402
 from tools.rodar_local import Executor, criar_spark, subir_api  # noqa: E402
 
 REF = date(2026, 9, 30)
-FINAIS = {"Concluída", "Cancelada"}
+FINAIS = {"Concluído", "Arquivada"}
 
 
 @pytest.fixture(scope="module")
@@ -34,7 +34,7 @@ def contar(spark, sql: str) -> dict:
 
 def test_status_das_tarefas(ambiente):
     spark, _, _, dados = ambiente
-    esperado = Counter(t["status"] for t in dados["tarefas"])
+    esperado = Counter(t["etapa"] for t in dados["tarefas"])
     assert contar(spark, "SELECT status, count(*) FROM fato_tarefa GROUP BY 1") == esperado
 
 
@@ -42,13 +42,13 @@ def test_situacao_de_prazo_das_tarefas(ambiente):
     spark, _, _, dados = ambiente
 
     def situacao(t):
-        if t["status"] == "Cancelada":
-            return "Cancelada"
-        if t["prazo"] is None:
+        if t["etapa"] == "Arquivada":
+            return "Arquivada"
+        if t["limite"] is None:
             return "Sem prazo"
-        if t["status"] == "Concluída":
-            return "Concluída no prazo" if t["concluida_em"][:10] <= t["prazo"] else "Concluída com atraso"
-        return "Vencida" if t["prazo"] < REF.isoformat() else "No prazo"
+        if t["etapa"] == "Concluído":
+            return "Concluída no prazo" if t["concluida_em"][:10] <= t["limite"] else "Concluída com atraso"
+        return "Vencida" if t["limite"] < REF.isoformat() else "No prazo"
 
     esperado = Counter(situacao(t) for t in dados["tarefas"])
     assert contar(spark, "SELECT situacao_prazo, count(*) FROM fato_tarefa GROUP BY 1") == esperado
@@ -56,9 +56,9 @@ def test_situacao_de_prazo_das_tarefas(ambiente):
 
 def test_retrabalho_e_bloqueios(ambiente):
     spark, _, _, dados = ambiente
-    eventos = dados["historico"]
-    retrabalho = sum(e["status_anterior"] == "Em Revisão" and e["status_novo"] == "Em Andamento" for e in eventos)
-    bloqueios = sum(e["status_novo"] == "Bloqueada" for e in eventos)
+    eventos = dados["movimentacoes"]
+    retrabalho = sum(e["etapa_anterior"] == "Em revisão" and e["etapa_nova"] == "Fazendo" for e in eventos)
+    bloqueios = sum(e["etapa_nova"] == "Impedido" for e in eventos)
     linha = spark.sql("SELECT sum(qtd_retrabalho), sum(qtd_bloqueios) FROM fato_tarefa").first()
     assert (linha[0], linha[1]) == (retrabalho, bloqueios)
 
@@ -72,8 +72,8 @@ def test_horas(ambiente):
 
 def test_projetos_atrasados(ambiente):
     spark, _, _, dados = ambiente
-    vivos = [p for p in dados["projetos"] if p["status"] in ("Em Andamento", "Planejamento")]
-    atrasados = sum(p["data_fim_planejada"] < REF.isoformat() for p in vivos)
+    vivos = [p for p in dados["projetos"] if p["situacao"] == "Ativo" and "Em espera" not in p["etiquetas"]]
+    atrasados = sum(p["limite"] < REF.isoformat() for p in vivos)
     assert contar(spark, "SELECT situacao_prazo, count(*) FROM dim_projeto GROUP BY 1").get("Atrasado", 0) == atrasados
 
 
@@ -83,6 +83,13 @@ def test_horario_de_brasilia(ambiente):
     criada = spark.sql(f"SELECT date_format(criada_em, 'yyyy-MM-dd HH:mm') FROM fato_tarefa "
                        f"WHERE tarefa_id = '{t['id']}'").first()[0]
     assert criada == t["criada_em"][:16].replace("T", " ")
+
+
+def test_farol_e_orcamento_do_portfolio(ambiente):
+    spark, _, _, dados = ambiente
+    assert contar(spark, "SELECT farol, count(*) FROM dim_projeto GROUP BY 1") == \
+        Counter(p["farol"] for p in dados["projetos"])
+    assert spark.sql("SELECT sum(orcamento) FROM dim_projeto").first()[0] == sum(p["orcamento"] for p in dados["projetos"])
 
 
 def test_textos_padronizados(ambiente):
@@ -96,7 +103,7 @@ def test_quarentena(ambiente):
     spark, executor, pasta, dados = ambiente
     boa = dados["tarefas"][0]
     ruins = [
-        boa | {"id": "TSK-99901", "status": "Em Pausa"},
+        boa | {"id": "TSK-99901", "etapa": "Em Pausa"},
         boa | {"id": "TSK-99902", "projeto_id": "PRJ-999"},
         boa | {"id": "TSK-99903", "horas_apontadas": -3},
     ]
@@ -106,7 +113,7 @@ def test_quarentena(ambiente):
     try:
         executor.rodar("nb_02_silver_tratamento")
         motivos = contar(spark, "SELECT id, motivo FROM silver_rejeitados")
-        assert motivos == {"TSK-99901": "status de tarefa desconhecido",
+        assert motivos == {"TSK-99901": "etapa de tarefa desconhecida",
                            "TSK-99902": "projeto_id sem correspondente",
                            "TSK-99903": "horas negativas"}
         assert spark.table("silver_tarefas").count() == len(dados["tarefas"])
@@ -117,18 +124,18 @@ def test_quarentena(ambiente):
 
 def test_exclusao_na_fonte_some_da_silver(ambiente):
     spark, executor, pasta, dados = ambiente
-    sem_tarefa = {p["id"] for p in dados["pessoas"]} - {t["responsavel_id"] for t in dados["tarefas"]} \
-        - {e["pessoa_id"] for e in dados["historico"]} - {p["gestor_id"] for p in dados["projetos"]} \
-        - {e["gestor_id"] for e in dados["equipes"]}
+    sem_tarefa = {p["id"] for p in dados["usuarios"]} - {t["responsavel_id"] for t in dados["tarefas"]} \
+        - {e["usuario_id"] for e in dados["movimentacoes"]} - {p["gerente_id"] for p in dados["projetos"]} \
+        - {e["dono_id"] for e in dados["portfolios"]}
     removida = sorted(sem_tarefa)[0]
-    restantes = [p for p in dados["pessoas"] if p["id"] != removida]
-    destino = pasta / "Files" / "bronze" / "pessoas" / "data_carga=2099-01-01" / "20990101T000000Z_p0001.json"
+    restantes = [p for p in dados["usuarios"] if p["id"] != removida]
+    destino = pasta / "Files" / "bronze" / "usuarios" / "data_carga=2099-01-01" / "20990101T000000Z_p0001.json"
     destino.parent.mkdir(parents=True)
     destino.write_text(json.dumps({"dados": restantes, "proxima": None, "_execucao": "20990101T000000Z"}))
     try:
         executor.rodar("nb_02_silver_tratamento")
-        ids = {r[0] for r in spark.sql("SELECT id FROM silver_pessoas").collect()}
-        assert removida not in ids and len(ids) == len(dados["pessoas"]) - 1
+        ids = {r[0] for r in spark.sql("SELECT id FROM silver_usuarios").collect()}
+        assert removida not in ids and len(ids) == len(dados["usuarios"]) - 1
     finally:
         destino.unlink()
         executor.rodar("nb_02_silver_tratamento")
@@ -153,7 +160,7 @@ def test_medidas_conferem_com_calculo_independente(ambiente):
         "Lead Time Médio (dias)": "SELECT avg(lead_time_dias) FROM fato_tarefa",
         "% Entregues no Prazo": """SELECT sum(int(situacao_prazo = 'Concluída no prazo'))
             / sum(int(situacao_prazo IN ('Concluída no prazo', 'Concluída com atraso'))) FROM fato_tarefa""",
-        "% Concluídas com Retrabalho": "SELECT avg(int(qtd_retrabalho > 0)) FROM fato_tarefa WHERE status = 'Concluída'",
+        "% Concluídas com Retrabalho": "SELECT avg(int(qtd_retrabalho > 0)) FROM fato_tarefa WHERE status = 'Concluído'",
         "Tarefas Paradas na Etapa": """SELECT count(DISTINCT tarefa_id) FROM fato_passagem_status
             WHERE etapa_atual AND NOT etapa_final""",
         "Paradas há mais de 15 dias": """SELECT count(DISTINCT tarefa_id) FROM fato_passagem_status

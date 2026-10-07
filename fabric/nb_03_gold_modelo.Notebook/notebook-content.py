@@ -35,7 +35,7 @@ from pyspark.sql import functions as F
 
 spark.conf.set("spark.sql.session.timeZone", "UTC")
 FUSO = "America/Sao_Paulo"
-FINAIS = ["Concluída", "Cancelada"]
+FINAIS = ["Concluído", "Arquivada"]
 
 
 def local(coluna: str):
@@ -51,11 +51,13 @@ DATA_REF = ref["data_referencia"]
 FIM_REF = F.to_timestamp(F.lit(f"{DATA_REF} 23:59:59"))
 print(f"data de referência: {DATA_REF}")
 
-equipes = spark.table("silver_equipes")
-pessoas = spark.table("silver_pessoas")
+portfolios = spark.table("silver_portfolios")
+pessoas = spark.table("silver_usuarios")
 projetos = spark.table("silver_projetos")
 tarefas = spark.table("silver_tarefas")
-historico = spark.table("silver_historico")
+historico = (spark.table("silver_movimentacoes")
+    .withColumnRenamed("etapa_anterior", "status_anterior").withColumnRenamed("etapa_nova", "status_novo")
+    .withColumnRenamed("usuario_id", "pessoa_id"))
 
 # METADATA ********************
 
@@ -66,8 +68,8 @@ historico = spark.table("silver_historico")
 
 # CELL ********************
 
-ORDEM_ETAPA = {"Backlog": 1, "A Fazer": 2, "Em Andamento": 3, "Bloqueada": 4, "Em Revisão": 5,
-               "Concluída": 6, "Cancelada": 7}
+ORDEM_ETAPA = {"Backlog": 1, "A fazer": 2, "Fazendo": 3, "Impedido": 4, "Em revisão": 5,
+               "Concluído": 6, "Arquivada": 7}
 ordem_etapa = F.create_map(*[F.lit(x) for kv in ORDEM_ETAPA.items() for x in kv])
 ordem = Window.partitionBy("tarefa_id").orderBy("ocorrido_em", "id")
 passagens = (historico
@@ -86,11 +88,11 @@ passagens = (historico
             "dias_na_etapa", "etapa_atual", "etapa_final"))
 
 por_tarefa = passagens.groupBy("tarefa_id").agg(
-    F.min(F.when(F.col("status") == "Em Andamento", F.col("entrada_em"))).alias("inicio_execucao_em"),
-    F.sum(F.when(F.col("status") == "Bloqueada", 1).otherwise(0)).alias("qtd_bloqueios"),
-    F.round(F.sum(F.when(F.col("status") == "Bloqueada", F.col("dias_na_etapa")).otherwise(0)), 2)
+    F.min(F.when(F.col("status") == "Fazendo", F.col("entrada_em"))).alias("inicio_execucao_em"),
+    F.sum(F.when(F.col("status") == "Impedido", 1).otherwise(0)).alias("qtd_bloqueios"),
+    F.round(F.sum(F.when(F.col("status") == "Impedido", F.col("dias_na_etapa")).otherwise(0)), 2)
         .alias("dias_bloqueada"),
-    F.sum(F.when((F.col("status_anterior") == "Em Revisão") & (F.col("status") == "Em Andamento"), 1)
+    F.sum(F.when((F.col("status_anterior") == "Em revisão") & (F.col("status") == "Fazendo"), 1)
           .otherwise(0)).alias("qtd_retrabalho"),
     F.max("entrada_em").alias("ultima_mudanca_em"),
 )
@@ -105,20 +107,22 @@ por_tarefa = passagens.groupBy("tarefa_id").agg(
 # CELL ********************
 
 t = (tarefas
+     .withColumnRenamed("etapa", "status").withColumnRenamed("limite", "prazo")
      .withColumn("criada_em", local("criada_em"))
      .withColumn("concluida_em", local("concluida_em"))
      .join(por_tarefa, tarefas["id"] == por_tarefa["tarefa_id"], "left"))
 
 aberta = ~F.col("status").isin(FINAIS)
-concluida = F.col("status") == "Concluída"
+concluida = F.col("status") == "Concluído"
 data_conclusao = F.to_date("concluida_em")
 
 fato_tarefa = t.select(
     F.col("id").alias("tarefa_id"), "projeto_id", "responsavel_id", "titulo", "tipo", "prioridade", "status",
+    "situacao", F.array_join("etiquetas", ", ").alias("etiquetas"),
     F.to_date("criada_em").alias("data_criacao"), "criada_em",
     F.to_date("inicio_execucao_em").alias("data_inicio_execucao"),
     data_conclusao.alias("data_conclusao"), "concluida_em",
-    F.col("prazo").alias("data_prazo"),
+    F.col("prazo").alias("data_limite"),
     F.col("estimativa_horas"), F.col("horas_apontadas"),
     F.when(concluida, F.round(F.col("horas_apontadas") - F.col("estimativa_horas"), 1)).alias("desvio_horas"),
     aberta.alias("aberta"),
@@ -129,7 +133,7 @@ fato_tarefa = t.select(
     F.coalesce("qtd_bloqueios", F.lit(0)).alias("qtd_bloqueios"),
     F.coalesce("dias_bloqueada", F.lit(0.0)).alias("dias_bloqueada"),
     F.coalesce("qtd_retrabalho", F.lit(0)).alias("qtd_retrabalho"),
-    F.when(F.col("status") == "Cancelada", "Cancelada")
+    F.when(F.col("status") == "Arquivada", "Arquivada")
      .when(F.col("prazo").isNull(), "Sem prazo")
      .when(concluida & (data_conclusao <= F.col("prazo")), "Concluída no prazo")
      .when(concluida, "Concluída com atraso")
@@ -149,38 +153,51 @@ fato_tarefa = t.select(
 
 # CELL ********************
 
-gestores = pessoas.select(F.col("id").alias("gestor_id"), F.col("nome").alias("gestor"))
-nomes_equipe = equipes.select(F.col("id").alias("equipe_id"), F.col("nome").alias("equipe"))
-ativo_ou_planejado = F.col("status").isin("Em Andamento", "Planejamento")
+gerentes = pessoas.select(F.col("id").alias("gerente_id"), F.col("nome").alias("gerente"))
+nomes_portfolio = portfolios.select(F.col("id").alias("portfolio_id"), F.col("nome").alias("portfolio"))
+
+status_projeto = (F.when(F.col("situacao") == "Arquivado", "Arquivado")
+                  .when(F.col("situacao") == "Concluído", "Concluído")
+                  .when(F.array_contains("etiquetas", "Em espera"), "Em espera")
+                  .when(F.col("etapa") == "Planejamento", "Planejamento")
+                  .otherwise("Em execução"))
+
+projetos_status = (projetos.withColumn("status", status_projeto)
+                   .withColumnRenamed("inicio", "data_inicio").withColumnRenamed("limite", "data_limite")
+                   .withColumnRenamed("concluido_em", "data_conclusao"))
+
+ativo_ou_planejado = F.col("status").isin("Em execução", "Planejamento")
 fim_real_ou_ref = F.coalesce("data_conclusao", F.lit(DATA_REF).cast("date"))
 
-dim_projeto = (projetos
-    .join(nomes_equipe, "equipe_id", "left")
-    .join(gestores, "gestor_id", "left")
+dim_projeto = (projetos_status
+    .join(nomes_portfolio, "portfolio_id", "left")
+    .join(gerentes, "gerente_id", "left")
     .select(
-        F.col("id").alias("projeto_id"), F.col("nome").alias("projeto"), "equipe", "gestor", "prioridade",
-        "status", "data_inicio", "data_fim_planejada", "data_conclusao", "horas_orcadas",
-        F.datediff("data_fim_planejada", "data_inicio").alias("dias_planejados"),
+        F.col("id").alias("projeto_id"), F.col("nome").alias("projeto"), "portfolio", "gerente", "prioridade",
+        "status", "etapa", "situacao", "farol", "origem", "origem_id",
+        F.array_join("etiquetas", ", ").alias("etiquetas"),
+        "data_inicio", "data_limite", "data_conclusao", "horas_orcadas", "orcamento",
+        F.datediff("data_limite", "data_inicio").alias("dias_planejados"),
         F.when(F.col("status") == "Concluído",
-               F.when(F.col("data_conclusao") <= F.col("data_fim_planejada"), "Concluído no prazo")
+               F.when(F.col("data_conclusao") <= F.col("data_limite"), "Concluído no prazo")
                 .otherwise("Concluído com atraso"))
-         .when(ativo_ou_planejado & (F.lit(DATA_REF) > F.col("data_fim_planejada")), "Atrasado")
+         .when(ativo_ou_planejado & (F.lit(DATA_REF) > F.col("data_limite")), "Atrasado")
          .when(ativo_ou_planejado, "No prazo")
          .otherwise(F.col("status")).alias("situacao_prazo"),
-        F.when(F.col("status").isin("Concluído", "Em Andamento", "Planejamento"),
-               F.greatest(F.datediff(fim_real_ou_ref, "data_fim_planejada"), F.lit(0))).alias("dias_atraso"),
+        F.when(F.col("status").isin("Concluído", "Em execução", "Planejamento"),
+               F.greatest(F.datediff(fim_real_ou_ref, "data_limite"), F.lit(0))).alias("dias_atraso"),
         F.when(ativo_ou_planejado,
-               F.round(F.datediff(F.lit(DATA_REF), "data_inicio") / F.datediff("data_fim_planejada", "data_inicio"), 4))
+               F.round(F.datediff(F.lit(DATA_REF), "data_inicio") / F.datediff("data_limite", "data_inicio"), 4))
          .alias("percentual_prazo_decorrido"),
     ))
 
-dim_pessoa = (pessoas.join(nomes_equipe, "equipe_id", "left")
-    .select(F.col("id").alias("pessoa_id"), F.col("nome").alias("pessoa"), "equipe", "cargo", "ativo",
+dim_pessoa = (pessoas.join(nomes_portfolio, "portfolio_id", "left")
+    .select(F.col("id").alias("pessoa_id"), F.col("nome").alias("pessoa"), "portfolio", "cargo", "ativo",
             "data_admissao"))
 
-CATEGORIA = {"Backlog": "Não iniciada", "A Fazer": "Não iniciada", "Em Andamento": "Em execução",
-             "Bloqueada": "Em execução", "Em Revisão": "Em execução", "Concluída": "Concluída",
-             "Cancelada": "Cancelada"}
+CATEGORIA = {"Backlog": "Não iniciada", "A fazer": "Não iniciada", "Fazendo": "Em andamento",
+             "Impedido": "Em andamento", "Em revisão": "Em andamento", "Concluído": "Concluída",
+             "Arquivada": "Arquivada"}
 dim_status = spark.createDataFrame([(s, CATEGORIA[s], o) for s, o in ORDEM_ETAPA.items()],
                                    "status string, categoria string, ordem int")
 
@@ -194,7 +211,7 @@ dim_status = spark.createDataFrame([(s, CATEGORIA[s], o) for s, o in ORDEM_ETAPA
 # CELL ********************
 
 limites = (fato_tarefa.select(F.min("data_criacao").alias("d")).union(dim_projeto.select(F.min("data_inicio")))
-           .union(dim_projeto.select(F.max("data_fim_planejada"))).union(spark.createDataFrame([(DATA_REF,)], "d date")))
+           .union(dim_projeto.select(F.max("data_limite"))).union(spark.createDataFrame([(DATA_REF,)], "d date")))
 inicio_cal, fim_cal = limites.agg(F.min("d"), F.max("d")).first()
 inicio_cal, fim_cal = inicio_cal.replace(month=1, day=1), fim_cal.replace(month=12, day=31)
 
