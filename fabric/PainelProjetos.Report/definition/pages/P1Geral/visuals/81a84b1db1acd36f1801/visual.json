@@ -3,9 +3,9 @@
   "name": "81a84b1db1acd36f1801",
   "position": {
     "x": 996,
-    "y": 12,
+    "y": 8,
     "z": 400,
-    "height": 52,
+    "height": 60,
     "width": 128,
     "tabOrder": 400
   },
@@ -229,28 +229,28 @@
             "top": {
               "expr": {
                 "Literal": {
-                  "Value": "4.0D"
+                  "Value": "2.0D"
                 }
               }
             },
             "bottom": {
               "expr": {
                 "Literal": {
-                  "Value": "4.0D"
+                  "Value": "2.0D"
                 }
               }
             },
             "left": {
               "expr": {
                 "Literal": {
-                  "Value": "4.0D"
+                  "Value": "2.0D"
                 }
               }
             },
             "right": {
               "expr": {
                 "Literal": {
-                  "Value": "4.0D"
+                  "Value": "2.0D"
                 }
               }
             }
