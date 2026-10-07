@@ -15,8 +15,8 @@ PAGINAS = [("P1Portfolio", "Portfólio", "Visão executiva da Central de Iniciat
            ("P2ProjetosTarefas", "Projetos e tarefas", "Andamento de cada projeto e o que está travando as entregas"),
            ("P3Cronograma", "Cronograma", "Projetos e tarefas no tempo")]
 
-SLICERS = [("dim_projeto.portfolio", "Portfólio", 888, 20, 180, 46),
-           ("dim_projeto.status", "Status do projeto", 1084, 20, 180, 46)]
+SLICERS = [("dim_projeto.portfolio", "Portfólio", 888, 14, 180, 54),
+           ("dim_projeto.status", "Status do projeto", 1084, 14, 180, 54)]
 DATA_REF = (660, 30, 210, 26)
 
 
@@ -28,7 +28,7 @@ def kpis(n):
 CARTOES = {
     "P1Portfolio": {
         "saude": (88, 200, 360, 252, "Saúde do portfólio", "Farol dos projetos"),
-        "entregas": (464, 200, 500, 252, "Entregas x demanda", "Tarefas criadas e entregues por mês"),
+        "entregas": (464, 200, 500, 252, "Entregas x demanda", "Tarefas criadas e entregues por mês, desde jan/2025"),
         "risco": (980, 200, 284, 252, "Projetos em risco", "Atrasados, por dias de atraso"),
         "equipes": (88, 468, 580, 236, "Desempenho por portfólio", "Projetos ativos e atrasados"),
         "esforco": (684, 468, 580, 236, "Projetos por etapa", "Kanban do portfólio"),

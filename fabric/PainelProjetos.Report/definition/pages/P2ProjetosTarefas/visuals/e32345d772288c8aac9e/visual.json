@@ -212,7 +212,14 @@
             "position": {
               "expr": {
                 "Literal": {
-                  "Value": "'TopLeft'"
+                  "Value": "'Top'"
+                }
+              }
+            },
+            "showTitle": {
+              "expr": {
+                "Literal": {
+                  "Value": "false"
                 }
               }
             },

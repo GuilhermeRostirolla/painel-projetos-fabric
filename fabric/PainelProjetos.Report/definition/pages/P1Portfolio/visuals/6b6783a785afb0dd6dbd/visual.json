@@ -76,14 +76,21 @@
             "show": {
               "expr": {
                 "Literal": {
-                  "Value": "true"
+                  "Value": "false"
                 }
               }
             },
             "position": {
               "expr": {
                 "Literal": {
-                  "Value": "'Right'"
+                  "Value": "'Top'"
+                }
+              }
+            },
+            "showTitle": {
+              "expr": {
+                "Literal": {
+                  "Value": "false"
                 }
               }
             },
@@ -121,7 +128,7 @@
             "labelStyle": {
               "expr": {
                 "Literal": {
-                  "Value": "'Data value'"
+                  "Value": "'Category, data value'"
                 }
               }
             },
