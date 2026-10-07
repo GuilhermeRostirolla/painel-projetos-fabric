@@ -149,6 +149,8 @@ Crie um Azure Key Vault (ou use um existente), adicione o segredo `token-api-pro
 4. Rode o `nb_04_publicar_modelo`: ele cria o modelo semântico e o relatório **PainelProjetos** (descobre o SQL endpoint sozinho) e confere as 37 medidas em DAX contra [`docs/valores_esperados.json`](docs/valores_esperados.json).
 5. Volte `MODO` para `incremental` e **agende** o `nb_00` (ex.: todo dia às 6h).
 
+**Rodando só no Fabric, sem API publicada:** o workspace de demonstração tem o notebook `testar_pipeline` **agendado todo dia às 06:00**. Ele sobe a API simulada dentro da própria sessão e roda o orquestrador, sem token nem serviço externo; como o modelo é Direct Lake, o relatório já mostra o resultado.
+
 **Quer testar no Fabric antes de publicar a API?** Num notebook com o `lh_projetos` anexado, rode
 `tools/testar_no_fabric.py` do mesmo jeito: ele sobe a API simulada dentro da própria sessão (em `localhost`, num processo separado) e roda o orquestrador contra ela.
 
