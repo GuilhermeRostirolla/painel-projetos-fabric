@@ -1,0 +1,7 @@
+role ExcelenciaOperacional
+	modelPermission: read
+
+	tablePermission dim_projeto = [portfolio] = "Excelência Operacional"
+
+	annotation PBI_Id = 754b7e27dad659e88908a6e78699a71d
+

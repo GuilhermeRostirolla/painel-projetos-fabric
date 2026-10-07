@@ -34,36 +34,43 @@ def test_semente_diferente_muda_cenario(dados):
     assert gerar(Config(semente=43))["tarefas"] != dados["tarefas"]
 
 
-def test_portfolio_tem_todos_os_status_de_projeto():
+def test_portfolio_tem_todas_as_situacoes_e_etapas():
     vistos = set()
     for semente in (42, 7, 123):
-        vistos |= {p["status"] for p in gerar(Config(semente=semente))["projetos"]}
-    assert vistos == {"Planejamento", "Em Andamento", "Pausado", "Cancelado", "Concluído"}
+        vistos |= {(p["situacao"], p["etapa"], "Em espera" in p["etiquetas"])
+                   for p in gerar(Config(semente=semente))["projetos"]}
+    assert {("Ativo", "Planejamento", False), ("Ativo", "Execução", False), ("Ativo", "Implantação", False),
+            ("Ativo", "Execução", True), ("Arquivado", "Execução", False), ("Concluído", "Concluído", False)} <= vistos
+
+
+def test_farol_e_origem_variados(dados):
+    assert {p["farol"] for p in dados["projetos"]} == {"Verde", "Amarelo", "Vermelho", "Encerrado"}
+    assert {p["origem"] for p in dados["projetos"]} == {"Ideia", "Startup", "Direto"}
 
 
 def test_tarefas_abertas_em_todas_as_etapas(dados):
-    status = Counter(t["status"] for t in dados["tarefas"])
+    status = Counter(t["etapa"] for t in dados["tarefas"])
     assert set(status) == {s.nome for s in cat.STATUS}
 
 
 def test_proporcao_de_atraso_plausivel(dados):
-    com_prazo = [t for t in dados["tarefas"] if t["concluida_em"] and t["prazo"]]
-    atrasadas = sum(t["concluida_em"][:10] > t["prazo"] for t in com_prazo)
+    com_prazo = [t for t in dados["tarefas"] if t["concluida_em"] and t["limite"]]
+    atrasadas = sum(t["concluida_em"][:10] > t["limite"] for t in com_prazo)
     assert 0.10 < atrasadas / len(com_prazo) < 0.35
 
 
 def test_horas_so_em_tarefas_iniciadas(dados):
-    iniciadas = {e["tarefa_id"] for e in dados["historico"] if e["status_novo"] == cat.EM_ANDAMENTO}
+    iniciadas = {e["tarefa_id"] for e in dados["movimentacoes"] if e["etapa_nova"] == cat.EM_ANDAMENTO}
     for t in dados["tarefas"]:
         if t["id"] not in iniciadas:
             assert t["horas_apontadas"] == 0
 
 
 def test_projeto_cancelado_nao_tem_tarefa_aberta(dados):
-    cancelados = {p["id"] for p in dados["projetos"] if p["status"] == "Cancelado"}
+    cancelados = {p["id"] for p in dados["projetos"] if p["situacao"] == "Arquivado"}
     for t in dados["tarefas"]:
         if t["projeto_id"] in cancelados:
-            assert t["status"] in cat.STATUS_FINAIS
+            assert t["etapa"] in cat.STATUS_FINAIS
 
 
 def test_sujeira_proposital_presente(dados):
@@ -94,8 +101,8 @@ def test_corte_cancela_tarefa_aberta():
 
 def test_relogio_andando_nao_muda_o_passado(dados):
     antes = gerar(Config(data_referencia=date(2026, 8, 31)))
-    eventos_depois = {e["id"]: e for e in dados["historico"]}
-    assert all(eventos_depois[e["id"]] == e for e in antes["historico"])
+    eventos_depois = {e["id"]: e for e in dados["movimentacoes"]}
+    assert all(eventos_depois[e["id"]] == e for e in antes["movimentacoes"])
     tarefas_depois = {t["id"]: t for t in dados["tarefas"]}
     for t in antes["tarefas"]:
         depois = tarefas_depois[t["id"]]
@@ -111,4 +118,4 @@ def test_relogio_andando_nao_muda_o_passado(dados):
 
 def test_impressao_digital_travada(dados):
     from simulador.cenario import impressao_digital
-    assert impressao_digital(dados) == "f5e3d8e3c86d9d89"
+    assert impressao_digital(dados) == "28e6c08d8addd5f4"

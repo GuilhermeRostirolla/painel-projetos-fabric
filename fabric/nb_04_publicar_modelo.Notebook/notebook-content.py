@@ -210,17 +210,17 @@ if CONFERIR_MEDIDAS:
 if CONFERIR_MEDIDAS:
     consulta = 'EVALUATE ROW ( "Projetos", [Projetos], "Tarefas", [Tarefas], "Tarefas Abertas", [Tarefas Abertas] )'
     falhas = []
-    for papel_nome, equipe in esperado["papeis"].items():
+    for papel_nome, portfolio in esperado["papeis"].items():
         linha = fabric.evaluate_dax(NOME_MODELO, consulta, workspace=WORKSPACE, role=papel_nome).iloc[0]
         visto = {re.sub(r"^\[|\]$", "", str(k)): v for k, v in linha.items()}
-        for medida, valor in esperado["por_equipe"][equipe].items():
+        for medida, valor in esperado["por_portfolio"][portfolio].items():
             ok = visto.get(medida) is not None and int(visto[medida]) == int(valor)
             print(f"{'ok    ' if ok else 'DIFERE'}  papel {papel_nome:<15} {medida:<16} DAX={visto.get(medida)!s:<6} SQL={valor}")
             if not ok:
                 falhas.append(f"{papel_nome}/{medida}")
     if falhas:
         raise AssertionError(f"RLS não filtrou como esperado: {falhas}")
-    print(f"\nos {len(esperado['papeis'])} papéis de segurança enxergam só a própria equipe")
+    print(f"\nos {len(esperado['papeis'])} papéis de segurança enxergam só o próprio portfólio")
     notebookutils.notebook.exit(json.dumps({"medidas_ok": len(medidas), "papeis_ok": len(esperado["papeis"])}))
 
 # METADATA ********************

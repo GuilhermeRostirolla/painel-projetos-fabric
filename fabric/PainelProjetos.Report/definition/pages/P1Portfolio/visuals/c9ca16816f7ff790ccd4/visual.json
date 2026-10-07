@@ -23,11 +23,11 @@
                       "Entity": "ref_parametros"
                     }
                   },
-                  "Property": "Contexto Orçamento"
+                  "Property": "Contexto Orçamento Consumido"
                 }
               },
-              "queryRef": "ref_parametros.Contexto Orçamento",
-              "nativeQueryRef": "Contexto Orçamento"
+              "queryRef": "ref_parametros.Contexto Orçamento Consumido",
+              "nativeQueryRef": "Contexto Orçamento Consumido"
             }
           ]
         }

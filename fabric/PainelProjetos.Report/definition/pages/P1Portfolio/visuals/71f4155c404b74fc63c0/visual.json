@@ -23,11 +23,11 @@
                       "Entity": "dim_projeto"
                     }
                   },
-                  "Property": "equipe"
+                  "Property": "portfolio"
                 }
               },
-              "queryRef": "dim_projeto.equipe",
-              "nativeQueryRef": "equipe"
+              "queryRef": "dim_projeto.portfolio",
+              "nativeQueryRef": "portfolio"
             }
           ]
         }
@@ -60,7 +60,7 @@
             "text": {
               "expr": {
                 "Literal": {
-                  "Value": "'Equipe'"
+                  "Value": "'Portfólio'"
                 }
               }
             },

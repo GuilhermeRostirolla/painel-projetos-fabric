@@ -1,0 +1,7 @@
+role DadosAnalytics
+	modelPermission: read
+
+	tablePermission dim_projeto = [portfolio] = "Dados & Analytics"
+
+	annotation PBI_Id = c43a364047185f9f95a8b898617535e7
+

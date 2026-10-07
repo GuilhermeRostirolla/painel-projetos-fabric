@@ -2,147 +2,159 @@
  "mes_ano": "set/26",
  "medidas": {
   "Projetos": {
-   "valor": 45.0,
+   "valor": 122.0,
    "periodo": false
   },
   "Projetos Ativos": {
-   "valor": 26.0,
+   "valor": 42.0,
    "periodo": false
   },
-  "Projetos em Andamento": {
-   "valor": 25.0,
-   "periodo": false
-  },
-  "Projetos Concluídos": {
-   "valor": 14.0,
-   "periodo": false
-  },
-  "Projetos Atrasados": {
-   "valor": 7.0,
-   "periodo": false
-  },
-  "% Projetos Atrasados": {
-   "valor": 0.2692307692307692,
-   "periodo": false
-  },
-  "% Projetos Entregues no Prazo": {
-   "valor": 0.21428571428571427,
-   "periodo": false
-  },
-  "Atraso Médio dos Projetos (dias)": {
-   "valor": 89.16666666666667,
-   "periodo": false
-  },
-  "Horas Orçadas": {
-   "valor": 22750.0,
-   "periodo": false
-  },
-  "% Orçamento Consumido": {
-   "valor": 0.9634945054945042,
-   "periodo": false
-  },
-  "Tarefas": {
-   "valor": 1435.0,
-   "periodo": false
-  },
-  "Tarefas Abertas": {
-   "valor": 140.0,
-   "periodo": false
-  },
-  "Tarefas Concluídas": {
-   "valor": 1235.0,
-   "periodo": false
-  },
-  "Tarefas Bloqueadas": {
-   "valor": 7.0,
-   "periodo": false
-  },
-  "Tarefas Vencidas": {
+  "Projetos em Execução": {
    "valor": 39.0,
    "periodo": false
   },
+  "Projetos Concluídos": {
+   "valor": 63.0,
+   "periodo": false
+  },
+  "Projetos Atrasados": {
+   "valor": 12.0,
+   "periodo": false
+  },
+  "% Projetos Atrasados": {
+   "valor": 0.2857142857142857,
+   "periodo": false
+  },
+  "% Projetos Entregues no Prazo": {
+   "valor": 0.3333333333333333,
+   "periodo": false
+  },
+  "Atraso Médio dos Projetos (dias)": {
+   "valor": 96.64814814814815,
+   "periodo": false
+  },
+  "Horas Orçadas": {
+   "valor": 69200.0,
+   "periodo": false
+  },
+  "% Orçamento Consumido": {
+   "valor": 1.0272196531791888,
+   "periodo": false
+  },
+  "Orçamento": {
+   "valor": 10335800.0,
+   "periodo": false
+  },
+  "Projetos Farol Vermelho": {
+   "valor": 17.0,
+   "periodo": false
+  },
+  "Projetos de Ideias": {
+   "valor": 48.0,
+   "periodo": false
+  },
+  "Tarefas": {
+   "valor": 4467.0,
+   "periodo": false
+  },
+  "Tarefas Abertas": {
+   "valor": 176.0,
+   "periodo": false
+  },
+  "Tarefas Concluídas": {
+   "valor": 4064.0,
+   "periodo": false
+  },
+  "Tarefas Impedidas": {
+   "valor": 6.0,
+   "periodo": false
+  },
+  "Tarefas Vencidas": {
+   "valor": 50.0,
+   "periodo": false
+  },
   "% Abertas Vencidas": {
-   "valor": 0.30708661417322836,
+   "valor": 0.3067484662576687,
    "periodo": false
   },
   "% Entregues no Prazo": {
-   "valor": 0.7617801047120419,
+   "valor": 0.7888247639034628,
    "periodo": false
   },
   "Atraso Médio das Tarefas (dias)": {
-   "valor": 20.80128205128205,
+   "valor": 21.94970760233918,
    "periodo": false
   },
   "Lead Time Médio (dias)": {
-   "valor": 20.559187471884833,
+   "valor": 19.88138858131014,
    "periodo": false
   },
   "Ciclo Médio (dias)": {
-   "valor": 9.149829959514163,
+   "valor": 9.222578740157488,
    "periodo": false
   },
   "Ciclo Mediano (dias)": {
-   "valor": 6.83,
+   "valor": 6.72,
    "periodo": false
   },
   "Idade Média das Abertas (dias)": {
-   "valor": 42.35889219576717,
+   "valor": 75.02255787037036,
    "periodo": false
   },
   "Dias Bloqueada": {
-   "valor": 1385.4599999999998,
+   "valor": 5056.79,
    "periodo": false
   },
   "% Concluídas com Retrabalho": {
-   "valor": 0.1797570850202429,
+   "valor": 0.1702755905511811,
    "periodo": false
   },
   "Horas Estimadas": {
-   "valor": 18630.0,
+   "valor": 58718.0,
    "periodo": false
   },
   "Horas Apontadas": {
-   "valor": 21919.49999999997,
+   "valor": 71083.59999999987,
    "periodo": false
   },
   "Desvio de Esforço %": {
-   "valor": 0.33565777721066525,
+   "valor": 0.3123511231720164,
    "periodo": false
   },
   "Tarefas Criadas": {
-   "valor": 167.0,
+   "valor": 226.0,
    "periodo": true
   },
   "Tarefas Entregues": {
-   "valor": 175.0,
+   "valor": 213.0,
    "periodo": true
   },
   "Saldo do Período": {
-   "valor": -8.0,
+   "valor": 13.0,
    "periodo": true
   },
   "% Tarefas Concluídas": {
-   "valor": 0.8606271777003485,
+   "valor": 0.9097828520259682,
    "periodo": false
   },
   "Tempo Médio na Etapa (dias)": {
-   "valor": 4.4363294611164905,
+   "valor": 4.2733381770807295,
    "periodo": false
   },
   "Tarefas Paradas na Etapa": {
-   "valor": 140.0,
+   "valor": 176.0,
    "periodo": false
   },
   "Paradas há mais de 15 dias": {
-   "valor": 27.0,
+   "valor": 43.0,
    "periodo": false
   },
   "Mudanças de Status": {
-   "valor": 1019.0,
+   "valor": 1252.0,
    "periodo": true
   },
   "Bloqueios no Período": {
-   "valor": 26.0,
+   "valor": 31.0,
    "periodo": true
   },
   "Data de Referência": {
@@ -154,23 +166,23 @@
    "periodo": false
   },
   "Contexto Projetos Ativos": {
-   "valor": "de 45 no portfólio",
+   "valor": "de 122 no portfólio",
    "periodo": false
   },
   "Contexto Projetos Atrasados": {
-   "valor": "27% dos ativos",
+   "valor": "29% dos ativos",
    "periodo": false
   },
   "Contexto Atrasados de Ativos": {
-   "valor": "7 de 26 ativos",
+   "valor": "12 de 42 ativos",
    "periodo": false
   },
   "Contexto Entregues no Prazo": {
-   "valor": "3 de 14 concluídos",
+   "valor": "21 de 63 concluídos",
    "periodo": false
   },
   "Contexto Tarefas Abertas": {
-   "valor": "7 bloqueadas agora",
+   "valor": "6 impedidas agora",
    "periodo": false
   },
   "Contexto Tarefas Vencidas": {
@@ -178,50 +190,76 @@
    "periodo": false
   },
   "Contexto Tarefas Concluídas": {
-   "valor": "86% de todas as tarefas",
+   "valor": "91% de todas as tarefas",
    "periodo": false
   },
   "Contexto Horas Apontadas": {
-   "valor": "+18% vs. o estimado",
+   "valor": "+21% vs. o estimado",
+   "periodo": false
+  },
+  "Contexto Orçamento Consumido": {
+   "valor": "103% das horas orçadas já usadas",
+   "periodo": false
+  },
+  "Contexto Projetos de Ideias": {
+   "valor": "48 vieram de ideias",
    "periodo": false
   },
   "Contexto Orçamento": {
-   "valor": "restam 831 h",
+   "valor": "estourou em 1884 h",
    "periodo": false
   }
  },
- "por_equipe": {
-  "Comercial": {
-   "Projetos": 8,
-   "Tarefas": 246,
-   "Tarefas Abertas": 26
+ "por_portfolio": {
+  "Crescimento Comercial": {
+   "Projetos": 15,
+   "Tarefas": 553,
+   "Tarefas Abertas": 17
   },
-  "Dados & BI": {
-   "Projetos": 9,
-   "Tarefas": 245,
-   "Tarefas Abertas": 36
+  "Dados & Analytics": {
+   "Projetos": 16,
+   "Tarefas": 564,
+   "Tarefas Abertas": 14
   },
-  "Operações": {
-   "Projetos": 9,
-   "Tarefas": 314,
-   "Tarefas Abertas": 16
+  "Excelência Operacional": {
+   "Projetos": 16,
+   "Tarefas": 634,
+   "Tarefas Abertas": 15
+  },
+  "Experiência do Cliente": {
+   "Projetos": 15,
+   "Tarefas": 530,
+   "Tarefas Abertas": 34
+  },
+  "Inovação Aberta": {
+   "Projetos": 14,
+   "Tarefas": 507,
+   "Tarefas Abertas": 28
   },
   "Pessoas & Cultura": {
-   "Projetos": 8,
-   "Tarefas": 274,
-   "Tarefas Abertas": 22
+   "Projetos": 15,
+   "Tarefas": 472,
+   "Tarefas Abertas": 25
   },
-  "Tecnologia": {
-   "Projetos": 11,
-   "Tarefas": 356,
-   "Tarefas Abertas": 40
+  "Sustentabilidade & ESG": {
+   "Projetos": 14,
+   "Tarefas": 509,
+   "Tarefas Abertas": 28
+  },
+  "Transformação Digital": {
+   "Projetos": 17,
+   "Tarefas": 698,
+   "Tarefas Abertas": 15
   }
  },
  "papeis": {
-  "Tecnologia": "Tecnologia",
-  "DadosBI": "Dados & BI",
-  "Operacoes": "Operações",
-  "Comercial": "Comercial",
-  "PessoasCultura": "Pessoas & Cultura"
+  "TransformacaoDigital": "Transformação Digital",
+  "DadosAnalytics": "Dados & Analytics",
+  "ExcelenciaOperacional": "Excelência Operacional",
+  "CrescimentoComercial": "Crescimento Comercial",
+  "PessoasCultura": "Pessoas & Cultura",
+  "ExperienciaCliente": "Experiência do Cliente",
+  "SustentabilidadeESG": "Sustentabilidade & ESG",
+  "InovacaoAberta": "Inovação Aberta"
  }
 }

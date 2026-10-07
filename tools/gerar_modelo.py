@@ -60,9 +60,9 @@ RETURN
                 NOT ISBLANK ( t_ini ) && t_ini <= fim && ate >= ini,
                 SWITCH (
                     TRUE (),
-                    situacao = "Concluída", "#5D7398",
-                    situacao = "Cancelada", "#364259",
-                    situacao = "Bloqueada", "#C4851A",
+                    situacao = "Concluído", "#5D7398",
+                    situacao = "Arquivada", "#364259",
+                    situacao = "Impedido", "#C4851A",
                     prazo = "Vencida", "#E44A5D",
                     "#4682F5"
                 )
@@ -75,8 +75,8 @@ RETURN
                 SWITCH (
                     TRUE (),
                     NOT ISBLANK ( MAX ( dim_projeto[data_conclusao] ) ), MAX ( dim_projeto[data_conclusao] ),
-                    p_status = "Cancelado", MAX ( dim_projeto[data_fim_planejada] ),
-                    MAX ( MAX ( dim_projeto[data_fim_planejada] ), ref )
+                    p_status = "Arquivado", MAX ( dim_projeto[data_limite] ),
+                    MAX ( MAX ( dim_projeto[data_limite] ), ref )
                 )
             RETURN
                 IF (
@@ -84,9 +84,9 @@ RETURN
                     SWITCH (
                         TRUE (),
                         MAX ( dim_projeto[situacao_prazo] ) = "Atrasado", "#E44A5D",
-                        p_status = "Cancelado", "#364259",
+                        p_status = "Arquivado", "#364259",
                         p_status = "Concluído", "#5D7398",
-                        p_status = "Pausado", "#33415E",
+                        p_status = "Em espera", "#33415E",
                         "#4682F5"
                     )
                 )
@@ -99,8 +99,8 @@ MEDIDAS = {
     "dim_projeto": [
         ("Projetos", "Portfólio", INT, "COUNTROWS ( dim_projeto )"),
         ("Projetos Ativos", "Portfólio", INT,
-         'CALCULATE ( [Projetos], dim_projeto[status] IN { "Em Andamento", "Planejamento" } )'),
-        ("Projetos em Andamento", "Portfólio", INT, 'CALCULATE ( [Projetos], dim_projeto[status] = "Em Andamento" )'),
+         'CALCULATE ( [Projetos], dim_projeto[status] IN { "Em execução", "Planejamento" } )'),
+        ("Projetos em Execução", "Portfólio", INT, 'CALCULATE ( [Projetos], dim_projeto[status] = "Em execução" )'),
         ("Projetos Concluídos", "Portfólio", INT, 'CALCULATE ( [Projetos], dim_projeto[status] = "Concluído" )'),
         ("Projetos Atrasados", "Prazo", INT, 'CALCULATE ( [Projetos], dim_projeto[situacao_prazo] = "Atrasado" )'),
         ("% Projetos Atrasados", "Prazo", PCT, "DIVIDE ( [Projetos Atrasados], [Projetos Ativos] )"),
@@ -110,15 +110,18 @@ MEDIDAS = {
          'CALCULATE ( AVERAGE ( dim_projeto[dias_atraso] ), dim_projeto[situacao_prazo] IN { "Atrasado", "Concluído com atraso" } )'),
         ("Horas Orçadas", "Esforço", HORAS, "SUM ( dim_projeto[horas_orcadas] )"),
         ("% Orçamento Consumido", "Esforço", PCT, "DIVIDE ( [Horas Apontadas], [Horas Orçadas] )"),
+        ("Orçamento", "Portfólio", '"R$" #,0', "SUM ( dim_projeto[orcamento] )"),
+        ("Projetos Farol Vermelho", "Portfólio", INT, 'CALCULATE ( [Projetos], dim_projeto[farol] = "Vermelho" )'),
+        ("Projetos de Ideias", "Portfólio", INT, 'CALCULATE ( [Projetos], dim_projeto[origem] = "Ideia" )'),
     ],
     "fato_tarefa": [
         ("Tarefas", "Tarefas", INT, "COUNTROWS ( fato_tarefa )"),
         ("Tarefas Abertas", "Tarefas", INT, "CALCULATE ( [Tarefas], fato_tarefa[aberta] = TRUE () )"),
-        ("Tarefas Concluídas", "Tarefas", INT, 'CALCULATE ( [Tarefas], fato_tarefa[status] = "Concluída" )'),
-        ("Tarefas Bloqueadas", "Tarefas", INT, 'CALCULATE ( [Tarefas], fato_tarefa[status] = "Bloqueada" )'),
+        ("Tarefas Concluídas", "Tarefas", INT, 'CALCULATE ( [Tarefas], fato_tarefa[status] = "Concluído" )'),
+        ("Tarefas Impedidas", "Tarefas", INT, 'CALCULATE ( [Tarefas], fato_tarefa[status] = "Impedido" )'),
         ("Tarefas Vencidas", "Prazo", INT, 'CALCULATE ( [Tarefas], fato_tarefa[situacao_prazo] = "Vencida" )'),
         ("% Abertas Vencidas", "Prazo", PCT,
-         "DIVIDE ( [Tarefas Vencidas], CALCULATE ( [Tarefas Abertas], NOT ISBLANK ( fato_tarefa[data_prazo] ) ) )"),
+         "DIVIDE ( [Tarefas Vencidas], CALCULATE ( [Tarefas Abertas], NOT ISBLANK ( fato_tarefa[data_limite] ) ) )"),
         ("% Entregues no Prazo", "Prazo", PCT,
          'DIVIDE (\n    CALCULATE ( [Tarefas], fato_tarefa[situacao_prazo] = "Concluída no prazo" ),\n'
          '    CALCULATE ( [Tarefas], fato_tarefa[situacao_prazo] IN { "Concluída no prazo", "Concluída com atraso" } )\n)'),
@@ -134,7 +137,7 @@ MEDIDAS = {
         ("Horas Estimadas", "Esforço", HORAS, "SUM ( fato_tarefa[estimativa_horas] )"),
         ("Horas Apontadas", "Esforço", HORAS, "SUM ( fato_tarefa[horas_apontadas] )"),
         ("Desvio de Esforço %", "Esforço", "+0.0%;-0.0%;0.0%",
-         'VAR concluidas = FILTER ( fato_tarefa, fato_tarefa[status] = "Concluída" )\n'
+         'VAR concluidas = FILTER ( fato_tarefa, fato_tarefa[status] = "Concluído" )\n'
          "RETURN\n    DIVIDE ( SUMX ( concluidas, fato_tarefa[horas_apontadas] ), "
          "SUMX ( concluidas, fato_tarefa[estimativa_horas] ) ) - 1"),
         ("Tarefas Criadas", "Período", INT, "[Tarefas]"),
@@ -159,7 +162,7 @@ MEDIDAS = {
          "    USERELATIONSHIP ( fato_passagem_status[data_entrada], dim_data[data] ),\n"
          "    CROSSFILTER ( fato_tarefa[data_criacao], dim_data[data], NONE )\n)"),
         ("Bloqueios no Período", "Fluxo", INT,
-         'CALCULATE ( [Mudanças de Status], fato_passagem_status[status] = "Bloqueada" )'),
+         'CALCULATE ( [Mudanças de Status], fato_passagem_status[status] = "Impedido" )'),
     ],
     "ref_parametros": [
         ("Data de Referência", "Referência", "dd/MM/yyyy", REF),
@@ -174,13 +177,17 @@ MEDIDAS = {
          'FORMAT ( CALCULATE ( [Projetos], dim_projeto[situacao_prazo] = "Concluído no prazo" ) + 0, "#,0" )\n'
          '    & " de " & FORMAT ( [Projetos Concluídos] + 0, "#,0" ) & " concluídos"'),
         ("Contexto Tarefas Abertas", "Contexto dos cartões", None,
-         'FORMAT ( [Tarefas Bloqueadas] + 0, "#,0" ) & " bloqueadas agora"'),
+         'FORMAT ( [Tarefas Impedidas] + 0, "#,0" ) & " impedidas agora"'),
         ("Contexto Tarefas Vencidas", "Contexto dos cartões", None,
          'FORMAT ( [% Abertas Vencidas] + 0, "0%" ) & " das abertas"'),
         ("Contexto Tarefas Concluídas", "Contexto dos cartões", None,
          'FORMAT ( DIVIDE ( [Tarefas Concluídas], [Tarefas] ) + 0, "0%" ) & " de todas as tarefas"'),
         ("Contexto Horas Apontadas", "Contexto dos cartões", None,
          'FORMAT ( DIVIDE ( [Horas Apontadas], [Horas Estimadas] ) - 1, "+0%;-0%;0%" ) & " vs. o estimado"'),
+        ("Contexto Orçamento Consumido", "Contexto dos cartões", None,
+         'FORMAT ( [% Orçamento Consumido] + 0, "0%" ) & " das horas orçadas já usadas"'),
+        ("Contexto Projetos de Ideias", "Contexto dos cartões", None,
+         'FORMAT ( [Projetos de Ideias] + 0, "#,0" ) & " vieram de ideias"'),
         ("Contexto Orçamento", "Contexto dos cartões", None,
          'VAR saldo = [Horas Orçadas] - [Horas Apontadas]\n'
          'RETURN IF ( saldo >= 0, "restam ", "estourou em " ) & FORMAT ( ABS ( saldo ), "#,0" ) & " h"'),
@@ -242,13 +249,15 @@ def relacionamentos(schema: dict) -> str:
     return "\n".join(saida)
 
 
-PAPEIS = {"Tecnologia": "Tecnologia", "DadosBI": "Dados & BI", "Operacoes": "Operações",
-          "Comercial": "Comercial", "PessoasCultura": "Pessoas & Cultura"}
+PAPEIS = {"TransformacaoDigital": "Transformação Digital", "DadosAnalytics": "Dados & Analytics",
+          "ExcelenciaOperacional": "Excelência Operacional", "CrescimentoComercial": "Crescimento Comercial",
+          "PessoasCultura": "Pessoas & Cultura", "ExperienciaCliente": "Experiência do Cliente",
+          "SustentabilidadeESG": "Sustentabilidade & ESG", "InovacaoAberta": "Inovação Aberta"}
 
 
-def papel(nome: str, equipe: str) -> str:
+def papel(nome: str, portfolio: str) -> str:
     return (f"role {nome}\n\tmodelPermission: read\n\n"
-            f'\ttablePermission dim_projeto = [equipe] = "{equipe}"\n\n'
+            f'\ttablePermission dim_projeto = [portfolio] = "{portfolio}"\n\n'
             f"\tannotation PBI_Id = {tag('papel', nome).replace('-', '')}\n\n")
 
 
@@ -281,8 +290,8 @@ def gerar(endpoint: str = ENDPOINT, endpoint_id: str = ENDPOINT_ID, destino: Pat
     (definicao / "relationships.tmdl").write_text(relacionamentos(schema))
     for nome in TABELAS:
         (definicao / "tables" / f"{nome}.tmdl").write_text(tabela(nome, schema[nome]))
-    for nome, equipe in PAPEIS.items():
-        (definicao / "roles" / f"{nome}.tmdl").write_text(papel(nome, equipe))
+    for nome, portfolio in PAPEIS.items():
+        (definicao / "roles" / f"{nome}.tmdl").write_text(papel(nome, portfolio))
 
 
 def main() -> None:

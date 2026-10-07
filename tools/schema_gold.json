@@ -29,6 +29,14 @@
    "string"
   ],
   [
+   "situacao",
+   "string"
+  ],
+  [
+   "etiquetas",
+   "string"
+  ],
+  [
    "data_criacao",
    "date"
   ],
@@ -49,7 +57,7 @@
    "timestamp"
   ],
   [
-   "data_prazo",
+   "data_limite",
    "date"
   ],
   [
@@ -173,11 +181,11 @@
    "string"
   ],
   [
-   "equipe",
+   "portfolio",
    "string"
   ],
   [
-   "gestor",
+   "gerente",
    "string"
   ],
   [
@@ -189,11 +197,35 @@
    "string"
   ],
   [
+   "etapa",
+   "string"
+  ],
+  [
+   "situacao",
+   "string"
+  ],
+  [
+   "farol",
+   "string"
+  ],
+  [
+   "origem",
+   "string"
+  ],
+  [
+   "origem_id",
+   "string"
+  ],
+  [
+   "etiquetas",
+   "string"
+  ],
+  [
    "data_inicio",
    "date"
   ],
   [
-   "data_fim_planejada",
+   "data_limite",
    "date"
   ],
   [
@@ -203,6 +235,10 @@
   [
    "horas_orcadas",
    "int"
+  ],
+  [
+   "orcamento",
+   "double"
   ],
   [
    "dias_planejados",
@@ -231,7 +267,7 @@
    "string"
   ],
   [
-   "equipe",
+   "portfolio",
    "string"
   ],
   [

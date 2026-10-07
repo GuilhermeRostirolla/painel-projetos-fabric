@@ -346,37 +346,34 @@ class Pagina:
             "drillFilterOtherVisuals": True})
 
 
-SITUACAO = {"No prazo": COR["azul"], "Concluído com atraso": COR["atencao"], "Atrasado": COR["critico"],
-            "Concluído no prazo": COR["bom"], "Pausado": COR["concluido"], "Cancelado": COR["cancelado"]}
+FAROL = {"Verde": COR["bom"], "Amarelo": COR["atencao"], "Vermelho": COR["critico"], "Encerrado": COR["cancelado"]}
 
 
 def paginas() -> list[Pagina]:
     titulos = {p[0]: p[1] for p in L.PAGINAS}
 
     portfolio = Pagina("P1Portfolio", titulos["P1Portfolio"])
-    portfolio.grafico("donutChart", "saude", "dim_projeto.situacao_prazo", ["Projetos"], destaques=SITUACAO,
-                      ordem="Projetos")
+    portfolio.grafico("donutChart", "saude", "dim_projeto.farol", ["Projetos"], destaques=FAROL, ordem="Projetos")
     portfolio.grafico("lineChart", "entregas", "dim_data.mes_ano",
                       [("Tarefas Criadas", "Criadas"), ("Tarefas Entregues", "Entregues")],
                       cores=[COR["concluido"], COR["azul"]], ordem="dim_data.mes_ano", ordem_crescente=True)
     portfolio.tabela("risco", [("dim_projeto.projeto", "Projeto"), ("dim_projeto.dias_atraso", "Dias")],
                      ordem="dim_projeto.dias_atraso", barras={"dim_projeto.dias_atraso": COR["barra_vermelha"]},
                      filtro=("dim_projeto.situacao_prazo", "Atrasado"))
-    portfolio.grafico("clusteredColumnChart", "equipes", "dim_projeto.equipe",
+    portfolio.grafico("clusteredColumnChart", "equipes", "dim_projeto.portfolio",
                       [("Projetos Ativos", "Ativos"), ("Projetos Atrasados", "Atrasados")],
                       cores=[COR["azul"], COR["critico"]], ordem="Projetos Ativos")
-    portfolio.grafico("clusteredColumnChart", "esforco", "dim_pessoa.equipe",
-                      [("Horas Estimadas", "Estimadas"), ("Horas Apontadas", "Apontadas")],
-                      cores=[COR["neutro"], COR["azul"]], ordem="Horas Apontadas")
+    portfolio.grafico("clusteredColumnChart", "esforco", "dim_projeto.etapa", ["Projetos"],
+                      cores=[COR["azul"]], destaques={"Concluído": COR["concluido"]}, ordem="Projetos")
 
     tarefas = Pagina("P2ProjetosTarefas", titulos["P2ProjetosTarefas"])
-    tarefas.tabela("projetos", [("dim_projeto.projeto", "Projeto"), ("dim_projeto.equipe", "Equipe"),
-                                ("dim_projeto.situacao_prazo", "Prazo"), ("% Tarefas Concluídas", "Concluído"),
-                                ("dim_projeto.dias_atraso", "Dias de atraso")],
+    tarefas.tabela("projetos", [("dim_projeto.projeto", "Projeto"), ("dim_projeto.portfolio", "Portfólio"),
+                                ("dim_projeto.etapa", "Etapa"), ("dim_projeto.farol", "Farol"),
+                                ("% Tarefas Concluídas", "Concluído"), ("dim_projeto.dias_atraso", "Dias de atraso")],
                    ordem="dim_projeto.dias_atraso",
                    barras={"% Tarefas Concluídas": COR["barra_azul"], "dim_projeto.dias_atraso": COR["barra_vermelha"]})
     tarefas.grafico("clusteredBarChart", "etapas", "fato_passagem_status.status", ["Tarefas Paradas na Etapa"],
-                    cores=[COR["azul"]], destaques={"Bloqueada": COR["critico"]},
+                    cores=[COR["azul"]], destaques={"Impedido": COR["critico"]},
                     ordem="fato_passagem_status.status", ordem_crescente=True)
     tarefas.tabela("vencidas", [("fato_tarefa.titulo", "Tarefa"), ("dim_pessoa.pessoa", "Responsável"),
                                 ("fato_tarefa.dias_atraso", "Dias")],

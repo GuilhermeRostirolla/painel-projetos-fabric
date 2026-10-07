@@ -7,15 +7,15 @@ table dim_projeto
 		displayFolder: Portfólio
 		lineageTag: 2cc9f825-5e41-5dab-aadc-6e60fd5d50c3
 
-	measure 'Projetos Ativos' = CALCULATE ( [Projetos], dim_projeto[status] IN { "Em Andamento", "Planejamento" } )
+	measure 'Projetos Ativos' = CALCULATE ( [Projetos], dim_projeto[status] IN { "Em execução", "Planejamento" } )
 		formatString: #,0
 		displayFolder: Portfólio
 		lineageTag: be077c61-dbfd-51e8-a74e-1bb7a2c58439
 
-	measure 'Projetos em Andamento' = CALCULATE ( [Projetos], dim_projeto[status] = "Em Andamento" )
+	measure 'Projetos em Execução' = CALCULATE ( [Projetos], dim_projeto[status] = "Em execução" )
 		formatString: #,0
 		displayFolder: Portfólio
-		lineageTag: 321602fd-3a0d-56af-97cb-2be663326d81
+		lineageTag: ad0da824-76e6-5bea-a9c6-c830aeb8fb9a
 
 	measure 'Projetos Concluídos' = CALCULATE ( [Projetos], dim_projeto[status] = "Concluído" )
 		formatString: #,0
@@ -52,6 +52,21 @@ table dim_projeto
 		displayFolder: Esforço
 		lineageTag: 799b8e6f-04f6-5737-9fb0-1ced7f10f44c
 
+	measure 'Orçamento' = SUM ( dim_projeto[orcamento] )
+		formatString: "R$" #,0
+		displayFolder: Portfólio
+		lineageTag: 0cc4f2b3-9107-5c9f-aa7d-0679194e49e6
+
+	measure 'Projetos Farol Vermelho' = CALCULATE ( [Projetos], dim_projeto[farol] = "Vermelho" )
+		formatString: #,0
+		displayFolder: Portfólio
+		lineageTag: 27e383e3-fdc7-5b3c-be49-941159022000
+
+	measure 'Projetos de Ideias' = CALCULATE ( [Projetos], dim_projeto[origem] = "Ideia" )
+		formatString: #,0
+		displayFolder: Portfólio
+		lineageTag: bd90b56d-b7c3-5300-b70f-8843bb3d1e36
+
 	column projeto_id
 		dataType: string
 		isHidden
@@ -71,21 +86,21 @@ table dim_projeto
 
 		annotation SummarizationSetBy = Automatic
 
-	column equipe
+	column portfolio
 		dataType: string
-		lineageTag: eb12451b-8f91-55df-b3bd-dd438f90b748
-		sourceLineageTag: equipe
+		lineageTag: f65f2836-eb8d-507c-8e2e-d81f42f85149
+		sourceLineageTag: portfolio
 		summarizeBy: none
-		sourceColumn: equipe
+		sourceColumn: portfolio
 
 		annotation SummarizationSetBy = Automatic
 
-	column gestor
+	column gerente
 		dataType: string
-		lineageTag: b58dbbfd-8636-592a-be3f-af09abcb7109
-		sourceLineageTag: gestor
+		lineageTag: cc1cbc83-ef29-556c-a840-5c152ea76373
+		sourceLineageTag: gerente
 		summarizeBy: none
-		sourceColumn: gestor
+		sourceColumn: gerente
 
 		annotation SummarizationSetBy = Automatic
 
@@ -107,6 +122,60 @@ table dim_projeto
 
 		annotation SummarizationSetBy = Automatic
 
+	column etapa
+		dataType: string
+		lineageTag: ec1c3492-16e1-5131-8ef6-0edde1b3fa41
+		sourceLineageTag: etapa
+		summarizeBy: none
+		sourceColumn: etapa
+
+		annotation SummarizationSetBy = Automatic
+
+	column situacao
+		dataType: string
+		lineageTag: c92a3a88-ad73-58d9-bfe1-879466c4bf2e
+		sourceLineageTag: situacao
+		summarizeBy: none
+		sourceColumn: situacao
+
+		annotation SummarizationSetBy = Automatic
+
+	column farol
+		dataType: string
+		lineageTag: 7cdb1e42-8c1e-57c3-b40d-bc2a9feb5698
+		sourceLineageTag: farol
+		summarizeBy: none
+		sourceColumn: farol
+
+		annotation SummarizationSetBy = Automatic
+
+	column origem
+		dataType: string
+		lineageTag: dc96d102-b830-517b-b737-d693a8c2dbbc
+		sourceLineageTag: origem
+		summarizeBy: none
+		sourceColumn: origem
+
+		annotation SummarizationSetBy = Automatic
+
+	column origem_id
+		dataType: string
+		lineageTag: b30c7ced-85ae-5ba6-9ed6-44878f3b66b3
+		sourceLineageTag: origem_id
+		summarizeBy: none
+		sourceColumn: origem_id
+
+		annotation SummarizationSetBy = Automatic
+
+	column etiquetas
+		dataType: string
+		lineageTag: 128790d9-e368-5d47-adf2-200c2a0683cc
+		sourceLineageTag: etiquetas
+		summarizeBy: none
+		sourceColumn: etiquetas
+
+		annotation SummarizationSetBy = Automatic
+
 	column data_inicio
 		dataType: dateTime
 		formatString: dd/MM/yyyy
@@ -117,13 +186,13 @@ table dim_projeto
 
 		annotation SummarizationSetBy = Automatic
 
-	column data_fim_planejada
+	column data_limite
 		dataType: dateTime
 		formatString: dd/MM/yyyy
-		lineageTag: 41fc3092-dee6-5ae7-9170-8e8289808bc0
-		sourceLineageTag: data_fim_planejada
+		lineageTag: 40342ab2-eb22-51bb-92be-10b35c6a11d5
+		sourceLineageTag: data_limite
 		summarizeBy: none
-		sourceColumn: data_fim_planejada
+		sourceColumn: data_limite
 
 		annotation SummarizationSetBy = Automatic
 
@@ -144,6 +213,16 @@ table dim_projeto
 		sourceLineageTag: horas_orcadas
 		summarizeBy: none
 		sourceColumn: horas_orcadas
+
+		annotation SummarizationSetBy = Automatic
+
+	column orcamento
+		dataType: double
+		formatString: #,0.0
+		lineageTag: db2fec40-7e20-5f5a-85ce-f6e788d68ffd
+		sourceLineageTag: orcamento
+		summarizeBy: none
+		sourceColumn: orcamento
 
 		annotation SummarizationSetBy = Automatic
 

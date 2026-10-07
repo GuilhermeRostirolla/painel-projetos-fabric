@@ -1,4 +1,4 @@
-"""Gera o cenário (equipes, pessoas, projetos, tarefas, histórico).
+"""Gera o cenário no formato da AEVO: portfólios, usuários, projetos, tarefas e movimentações.
 
 _mundo simula tudo até o horizonte; gerar corta na data de referência."""
 import hashlib
@@ -19,7 +19,7 @@ from simulador.tempo import iso, no_expediente
 class Config:
     semente: int = 42
     data_referencia: date = date(2026, 9, 30)
-    inicio: date = date(2025, 1, 6)
+    inicio: date = date(2024, 1, 8)
     fim_portfolio: date = date(2026, 9, 26)
     horizonte: date = date(2028, 12, 31)
     p_cancelado: float = 0.08
@@ -49,7 +49,7 @@ class _Tarefa:
 class _Projeto:
     n: int
     nome: str
-    equipe_id: int
+    portfolio_id: int
     gestor: dict
     prioridade: str
     inicio: datetime
@@ -68,8 +68,8 @@ def _email(nome: str) -> str:
 
 def _pessoas(rng: np.random.Generator, fake: Faker, cfg: Config) -> list[dict]:
     pessoas, nomes, emails = [], set(), set()
-    for eq in cat.EQUIPES:
-        for i in range(int(rng.integers(10, 15))):
+    for eq in cat.PORTFOLIOS:
+        for i in range(int(rng.integers(16, 25))):
             while True:
                 nome = f"{fake.first_name()} {fake.last_name()}"
                 if nome not in nomes and _email(nome) not in emails:
@@ -77,17 +77,17 @@ def _pessoas(rng: np.random.Generator, fake: Faker, cfg: Config) -> list[dict]:
             nomes.add(nome)
             emails.add(_email(nome))
             pessoas.append({
-                "id": f"PES-{len(pessoas) + 1:03d}",
+                "id": f"USR-{len(pessoas) + 1:03d}",
                 "nome": nome,
                 "email": _email(nome),
-                "equipe_id": eq.id,
+                "portfolio_id": eq.id,
                 "cargo": cat.CARGOS["gestor"] if i == 0 else str(rng.choice(cat.CARGOS["membro"])),
                 "data_admissao": cfg.inicio - timedelta(days=int(rng.integers(30, 3000))),
                 "_saida": None,
                 "_ritmo": float(np.clip(rng.lognormal(0, 0.2), 0.6, 1.6)),
             })
     janela = (cfg.fim_portfolio - cfg.inicio).days
-    for i in rng.choice(len(pessoas), size=6, replace=False):
+    for i in rng.choice(len(pessoas), size=14, replace=False):
         if pessoas[i]["cargo"] != cat.CARGOS["gestor"]:
             pessoas[i]["_saida"] = cfg.inicio + timedelta(days=int(rng.uniform(0.3, 0.95) * janela))
     return pessoas
@@ -111,20 +111,20 @@ def _mundo(cfg: Config) -> tuple[list[dict], list[_Projeto]]:
     horizonte = datetime.combine(cfg.horizonte, time(23, 59, 59))
 
     pessoas = _pessoas(rng, fake, cfg)
-    por_equipe = {eq.id: [p for p in pessoas if p["equipe_id"] == eq.id] for eq in cat.EQUIPES}
+    por_portfolio = {eq.id: [p for p in pessoas if p["portfolio_id"] == eq.id] for eq in cat.PORTFOLIOS}
     pesos_tipo = np.array([t.peso for t in cat.TIPOS]) / sum(t.peso for t in cat.TIPOS)
     janela = (cfg.fim_portfolio - cfg.inicio).days
 
     projetos = []
-    for n, (equipe_id, nome) in enumerate(cat.PROJETOS):
+    for n, (portfolio_id, nome) in enumerate(cat.PROJETOS):
         inicio = no_expediente(cfg.inicio + timedelta(days=int(rng.beta(cfg.recencia, 1.0) * janela)), rng)
         duracao = int(rng.integers(90, 301))
         saude = float(np.clip(rng.lognormal(0, cfg.dispersao_saude), 0.7, 2.2))
         dias_planejados = int(duracao * rng.uniform(*cfg.otimismo))
         janela_tarefas = duracao * 0.85 * max(saude, 1.0) ** cfg.arrasto
 
-        equipe = por_equipe[equipe_id]
-        outros = [p for p in pessoas if p["equipe_id"] != equipe_id]
+        equipe = por_portfolio[portfolio_id]
+        outros = [p for p in pessoas if p["portfolio_id"] != portfolio_id]
         membros = [equipe[i] for i in rng.choice(range(1, len(equipe)), size=int(rng.integers(3, 7)), replace=False)]
         membros += [outros[i] for i in rng.choice(len(outros), size=int(rng.integers(0, 3)), replace=False)]
 
@@ -133,7 +133,7 @@ def _mundo(cfg: Config) -> tuple[list[dict], list[_Projeto]]:
         if sorte < cfg.p_cancelado + cfg.p_pausado:
             corte = Corte(quando, cancelar=sorte < cfg.p_cancelado)
 
-        projeto = _Projeto(n, nome, equipe_id, equipe[0],
+        projeto = _Projeto(n, nome, portfolio_id, equipe[0],
                            str(rng.choice(cat.PRIORIDADES[1:], p=(0.45, 0.4, 0.15))),
                            inicio, duracao, inicio + timedelta(days=janela_tarefas), dias_planejados, corte)
 
@@ -170,6 +170,40 @@ def _horas(tarefa: _Tarefa, eventos: list) -> float:
     return round(tarefa.horas_total * tarefa.fracao_parcial, 1)
 
 
+SITUACAO_TAREFA = {s.nome: s.categoria for s in cat.STATUS}
+CUSTO_HORA = {p.id: p.custo_hora for p in cat.PORTFOLIOS}
+
+
+def _etiquetas_tarefa(eventos: list) -> list[str]:
+    etiquetas = []
+    if eventos[-1][1] == cat.BLOQUEADA:
+        etiquetas.append("Bloqueada")
+    if any(a == cat.EM_REVISAO and n == cat.EM_ANDAMENTO for a, n, _ in eventos):
+        etiquetas.append("Retrabalho")
+    return etiquetas
+
+
+def _origem(nome: str) -> tuple[str, str | None]:
+    n = int(hashlib.sha256(nome.encode()).hexdigest()[:8], 16)
+    if n % 100 < 40:
+        return "Ideia", f"IDE-{1000 + n % 9000}"
+    if n % 100 < 55:
+        return "Startup", f"STA-{100 + n % 900}"
+    return "Direto", None
+
+
+def _farol(situacao: str, etiquetas: list[str], limite: date, tarefas: list, inicio: date, ref: date) -> str:
+    if situacao != "Ativo":
+        return "Encerrado"
+    if limite < ref:
+        return "Vermelho"
+    if "Em espera" in etiquetas:
+        return "Amarelo"
+    decorrido = (ref - inicio).days / max((limite - inicio).days, 1)
+    feitas = sum(s == cat.CONCLUIDA for s, _ in tarefas) / max(len(tarefas), 1)
+    return "Amarelo" if decorrido - feitas > 0.05 else "Verde"
+
+
 def gerar(cfg: Config = Config()) -> dict[str, list[dict]]:
     ref = datetime.combine(cfg.data_referencia, time(23, 59, 59))
     pessoas, projetos = _mundo(cfg)
@@ -194,63 +228,77 @@ def gerar(cfg: Config = Config()) -> dict[str, list[dict]]:
                 "id": tid,
                 "projeto_id": id_projeto[p.n],
                 "titulo": t.titulo,
-                "tipo": t.tipo,
-                "prioridade": t.prioridade,
+                "etapa": status,
+                "situacao": SITUACAO_TAREFA[status],
+                "etiquetas": _etiquetas_tarefa(evs),
                 "responsavel_id": t.responsavel["id"],
+                "prioridade": t.prioridade,
+                "tipo": t.tipo,
                 "estimativa_horas": t.estimativa,
                 "horas_apontadas": _horas(t, evs),
-                "status": status,
                 "criada_em": iso(t.criada),
-                "prazo": iso(t.prazo),
+                "limite": iso(t.prazo),
                 "concluida_em": iso(momento) if status == cat.CONCLUIDA else None,
                 "atualizado_em": iso(momento),
             })
             for j, (anterior, novo, quando) in enumerate(evs):
                 autor = p.gestor if novo in (cat.A_FAZER, cat.CANCELADA) else t.responsavel
-                saida_eventos.append({"id": id_evento[(tid, j)], "tarefa_id": tid, "status_anterior": anterior,
-                                      "status_novo": novo, "pessoa_id": autor["id"], "ocorrido_em": iso(quando)})
+                saida_eventos.append({"id": id_evento[(tid, j)], "tarefa_id": tid, "etapa_anterior": anterior,
+                                      "etapa_nova": novo, "usuario_id": autor["id"], "ocorrido_em": iso(quando)})
 
         escopo_original = p.inicio + timedelta(days=p.duracao * 0.85)
         status_tarefas = {s for s, _ in cortadas}
         momentos = [m for _, m in cortadas] + [p.inicio]
         conclusao = None
+        etiquetas = []
         if p.corte and p.corte.quando <= ref:
-            status = "Cancelado" if p.corte.cancelar else "Pausado"
+            situacao, etapa = ("Arquivado", "Execução") if p.corte.cancelar else ("Ativo", "Execução")
+            if not p.corte.cancelar:
+                etiquetas.append("Em espera")
             momentos.append(p.corte.quando)
         elif not status_tarefas or status_tarefas <= {cat.BACKLOG, cat.A_FAZER}:
-            status = "Planejamento"
+            situacao, etapa = "Ativo", "Planejamento"
         elif p.escopo_fecha_em <= ref and status_tarefas <= cat.STATUS_FINAIS:
-            status = "Concluído"
+            situacao, etapa = "Concluído", "Concluído"
             conclusao = max(max(momentos), p.escopo_fecha_em)
             momentos.append(conclusao)
         else:
-            status = "Em Andamento"
+            feitas = sum(s == cat.CONCLUIDA for s, _ in cortadas) / len(cortadas)
+            situacao, etapa = "Ativo", "Implantação" if feitas >= 0.8 else "Execução"
 
+        limite = p.inicio.date() + timedelta(days=p.dias_planejados)
+        horas_orcadas = int(np.ceil(sum(t.estimativa for t in p.tarefas if t.criada <= escopo_original) * 1.1 / 10) * 10)
+        origem, origem_id = _origem(p.nome)
         saida_projetos.append({
             "id": id_projeto[p.n],
+            "portfolio_id": p.portfolio_id,
             "nome": p.nome,
-            "equipe_id": p.equipe_id,
-            "gestor_id": p.gestor["id"],
+            "etapa": etapa,
+            "situacao": situacao,
+            "etiquetas": etiquetas,
+            "farol": _farol(situacao, etiquetas, limite, cortadas, p.inicio.date(), cfg.data_referencia),
+            "origem": origem,
+            "origem_id": origem_id,
+            "gerente_id": p.gestor["id"],
             "prioridade": p.prioridade,
-            "status": status,
-            "data_inicio": iso(p.inicio.date()),
-            "data_fim_planejada": iso(p.inicio.date() + timedelta(days=p.dias_planejados)),
-            "data_conclusao": iso(conclusao.date()) if conclusao else None,
-            "horas_orcadas": int(np.ceil(sum(t.estimativa for t in p.tarefas if t.criada <= escopo_original)
-                                         * 1.1 / 10) * 10),
+            "inicio": iso(p.inicio.date()),
+            "limite": iso(limite),
+            "concluido_em": iso(conclusao.date()) if conclusao else None,
+            "horas_orcadas": horas_orcadas,
+            "orcamento": horas_orcadas * CUSTO_HORA[p.portfolio_id],
             "criado_em": iso(p.inicio),
             "atualizado_em": iso(max(momentos)),
         })
 
-    equipes = [{"id": e.id, "nome": e.nome, "sigla": e.sigla,
-                "gestor_id": next(p["id"] for p in pessoas if p["equipe_id"] == e.id)} for e in cat.EQUIPES]
-    saida_pessoas = [{"id": p["id"], "nome": p["nome"], "email": p["email"], "equipe_id": p["equipe_id"],
-                      "cargo": p["cargo"], "data_admissao": iso(p["data_admissao"]),
-                      "ativo": p["_saida"] is None or p["_saida"] > cfg.data_referencia} for p in pessoas]
-    return {"equipes": equipes, "pessoas": saida_pessoas,
+    portfolios = [{"id": e.id, "nome": e.nome, "sigla": e.sigla, "etapas": list(cat.ETAPAS_PORTFOLIO),
+                   "dono_id": next(p["id"] for p in pessoas if p["portfolio_id"] == e.id)} for e in cat.PORTFOLIOS]
+    usuarios = [{"id": p["id"], "nome": p["nome"], "email": p["email"], "portfolio_id": p["portfolio_id"],
+                 "cargo": p["cargo"], "data_admissao": iso(p["data_admissao"]),
+                 "ativo": p["_saida"] is None or p["_saida"] > cfg.data_referencia} for p in pessoas]
+    return {"portfolios": portfolios, "usuarios": usuarios,
             "projetos": sorted(saida_projetos, key=lambda x: x["id"]),
             "tarefas": sorted(saida_tarefas, key=lambda x: x["id"]),
-            "historico": sorted(saida_eventos, key=lambda x: x["id"])}
+            "movimentacoes": sorted(saida_eventos, key=lambda x: x["id"])}
 
 
 def impressao_digital(dados: dict[str, list[dict]]) -> str:

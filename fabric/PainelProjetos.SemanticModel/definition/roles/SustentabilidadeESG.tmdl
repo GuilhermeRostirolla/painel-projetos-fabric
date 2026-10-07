@@ -1,0 +1,7 @@
+role SustentabilidadeESG
+	modelPermission: read
+
+	tablePermission dim_projeto = [portfolio] = "Sustentabilidade & ESG"
+
+	annotation PBI_Id = 7e15233ea7fe532a8b40c01b40299597
+

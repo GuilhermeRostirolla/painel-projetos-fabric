@@ -12,22 +12,22 @@ table fato_tarefa
 		displayFolder: Tarefas
 		lineageTag: 79362781-e755-591a-8e75-f1efa8c019ba
 
-	measure 'Tarefas Concluídas' = CALCULATE ( [Tarefas], fato_tarefa[status] = "Concluída" )
+	measure 'Tarefas Concluídas' = CALCULATE ( [Tarefas], fato_tarefa[status] = "Concluído" )
 		formatString: #,0
 		displayFolder: Tarefas
 		lineageTag: 0615dbbb-e46c-596c-8cf4-bfe11ce24cbd
 
-	measure 'Tarefas Bloqueadas' = CALCULATE ( [Tarefas], fato_tarefa[status] = "Bloqueada" )
+	measure 'Tarefas Impedidas' = CALCULATE ( [Tarefas], fato_tarefa[status] = "Impedido" )
 		formatString: #,0
 		displayFolder: Tarefas
-		lineageTag: b0b442da-a757-5daf-84c3-9880b0b2bb9a
+		lineageTag: 79078f7a-e7af-55cc-aa1d-d55ec95adccf
 
 	measure 'Tarefas Vencidas' = CALCULATE ( [Tarefas], fato_tarefa[situacao_prazo] = "Vencida" )
 		formatString: #,0
 		displayFolder: Prazo
 		lineageTag: 2e027398-3500-58de-a087-3704318f6776
 
-	measure '% Abertas Vencidas' = DIVIDE ( [Tarefas Vencidas], CALCULATE ( [Tarefas Abertas], NOT ISBLANK ( fato_tarefa[data_prazo] ) ) )
+	measure '% Abertas Vencidas' = DIVIDE ( [Tarefas Vencidas], CALCULATE ( [Tarefas Abertas], NOT ISBLANK ( fato_tarefa[data_limite] ) ) )
 		formatString: 0.0%
 		displayFolder: Prazo
 		lineageTag: bc5f3431-6574-5c87-a618-44d0acc02dab
@@ -88,7 +88,7 @@ table fato_tarefa
 		lineageTag: 8c17e6a2-db2a-5c4c-9bd6-a99baf5c2266
 
 	measure 'Desvio de Esforço %' = ```
-			VAR concluidas = FILTER ( fato_tarefa, fato_tarefa[status] = "Concluída" )
+			VAR concluidas = FILTER ( fato_tarefa, fato_tarefa[status] = "Concluído" )
 			RETURN
 			    DIVIDE ( SUMX ( concluidas, fato_tarefa[horas_apontadas] ), SUMX ( concluidas, fato_tarefa[estimativa_horas] ) ) - 1
 			```
@@ -133,9 +133,9 @@ table fato_tarefa
 			                NOT ISBLANK ( t_ini ) && t_ini <= fim && ate >= ini,
 			                SWITCH (
 			                    TRUE (),
-			                    situacao = "Concluída", "#5D7398",
-			                    situacao = "Cancelada", "#364259",
-			                    situacao = "Bloqueada", "#C4851A",
+			                    situacao = "Concluído", "#5D7398",
+			                    situacao = "Arquivada", "#364259",
+			                    situacao = "Impedido", "#C4851A",
 			                    prazo = "Vencida", "#E44A5D",
 			                    "#4682F5"
 			                )
@@ -148,8 +148,8 @@ table fato_tarefa
 			                SWITCH (
 			                    TRUE (),
 			                    NOT ISBLANK ( MAX ( dim_projeto[data_conclusao] ) ), MAX ( dim_projeto[data_conclusao] ),
-			                    p_status = "Cancelado", MAX ( dim_projeto[data_fim_planejada] ),
-			                    MAX ( MAX ( dim_projeto[data_fim_planejada] ), ref )
+			                    p_status = "Arquivado", MAX ( dim_projeto[data_limite] ),
+			                    MAX ( MAX ( dim_projeto[data_limite] ), ref )
 			                )
 			            RETURN
 			                IF (
@@ -157,9 +157,9 @@ table fato_tarefa
 			                    SWITCH (
 			                        TRUE (),
 			                        MAX ( dim_projeto[situacao_prazo] ) = "Atrasado", "#E44A5D",
-			                        p_status = "Cancelado", "#364259",
+			                        p_status = "Arquivado", "#364259",
 			                        p_status = "Concluído", "#5D7398",
-			                        p_status = "Pausado", "#33415E",
+			                        p_status = "Em espera", "#33415E",
 			                        "#4682F5"
 			                    )
 			                )
@@ -240,6 +240,24 @@ table fato_tarefa
 
 		annotation SummarizationSetBy = Automatic
 
+	column situacao
+		dataType: string
+		lineageTag: 60ecc85c-2cee-50ae-9247-f8e01277e8a3
+		sourceLineageTag: situacao
+		summarizeBy: none
+		sourceColumn: situacao
+
+		annotation SummarizationSetBy = Automatic
+
+	column etiquetas
+		dataType: string
+		lineageTag: 6bbc7902-bddc-58f6-a0e5-5939b7a27b5a
+		sourceLineageTag: etiquetas
+		summarizeBy: none
+		sourceColumn: etiquetas
+
+		annotation SummarizationSetBy = Automatic
+
 	column data_criacao
 		dataType: dateTime
 		formatString: dd/MM/yyyy
@@ -292,13 +310,13 @@ table fato_tarefa
 
 		annotation SummarizationSetBy = Automatic
 
-	column data_prazo
+	column data_limite
 		dataType: dateTime
 		formatString: dd/MM/yyyy
-		lineageTag: 9c1d848f-2435-59e4-a00b-c0f789851bed
-		sourceLineageTag: data_prazo
+		lineageTag: 98586314-361b-5cea-a2bc-e7efdcbd9068
+		sourceLineageTag: data_limite
 		summarizeBy: none
-		sourceColumn: data_prazo
+		sourceColumn: data_limite
 
 		annotation SummarizationSetBy = Automatic
 

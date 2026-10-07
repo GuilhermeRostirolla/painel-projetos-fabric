@@ -1,4 +1,4 @@
-"""API simulada de gestão de projetos.
+"""API simulada no formato da AEVO (Central de Iniciativas): portfólios, projetos e tarefas.
 
 Env: API_TOKEN, SEMENTE, DATA_REFERENCIA (AAAA-MM-DD), TAXA_FALHA (0 a 1)."""
 import os
@@ -33,7 +33,7 @@ def criar_app(cfg: Config | None = None, token: str | None = None,
     assinatura = impressao_digital(dados)
     sorteio = random.Random()
 
-    app = FastAPI(title="API de Projetos (simulada)", version=VERSAO,
+    app = FastAPI(title="API AEVO Iniciativas (simulada)", version=VERSAO,
                   description="Fonte de dados do Painel de Projetos. Dados 100% fictícios.")
     seguranca = HTTPBearer(auto_error=False)
 
@@ -76,8 +76,8 @@ def criar_app(cfg: Config | None = None, token: str | None = None,
         listar.__name__ = f"listar_{nome}"
         return listar
 
-    for nome, campo in (("equipes", None), ("pessoas", None), ("projetos", "atualizado_em"),
-                        ("tarefas", "atualizado_em"), ("historico", "ocorrido_em")):
+    for nome, campo in (("portfolios", None), ("usuarios", None), ("projetos", "atualizado_em"),
+                        ("tarefas", "atualizado_em"), ("movimentacoes", "ocorrido_em")):
         app.get(f"/v1/{nome}", tags=["dados"])(recurso(nome, campo))
 
     @app.get("/v1/meta", tags=["dados"])

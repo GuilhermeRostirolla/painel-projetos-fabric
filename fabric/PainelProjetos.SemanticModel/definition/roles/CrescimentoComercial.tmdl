@@ -1,0 +1,7 @@
+role CrescimentoComercial
+	modelPermission: read
+
+	tablePermission dim_projeto = [portfolio] = "Crescimento Comercial"
+
+	annotation PBI_Id = 5114cc61e35052b4991e32f244ac4fef
+

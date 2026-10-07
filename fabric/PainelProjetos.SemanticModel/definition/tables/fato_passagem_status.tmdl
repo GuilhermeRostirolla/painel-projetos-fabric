@@ -35,7 +35,7 @@ table fato_passagem_status
 		displayFolder: Fluxo
 		lineageTag: cd004c63-571b-588f-b485-51c74d04b7b5
 
-	measure 'Bloqueios no Período' = CALCULATE ( [Mudanças de Status], fato_passagem_status[status] = "Bloqueada" )
+	measure 'Bloqueios no Período' = CALCULATE ( [Mudanças de Status], fato_passagem_status[status] = "Impedido" )
 		formatString: #,0
 		displayFolder: Fluxo
 		lineageTag: e87fe2b2-3fb1-520b-886f-949b88d85a43

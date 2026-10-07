@@ -23,11 +23,11 @@
                       "Entity": "ref_parametros"
                     }
                   },
-                  "Property": "Contexto Projetos Ativos"
+                  "Property": "Contexto Projetos de Ideias"
                 }
               },
-              "queryRef": "ref_parametros.Contexto Projetos Ativos",
-              "nativeQueryRef": "Contexto Projetos Ativos"
+              "queryRef": "ref_parametros.Contexto Projetos de Ideias",
+              "nativeQueryRef": "Contexto Projetos de Ideias"
             }
           ]
         }

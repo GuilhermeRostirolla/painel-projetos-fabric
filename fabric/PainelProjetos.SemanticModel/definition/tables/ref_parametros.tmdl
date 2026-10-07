@@ -30,7 +30,7 @@ table ref_parametros
 		displayFolder: Contexto dos cartões
 		lineageTag: 3c89533c-5166-5519-8a93-353161e28b46
 
-	measure 'Contexto Tarefas Abertas' = FORMAT ( [Tarefas Bloqueadas] + 0, "#,0" ) & " bloqueadas agora"
+	measure 'Contexto Tarefas Abertas' = FORMAT ( [Tarefas Impedidas] + 0, "#,0" ) & " impedidas agora"
 		displayFolder: Contexto dos cartões
 		lineageTag: a754c98e-8a10-52e0-aa46-7357a6c07650
 
@@ -45,6 +45,14 @@ table ref_parametros
 	measure 'Contexto Horas Apontadas' = FORMAT ( DIVIDE ( [Horas Apontadas], [Horas Estimadas] ) - 1, "+0%;-0%;0%" ) & " vs. o estimado"
 		displayFolder: Contexto dos cartões
 		lineageTag: 4086d812-07fa-5d00-8a1c-66ebed4b148e
+
+	measure 'Contexto Orçamento Consumido' = FORMAT ( [% Orçamento Consumido] + 0, "0%" ) & " das horas orçadas já usadas"
+		displayFolder: Contexto dos cartões
+		lineageTag: 446e6f54-15db-50cf-9974-462077a59b30
+
+	measure 'Contexto Projetos de Ideias' = FORMAT ( [Projetos de Ideias] + 0, "#,0" ) & " vieram de ideias"
+		displayFolder: Contexto dos cartões
+		lineageTag: d98cb9fb-7280-5cb6-bc33-6c445f81f386
 
 	measure 'Contexto Orçamento' = ```
 			VAR saldo = [Horas Orçadas] - [Horas Apontadas]

@@ -110,7 +110,7 @@ def colunas2(itens, w, h, c1, c2, n1, n2):
 
 def area_chart(series, w, h, rotulos):
     L, R, top, bot = 30, 12, 22, 18
-    teto = 200
+    teto = 350
     pw, ph = w - L - R, h - top - bot
     n = len(rotulos)
     X = lambda i: L + pw * i / (n - 1)
@@ -203,15 +203,21 @@ def comuns():
     return "".join(out)
 
 
+CURTO = {"Transformação Digital": "Transf. Digital", "Crescimento Comercial": "Cresc. Comercial",
+         "Excelência Operacional": "Excel. Operacional", "Dados & Analytics": "Dados & Analytics",
+         "Pessoas & Cultura": "Pessoas & Cultura", "Experiência do Cliente": "Exp. Cliente",
+         "Sustentabilidade & ESG": "ESG", "Inovação Aberta": "Inov. Aberta"}
+COR_FAROL = {"Verde": COR["verde"], "Amarelo": COR["ambar"], "Vermelho": COR["vermelho"], "Encerrado": COR["cancelado"]}
+
+
 def dados_portfolio():
     p = "P1Portfolio"
-    out = comuns() + kpis_dados(p, [("26", "de 45 no portfólio", False), ("7", "27% dos ativos", True),
-                                    ("76,2%", "das tarefas concluídas", False), ("96,3%", "restam 831 h", False)])
-    sit = [("No prazo", 19), ("Concluído com atraso", 11), ("Atrasado", 7), ("Concluído no prazo", 3),
-           ("Pausado", 3), ("Cancelado", 2)]
-    cores = [COR["azul"], COR["ambar"], COR["vermelho"], COR["verde"], COR["concluido"], COR["cancelado"]]
+    out = comuns() + kpis_dados(p, [("42", "48 vieram de ideias", False), ("12", "29% dos ativos", True),
+                                    ("78,9%", "das tarefas concluídas", False),
+                                    ("R$ 10,3 mi", "103% das horas orçadas já usadas", False)])
+    farol = sorted(((f, int(n)) for f, n in G["farol"]), key=lambda x: -x[1])
     x, y, w, h = area(CARTOES[p]["saude"])
-    out += no_cartao(p, "saude", donut(sit, cores, w, h, 45))
+    out += no_cartao(p, "saude", donut(farol, [COR_FAROL[f] for f, _ in farol], w, h, 122))
     meses = [m for m, _ in D["criadas"]]
     ent = dict(D["entregues"])
     x, y, w, h = area(CARTOES[p]["entregas"])
@@ -219,38 +225,38 @@ def dados_portfolio():
         [("Criadas", [v for _, v in D["criadas"]], COR["concluido"], False),
          ("Entregues", [ent.get(m, 0) for m in meses], COR["azul"], True)],
         w, h, [f"{MES[int(m[5:]) - 1]}/{m[2:4]}" for m in meses]))
-    risco = [(r[0][:24], str(r[6])) for r in D["proj"] if r[4] == "Atrasado"][:5]
+    risco = [(r[0][:24], r[7]) for r in sorted(G["proj"], key=lambda r: -int(r[7] or 0)) if r[3] == "Atrasado"][:5]
     x, y, w, h = area(CARTOES[p]["risco"])
     out += no_cartao(p, "risco", tabela([("Projeto", "l"), ("Dias", "r")], risco, [w - 90, 90],
                                         {1: ("#E44A5D55", 407, float)}))
-    eq = [("Tecnologia", 7, 3), ("Comercial", 6, 1), ("Dados & BI", 5, 1), ("Operações", 5, 1),
-          ("Pessoas & Cult.", 3, 1)]
+    eq = [(CURTO[n], int(a), int(b)) for n, a, b in G["portfolio"]]
     x, y, w, h = area(CARTOES[p]["equipes"])
     out += no_cartao(p, "equipes", colunas2(eq, w, h, COR["azul"], COR["vermelho"], "Ativos", "Atrasados"))
     x, y, w, h = area(CARTOES[p]["esforco"])
-    horas = [(e if e != "Pessoas & Cultura" else "Pessoas & Cult.", a, b) for e, a, b in D["horas"]]
-    out += no_cartao(p, "esforco", colunas2(horas, w, h, COR["neutro"], COR["azul"], "Estimadas", "Apontadas"))
+    etapas = [(e, int(n)) for e, n in G["etapa"]]
+    out += no_cartao(p, "esforco", hbars(etapas, w, h, [COR["concluido"] if e == "Concluído" else COR["azul"]
+                                                        for e, _ in etapas], lab=110))
     return out
 
 
 def dados_tarefas():
     p = "P2ProjetosTarefas"
-    out = comuns() + kpis_dados(p, [("140", "7 bloqueadas agora", False), ("39", "31% das abertas", True),
-                                    ("86,1%", "86% de todas as tarefas", False), ("20,6", "da criação à conclusão", False)])
+    out = comuns() + kpis_dados(p, [("176", "6 impedidas agora", False), ("50", "31% das abertas", True),
+                                    ("91,0%", "91% de todas as tarefas", False), ("19,9", "da criação à conclusão", False)])
     linhas_ = []
     for r in sorted(G["proj"], key=lambda r: -(int(r[7]) if r[7] else -1))[:14]:
-        linhas_.append((r[0], r[1], r[3], f"{br(float(r[8]) * 100)}%", r[7] or ""))
+        linhas_.append((r[0][:30], CURTO[r[1]], r[9], r[10], f"{br(float(r[8]) * 100)}%", r[7] or ""))
     x, y, w, h = area(CARTOES[p]["projetos"])
     out += no_cartao(p, "projetos", tabela(
-        [("Projeto", "l"), ("Equipe", "l"), ("Prazo", "l"), ("Concluído", "r"), ("Dias de atraso", "r")],
-        linhas_, [220, 120, 140, 90, 100],
-        {3: ("#4682F555", 100, lambda v: float(v[:-1].replace(",", "."))),
-         4: ("#E44A5D55", 407, lambda v: float(v or 0))}))
-    ordem = ["Backlog", "A Fazer", "Em Andamento", "Em Revisão", "Bloqueada"]
-    par = dict(D["paradas"])
+        [("Projeto", "l"), ("Portfólio", "l"), ("Etapa", "l"), ("Farol", "l"), ("Concluído", "r"), ("Dias de atraso", "r")],
+        linhas_, [200, 110, 80, 60, 90, 96],
+        {4: ("#4682F555", 100, lambda v: float(v[:-1].replace(",", "."))),
+         5: ("#E44A5D55", 407, lambda v: float(v or 0))}))
+    ordem = ["Backlog", "A fazer", "Fazendo", "Impedido", "Em revisão"]
+    par = {e: int(n) for e, n in G["paradas"]}
     x, y, w, h = area(CARTOES[p]["etapas"])
     out += no_cartao(p, "etapas", hbars([(e, par[e]) for e in ordem], w, h,
-                                        [COR["vermelho"] if e == "Bloqueada" else COR["azul"] for e in ordem], lab=110))
+                                        [COR["vermelho"] if e == "Impedido" else COR["azul"] for e in ordem], lab=110))
     x, y, w, h = area(CARTOES[p]["vencidas"])
     out += no_cartao(p, "vencidas", tabela([("Tarefa", "l"), ("Responsável", "l"), ("Dias", "r")],
                                            [(v[0][:28], v[2], v[3]) for v in G["vencidas"][:6]], [200, 150, 80]))
@@ -277,13 +283,13 @@ def dados_cronograma():
     def cor_proj(r):
         if r[3] == "Atrasado":
             return COR["vermelho"]
-        return {"Cancelado": COR["cancelado"], "Concluído": COR["concluido"]}.get(r[2], COR["azul"])
+        return {"Arquivado": COR["cancelado"], "Concluído": COR["concluido"]}.get(r[2], COR["azul"])
 
     cab = "".join(f'<th style="width:{cw}px">{MES[m - 1]}{"<br>" + str(a)[2:] if m == 1 else ""}</th>' for a, m in meses)
     trs = []
     for r in G["proj"][:13]:
         ini = date.fromisoformat(r[4])
-        fim = (date.fromisoformat(r[6]) if r[6] else date.fromisoformat(r[5]) if r[2] == "Cancelado"
+        fim = (date.fromisoformat(r[6]) if r[6] else date.fromisoformat(r[5]) if r[2] == "Arquivado"
                else max(ref, date.fromisoformat(r[5])))
         aberto = r[0] == "Gestão de pátio"
         trs.append(f'<tr><td class="rh"><b>{"−" if aberto else "+"}</b> {r[0]}</td>{faixa(ini, fim, cor_proj(r))}</tr>')
@@ -291,7 +297,7 @@ def dados_cronograma():
             for t in G["tarefas_gestao"][-6:]:
                 ti = date.fromisoformat(t[3])
                 tf = date.fromisoformat(t[4]) if t[4] else ref
-                c = (COR["concluido"] if t[1] == "Concluída" else COR["ambar"] if t[1] == "Bloqueada"
+                c = (COR["concluido"] if t[1] == "Concluído" else COR["ambar"] if t[1] == "Impedido"
                      else COR["vermelho"] if t[2] == "Vencida" else COR["azul"])
                 trs.append(f'<tr><td class="rh sub2">{t[0][:30]}</td>{faixa(ti, tf, c)}</tr>')
     out += (f'<div class="vis" {caixa(x, y, w, h)}><table class="gantt"><thead><tr><th class="rh">Projeto / tarefa</th>'

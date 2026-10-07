@@ -1,0 +1,7 @@
+role InovacaoAberta
+	modelPermission: read
+
+	tablePermission dim_projeto = [portfolio] = "Inovação Aberta"
+
+	annotation PBI_Id = 6761f3bd0336579ebccd88a66274bcfd
+

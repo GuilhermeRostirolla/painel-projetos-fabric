@@ -79,12 +79,12 @@ def test_nada_que_o_direct_lake_recuse():
         assert "mode: import" not in texto, arquivo.name
 
 
-def test_um_papel_por_equipe():
-    from simulador.catalogos import EQUIPES
-    assert sorted(gm.PAPEIS.values()) == sorted(e.nome for e in EQUIPES)
+def test_um_papel_por_portfolio():
+    from simulador.catalogos import PORTFOLIOS
+    assert sorted(gm.PAPEIS.values()) == sorted(e.nome for e in PORTFOLIOS)
     modelo = (gm.DESTINO / "definition" / "model.tmdl").read_text()
-    for nome, equipe in gm.PAPEIS.items():
+    for nome, portfolio in gm.PAPEIS.items():
         texto = (gm.DESTINO / "definition" / "roles" / f"{nome}.tmdl").read_text()
-        assert texto.startswith(f"role {nome}\n") and f'[equipe] = "{equipe}"' in texto
+        assert texto.startswith(f"role {nome}\n") and f'[portfolio] = "{portfolio}"' in texto
         assert f"ref role {nome}" in modelo
         assert nome.isidentifier() and nome.isascii()

@@ -1,12 +1,13 @@
-"""Catálogos fixos do cenário: equipes, status, tipos de tarefa e nomes de projetos."""
+"""Catálogos do cenário no vocabulário da AEVO (Central de Iniciativas): portfólios, etapas, tipos e projetos."""
 from dataclasses import dataclass
 
 
 @dataclass(frozen=True)
-class Equipe:
+class Portfolio:
     id: int
     nome: str
     sigla: str
+    custo_hora: int
 
 
 @dataclass(frozen=True)
@@ -25,25 +26,30 @@ class TipoTarefa:
     estouro: float
 
 
-EQUIPES = (
-    Equipe(1, "Tecnologia", "TEC"),
-    Equipe(2, "Dados & BI", "DAT"),
-    Equipe(3, "Operações", "OPE"),
-    Equipe(4, "Comercial", "COM"),
-    Equipe(5, "Pessoas & Cultura", "PES"),
+PORTFOLIOS = (
+    Portfolio(1, "Transformação Digital", "TD", 160),
+    Portfolio(2, "Dados & Analytics", "DA", 170),
+    Portfolio(3, "Excelência Operacional", "EO", 130),
+    Portfolio(4, "Crescimento Comercial", "CC", 140),
+    Portfolio(5, "Pessoas & Cultura", "PC", 120),
+    Portfolio(6, "Experiência do Cliente", "EC", 150),
+    Portfolio(7, "Sustentabilidade & ESG", "SE", 140),
+    Portfolio(8, "Inovação Aberta", "IA", 180),
 )
 
+ETAPAS_PORTFOLIO = ("Planejamento", "Execução", "Implantação", "Concluído")
+
 BACKLOG, A_FAZER, EM_ANDAMENTO, BLOQUEADA, EM_REVISAO, CONCLUIDA, CANCELADA = (
-    "Backlog", "A Fazer", "Em Andamento", "Bloqueada", "Em Revisão", "Concluída", "Cancelada")
+    "Backlog", "A fazer", "Fazendo", "Impedido", "Em revisão", "Concluído", "Arquivada")
 
 STATUS = (
     Status(1, BACKLOG, "Não iniciada", 1),
     Status(2, A_FAZER, "Não iniciada", 2),
-    Status(3, EM_ANDAMENTO, "Em execução", 3),
-    Status(4, BLOQUEADA, "Em execução", 4),
-    Status(5, EM_REVISAO, "Em execução", 5),
+    Status(3, EM_ANDAMENTO, "Em andamento", 3),
+    Status(4, BLOQUEADA, "Em andamento", 4),
+    Status(5, EM_REVISAO, "Em andamento", 5),
     Status(6, CONCLUIDA, "Concluída", 6),
-    Status(7, CANCELADA, "Cancelada", 7),
+    Status(7, CANCELADA, "Arquivada", 7),
 )
 STATUS_FINAIS = frozenset({CONCLUIDA, CANCELADA})
 
@@ -88,6 +94,35 @@ PROJETOS = (
     (5, "Ponto eletrônico digital"), (5, "Plano de cargos e salários"),
     (2, "Monitoramento de pipelines de dados"), (1, "Assinatura eletrônica de contratos"),
     (3, "Controle de combustível"), (4, "Expansão para o Nordeste"),
+    (1, "Migração de e-mail corporativo"), (1, "Segurança de endpoints"), (1, "Rede Wi-Fi nas lojas"),
+    (1, "Automação de folha com RPA"), (1, "Portal do fornecedor"), (1, "Gestão de identidades"),
+    (2, "Modelo de churn de clientes"), (2, "Precificação dinâmica"), (2, "Painel executivo de vendas"),
+    (2, "Lakehouse no Microsoft Fabric"), (2, "Detecção de fraudes em reembolsos"), (2, "Segmentação de clientes"),
+    (2, "Previsão de inadimplência"),
+    (3, "Lean no centro de distribuição"), (3, "Rastreamento de frota por GPS"), (3, "Redução de avarias no transporte"),
+    (3, "Cross docking regional"), (3, "Sistema de gestão de armazém"), (3, "Inspeção de qualidade com visão"),
+    (3, "Programa 5S nas filiais"),
+    (4, "Força de vendas no campo"), (4, "Canal de vendas B2B online"), (4, "Programa de parceiros"),
+    (4, "Revisão de comissionamento"), (4, "Inteligência de mercado"), (4, "Abertura de filial em Goiânia"),
+    (4, "Key account management"),
+    (5, "Programa de estágio"), (5, "Saúde mental e bem-estar"), (5, "Universidade corporativa"),
+    (5, "Diversidade e inclusão"), (5, "Benefícios flexíveis"), (5, "Gestão de talentos"),
+    (5, "Recrutamento com triagem digital"),
+    (6, "Jornada do cliente omnichannel"), (6, "Chatbot de atendimento"), (6, "NPS em tempo real"),
+    (6, "Central de relacionamento"), (6, "App do cliente"), (6, "Programa de recompra"),
+    (6, "Autoatendimento de segunda via"), (6, "Pesquisa pós-entrega"), (6, "Redesenho do site"),
+    (6, "Atendimento por WhatsApp"), (6, "Tratamento de reclamações"), (6, "Base de conhecimento"),
+    (6, "Personalização de ofertas"), (6, "Entrega agendada"), (6, "Clube de vantagens"),
+    (7, "Inventário de emissões"), (7, "Energia solar nos CDs"), (7, "Logística reversa de embalagens"),
+    (7, "Frota elétrica urbana"), (7, "Relatório de sustentabilidade"), (7, "Redução de consumo de água"),
+    (7, "Compras sustentáveis"), (7, "Gestão de resíduos"), (7, "Certificação ISO 14001"),
+    (7, "Programa de voluntariado"), (7, "Neutralização de carbono"), (7, "Embalagem reciclável"),
+    (7, "Eficiência energética nas lojas"), (7, "Diagnóstico ESG de fornecedores"),
+    (8, "POC de roteirização com IA"), (8, "Piloto de drones no inventário"), (8, "Hackathon de logística"),
+    (8, "Programa de intraempreendedorismo"), (8, "POC de visão computacional"), (8, "Desafio de startups 2025"),
+    (8, "Piloto de IoT em câmaras frias"), (8, "Assistente de IA para vendedores"), (8, "Marketplace de serviços"),
+    (8, "Gêmeo digital do CD"), (8, "Desafio de startups 2026"), (8, "POC de manutenção com sensores"),
+    (8, "Laboratório de inovação"), (8, "Piloto de pagamentos por aproximação"),
 )
 
 TITULOS = {
