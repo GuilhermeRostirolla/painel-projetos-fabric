@@ -236,6 +236,8 @@ if CONFERIR_MEDIDAS:
     if falhas:
         raise AssertionError(f"RLS não filtrou como esperado: {falhas}")
     print(f"\nos {len(esperado['papeis'])} papéis de segurança enxergam só a própria equipe")
+    # resumo para quem chamar este notebook com notebookutils.notebook.run
+    notebookutils.notebook.exit(json.dumps({"medidas_ok": len(medidas), "papeis_ok": len(esperado["papeis"])}))
 
 # METADATA ********************
 
