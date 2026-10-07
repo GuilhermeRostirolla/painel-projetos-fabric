@@ -6,7 +6,9 @@ Este projeto busca os dados de uma ferramenta de gestão de projetos **por API**
 
 É a continuação do [Painel de Ideias](https://github.com/GuilhermeRostirolla/painel-ideias-powerbi): lá o dado nascia num banco SQL Server; aqui ele vem de uma API, como acontece com Jira, Asana, ClickUp e companhia, e o pipeline precisa lidar com tudo que uma API real faz: token, paginação, carga incremental e limite de requisições.
 
-### Perguntas que o painel vai responder
+![Visão Geral](docs/img/visao_geral.png)
+
+### Perguntas que o painel responde
 
 - **Portfólio:** quantos projetos estão em andamento, pausados, cancelados e concluídos, por equipe e gestor.
 - **Prazo:** quais projetos passaram do fim planejado, quantas tarefas estão vencidas e quanto cada uma atrasou.
@@ -56,6 +58,18 @@ flowchart LR
 | **Orquestrador** (`nb_00`) | Roda as três etapas em sequência. É ele que fica agendado. |
 | **Relatório** (`PainelProjetos.Report`) | 4 páginas em PBIR: Visão Geral, Projetos, Fluxo e gargalos, Pessoas e esforço. Gerado por `tools/gerar_relatorio.py` e publicado pelo `nb_04`. |
 | **Modelo semântico** (`PainelProjetos.SemanticModel`) | Direct Lake sobre a gold: 7 tabelas, 7 relacionamentos e 37 medidas em pastas (Portfólio, Prazo, Tarefas, Tempo, Fluxo, Esforço, Período). Gerado em TMDL por `tools/gerar_modelo.py`. |
+
+## Páginas
+
+| Projetos | Fluxo e gargalos |
+|---|---|
+| ![Projetos](docs/img/projetos.png) | ![Fluxo e gargalos](docs/img/fluxo.png) |
+
+| Pessoas e esforço |
+|---|
+| ![Pessoas e esforço](docs/img/pessoas.png) |
+
+> Capturas do relatório publicado no Microsoft Fabric, com os dados de 30/09/2026.
 
 ## Decisões que tomei
 
