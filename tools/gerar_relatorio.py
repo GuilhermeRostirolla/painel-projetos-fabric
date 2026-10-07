@@ -26,9 +26,16 @@ SCHEMA = "https://developer.microsoft.com/json-schemas/fabric/item/report/defini
 TEMA_BASE = "CY26SU04"
 TEMA = "TemaPainelProjetos.json"
 
-COR = {"texto": "#1B2430", "suave": "#5B6573", "fundo": "#F4F6F9", "cartao": "#FFFFFF",
-       "azul": "#1F5A96", "verde": "#1E8A6E", "laranja": "#D9822B", "vermelho": "#C2413A",
-       "cinza": "#9AA3AF", "roxo": "#6B5CA5"}
+# Tokens do redesign (Figma "Painel de Projetos — Redesign", quadro 05 · Guia de estilo).
+# Um assunto por cor: azul conta volume, cinza é referência, verde/âmbar/vermelho só situação.
+# Paleta conferida com o validador de daltonismo (status: verde × âmbar × vermelho separados).
+COR = {"texto": "#17212B", "suave": "#5A6472", "apagado": "#8A93A0", "fundo": "#F3F5F8", "cartao": "#FFFFFF",
+       "borda": "#E4E8EE", "grade": "#EDF0F4", "cabecalho": "#0F2A44", "cabecalho2": "#1C3A5A",
+       "cabecalho_texto": "#B9C6D6", "azul": "#2F6DB5", "referencia": "#A3ACB9", "neutro": "#B8C4D3",
+       "bom": "#1F8A5B", "atencao": "#D29B00", "atencao_texto": "#9A7000", "critico": "#C2362F",
+       "barra_azul": "#C9DAEE", "barra_vermelha": "#F2C9C6"}
+TOM = {"n": (COR["azul"], COR["suave"]), "c": (COR["critico"], COR["critico"]),
+       "w": (COR["atencao"], COR["atencao_texto"]), "g": (COR["bom"], COR["bom"])}
 
 TABELA_DA_MEDIDA = {m[0]: tabela for tabela, medidas in MEDIDAS.items() for m in medidas}
 
@@ -51,12 +58,15 @@ def cor(hexa: str) -> dict:
     return {"solid": {"color": lit(hexa)}}
 
 
+def coluna(tabela: str, nome: str) -> dict:
+    return {"Column": {"Expression": {"SourceRef": {"Entity": tabela}}, "Property": nome}}
+
+
 def campo(ref: str) -> dict:
     """'Medida' (sem ponto) ou 'tabela.coluna'."""
     if "." in ref and ref.split(".")[0] in {"dim_data", "dim_projeto", "dim_pessoa", "dim_status",
                                              "fato_tarefa", "fato_passagem_status", "ref_parametros"}:
-        tabela, coluna = ref.split(".", 1)
-        return {"Column": {"Expression": {"SourceRef": {"Entity": tabela}}, "Property": coluna}}
+        return coluna(*ref.split(".", 1))
     return {"Measure": {"Expression": {"SourceRef": {"Entity": TABELA_DA_MEDIDA[ref]}}, "Property": ref}}
 
 
@@ -82,45 +92,87 @@ def ordenar(ref: str, decrescente: bool = True) -> dict:
     return {"sort": [{"field": campo(ref), "direction": "Descending" if decrescente else "Ascending"}]}
 
 
-def moldura(titulo: str | None, fundo: bool = True, respiro: float = 8.0) -> dict:
+def quando(ref: str, valor: str) -> dict:
+    """seletor de um ponto pela categoria (ex.: só a barra 'Atrasado')"""
+    return {"data": [{"scopeId": {"Comparison": {"ComparisonKind": 0, "Left": campo(ref),
+                                                 "Right": {"Literal": {"Value": "'" + valor + "'"}}}}}]}
+
+
+def filtro_igual(ref: str, valor: str, nome: str) -> dict:
+    tabela, col = ref.split(".", 1)
+    return {"filters": [{
+        "name": nome, "field": campo(ref), "type": "Categorical",
+        "filter": {"Version": 2, "From": [{"Name": "t", "Entity": tabela, "Type": 0}],
+                   "Where": [{"Condition": {"In": {
+                       "Expressions": [{"Column": {"Expression": {"SourceRef": {"Source": "t"}}, "Property": col}}],
+                       "Values": [[{"Literal": {"Value": "'" + valor + "'"}}]]}}}]},
+        "howCreated": "User"}]}
+
+
+def moldura(titulo: str | None = None, subtitulo: str | None = None, fundo: str | None = COR["cartao"],
+            borda: bool = True, raio: float = 10.0, respiro: float = 12.0) -> dict:
     objetos = {
         "title": [{"properties": {"show": lit(bool(titulo)), **({"text": lit(titulo), "fontColor": cor(COR["texto"]),
-                                                                  "fontSize": lit(11.0), "bold": lit(True)}
+                                                                  "fontSize": lit(12.0), "bold": lit(False),
+                                                                  "fontFamily": lit("Segoe UI Semibold")}
                                                                  if titulo else {})}}],
-        "background": [{"properties": {"show": lit(fundo), "color": cor(COR["cartao"]),
-                                       "transparency": lit(0.0)}}],
-        "border": [{"properties": {"show": lit(fundo), "color": cor("#E3E7ED"), "radius": lit(8.0)}}],
+        "background": [{"properties": {"show": lit(fundo is not None),
+                                       **({"color": cor(fundo), "transparency": lit(0.0)} if fundo else {})}}],
+        "border": [{"properties": {"show": lit(borda), "color": cor(COR["borda"]), "radius": lit(raio)}}],
         "dropShadow": [{"properties": {"show": lit(False)}}],
         "visualHeader": [{"properties": {"show": lit(False)}}],
         "padding": [{"properties": {k: lit(respiro) for k in ("top", "bottom", "left", "right")}}],
     }
+    if subtitulo:
+        objetos["subTitle"] = [{"properties": {"show": lit(True), "text": lit(subtitulo),
+                                               "fontColor": cor(COR["suave"]), "fontSize": lit(9.0)}}]
     return objetos
 
 
 # --- visuais -------------------------------------------------------------------------------
 
 class Pagina:
+    """Grade de 1280 × 720: cabeçalho 0–76, cartões 92–188, linhas de gráficos em 204 e 460."""
+
+    Y_KPI, H_KPI = 92, 96
+    Y2, Y3, H_LINHA = 204, 460, 244
+
     def __init__(self, nome: str, titulo: str, subtitulo: str):
         self.nome, self.titulo = nome, titulo
         self.visuais: list[dict] = []
-        self.texto(titulo, 24, 8, 760, 42, 20, COR["texto"], negrito=True)
-        self.texto(subtitulo, 24, 52, 900, 24, 10.5, COR["suave"])
-        self.cartao("Texto Referência", 1036, 18, 220, 46, rotulo=False, tamanho=11.0, cor_valor=COR["suave"],
-                    fundo=False)
-        self.segmentacao("dim_projeto.equipe", "Equipe", 24, 82, 220, 52)
-        self.segmentacao("dim_projeto.status", "Status do projeto", 256, 82, 220, 52)
+        self.fundos: set[str] = set()   # painéis decorativos: os visuais de cima ficam dentro deles
+        # cabeçalho escuro com título, filtros e data de referência
+        self.painel(0, 0, LARGURA, 76, COR["cabecalho"], borda=False, raio=0.0)
+        self.texto(titulo, 24, 8, 560, 34, 17, "#FFFFFF", negrito=True)
+        self.texto(subtitulo, 24, 42, 560, 24, 9.5, COR["cabecalho_texto"])
+        self.segmentacao("dim_projeto.equipe", "Equipe", 860, 16, 128, 44)
+        self.segmentacao("dim_projeto.status", "Status do projeto", 996, 16, 128, 44)
+        self.valor("Texto Referência", 1134, 26, 130, 26, 9.0, COR["cabecalho_texto"])
 
     def _id(self) -> str:
         return hashlib.sha1(f"{self.nome}/{len(self.visuais)}".encode()).hexdigest()[:20]
 
-    def _add(self, x, y, w, h, visual: dict) -> None:
+    def _add(self, x, y, w, h, visual: dict, extra: dict | None = None) -> str:
         z = len(self.visuais) * 100
+        nome = self._id()
         self.visuais.append({
             "$schema": f"{SCHEMA}/visualContainer/2.11.0/schema.json",
-            "name": self._id(),
-            "position": {"x": x, "y": y, "z": z, "height": h, "width": w, "tabOrder": z},
+            "name": nome,
+            "position": {"x": round(x, 1), "y": round(y, 1), "z": z, "height": round(h, 1), "width": round(w, 1),
+                         "tabOrder": z},
             "visual": visual,
+            **(extra or {}),
         })
+        return nome
+
+    def painel(self, x, y, w, h, fundo, borda=True, raio=10.0):
+        """caixa de fundo (caixa de texto vazia): só cor, borda e cantos"""
+        nome = self._add(x, y, w, h, {
+            "visualType": "textbox",
+            "objects": {"general": [{"properties": {"paragraphs": [{"textRuns": [{"value": ""}]}]}}]},
+            "visualContainerObjects": moldura(fundo=fundo, borda=borda, raio=raio, respiro=0.0),
+            "drillFilterOtherVisuals": True})
+        self.fundos.add(nome)
 
     def texto(self, conteudo, x, y, w, h, tamanho, cor_texto, negrito=False):
         estilo = {"fontFamily": "Segoe UI Semibold" if negrito else "Segoe UI",
@@ -129,137 +181,229 @@ class Pagina:
             "visualType": "textbox",
             "objects": {"general": [{"properties": {"paragraphs": [
                 {"textRuns": [{"value": conteudo, "textStyle": estilo}], "horizontalTextAlignment": "left"}]}}]},
-            "visualContainerObjects": moldura(None, fundo=False, respiro=0.0),
+            "visualContainerObjects": moldura(fundo=None, borda=False, respiro=0.0),
             "drillFilterOtherVisuals": True})
 
-    def cartao(self, medida, x, y, w=190, h=96, rotulo=True, tamanho=22.0, cor_valor=None, fundo=True):
+    def valor(self, medida, x, y, w, h, tamanho, cor_valor, negrito=False):
+        """um número (ou texto) alinhado à esquerda, sem rótulo: cartão de várias linhas enxuto"""
         self._add(x, y, w, h, {
-            "visualType": "card",
+            "visualType": "multiRowCard",
             "query": {"queryState": {"Values": {"projections": campos([medida])}}},
             "objects": {
-                "labels": [{"properties": {"fontSize": lit(tamanho), "color": cor(cor_valor or COR["texto"]),
-                                           "labelDisplayUnits": lit(1.0)}}],
-                "categoryLabels": [{"properties": {"show": lit(rotulo), "fontSize": lit(9.0),
-                                                   "color": cor(COR["suave"])}}],
+                "dataLabels": [{"properties": {"fontSize": lit(float(tamanho)), "color": cor(cor_valor),
+                                               "fontFamily": lit("Segoe UI Semibold" if negrito else "Segoe UI")}}],
+                "categoryLabels": [{"properties": {"show": lit(False)}}],
+                "card": [{"properties": {"barShow": lit(False), "outline": lit("None"),
+                                         "cardPadding": lit(0.0), "cardBackground": cor("#FFFFFF"),
+                                         "cardBackgroundTransparency": lit(100.0)}}],
             },
-            "visualContainerObjects": moldura(None, fundo=fundo),
+            "visualContainerObjects": moldura(fundo=None, borda=False, respiro=0.0),
             "drillFilterOtherVisuals": True})
 
-    def segmentacao(self, coluna, titulo, x, y, w, h):
+    def kpi(self, medida, rotulo, contexto, tom, x, y, w, h):
+        """cartão: barra de situação, rótulo em caixa alta, número grande e linha de contexto"""
+        barra, cor_contexto = TOM[tom]
+        self.painel(x, y, w, h, COR["cartao"])
+        self.painel(x + 10, y + 14, 3, h - 28, barra, borda=False, raio=2.0)
+        self.texto(rotulo.upper(), x + 20, y + 10, w - 28, 20, 8, COR["suave"], negrito=True)
+        self.valor(medida, x + 17, y + 30, w - 26, 36, 20, COR["texto"], negrito=True)
+        if contexto in TABELA_DA_MEDIDA:
+            self.valor(contexto, x + 17, y + 66, w - 26, 22, 9, cor_contexto)
+        else:
+            self.texto(contexto, x + 20, y + 66, w - 28, 22, 9, cor_contexto)
+
+    def linha_de_cartoes(self, itens):
+        n, espaco = len(itens), 12
+        w = (LARGURA - 48 - espaco * (n - 1)) / n
+        for i, item in enumerate(itens):
+            self.kpi(*item, 24 + i * (w + espaco), self.Y_KPI, w, self.H_KPI)
+
+    def segmentacao(self, col, titulo, x, y, w, h):
         self._add(x, y, w, h, {
             "visualType": "slicer",
-            "query": {"queryState": {"Values": {"projections": campos([coluna])}}},
+            "query": {"queryState": {"Values": {"projections": campos([col])}}},
             "objects": {"data": [{"properties": {"mode": lit("Dropdown")}}],
                         "header": [{"properties": {"show": lit(True), "text": lit(titulo),
-                                                   "fontColor": cor(COR["suave"]), "textSize": lit(9.0)}}]},
-            "visualContainerObjects": moldura(None, fundo=False),
+                                                   "fontColor": cor(COR["cabecalho_texto"]), "textSize": lit(8.0)}}],
+                        "items": [{"properties": {"fontColor": cor("#FFFFFF"), "background": cor(COR["cabecalho2"]),
+                                                  "textSize": lit(10.0)}}]},
+            "visualContainerObjects": moldura(fundo=COR["cabecalho2"], borda=False, raio=6.0, respiro=4.0),
             "drillFilterOtherVisuals": True})
 
-    def grafico(self, tipo, titulo, categoria, medidas, x, y, w, h, cores=None, ordem=None,
-                ordem_crescente=False, legenda=True):
-        objetos = {"categoryAxis": [{"properties": {"fontSize": lit(9.0), "labelColor": cor(COR["suave"]),
-                                                    "showAxisTitle": lit(False)}}],
-                   "valueAxis": [{"properties": {"fontSize": lit(9.0), "labelColor": cor(COR["suave"]),
-                                                 "showAxisTitle": lit(False), "labelDisplayUnits": lit(1.0)}}],
-                   "legend": [{"properties": {"show": lit(legenda and len(medidas) > 1), "position": lit("Top"),
-                                              "fontSize": lit(9.0)}}],
-                   "labels": [{"properties": {"show": lit(tipo != "lineChart"), "fontSize": lit(9.0),
-                                              "labelDisplayUnits": lit(1.0)}}]}
-        if cores:
-            objetos["dataPoint"] = [
-                {"properties": {"fill": cor(c)}, "selector": {"metadata": projecao(m)["queryRef"]}}
-                for m, c in zip([m if isinstance(m, str) else m[0] for m in medidas], cores)]
+    def grafico(self, tipo, titulo, subtitulo, categoria, medidas, x, y, w, h, cores=None, destaques=None,
+                ordem=None, ordem_crescente=False):
+        """tipo: barras horizontais (clusteredBarChart), colunas ou linha.
+        cores: uma por medida. destaques: {valor da categoria: cor} (o resto fica com a cor da medida)."""
+        barras = tipo != "lineChart"
+        horizontal = tipo == "clusteredBarChart"
+        objetos = {
+            "categoryAxis": [{"properties": {"show": lit(True), "fontSize": lit(9.0 if horizontal else 8.0),
+                                             "labelColor": cor(COR["texto"] if horizontal else COR["apagado"]),
+                                             "showAxisTitle": lit(False), "innerPadding": lit(28.0 if barras else 0.0)}}],
+            # barras: sem eixo de valor nem grade (o rótulo na ponta já diz o número); linha: grade bem clara
+            "valueAxis": [{"properties": {"show": lit(not barras), "fontSize": lit(8.0),
+                                          "labelColor": cor(COR["apagado"]), "showAxisTitle": lit(False),
+                                          "labelDisplayUnits": lit(1.0), "gridlineShow": lit(not barras),
+                                          "gridlineColor": cor(COR["grade"]), "gridlineStyle": lit("solid")}}],
+            "legend": [{"properties": {"show": lit(len(medidas) > 1), "position": lit("TopLeft"),
+                                       "fontSize": lit(8.0), "labelColor": cor(COR["suave"])}}],
+            "labels": [{"properties": {"show": lit(barras), "fontSize": lit(8.5), "color": cor(COR["texto"]),
+                                       "labelDisplayUnits": lit(1.0)}}],
+        }
+        if not barras:
+            objetos["lineStyles"] = [{"properties": {"strokeWidth": lit(2.0), "showMarker": lit(False)}}]
+        pontos = []
+        nomes = [m if isinstance(m, str) else m[0] for m in medidas]
+        for m, c in zip(nomes, cores or []):
+            pontos.append({"properties": {"fill": cor(c)}, "selector": {"metadata": projecao(m)["queryRef"]}})
+        for valor_categoria, c in (destaques or {}).items():
+            pontos.append({"properties": {"fill": cor(c)}, "selector": quando(categoria, valor_categoria)})
+        if pontos:
+            objetos["dataPoint"] = pontos
         query = {"queryState": {"Category": {"projections": [projecao(categoria, ativo=True)]},
                                 "Y": {"projections": campos(medidas)}}}
         if ordem:
             query["sortDefinition"] = ordenar(ordem, not ordem_crescente)
         self._add(x, y, w, h, {"visualType": tipo, "query": query, "objects": objetos,
-                               "visualContainerObjects": moldura(titulo), "drillFilterOtherVisuals": True})
+                               "visualContainerObjects": moldura(titulo, subtitulo), "drillFilterOtherVisuals": True})
 
-    def tabela(self, titulo, colunas, x, y, w, h, ordem, crescente=False):
+    def tabela(self, titulo, subtitulo, colunas_, x, y, w, h, ordem, crescente=False, barras=None, filtro=None):
+        """barras: {campo: cor} → barra de dados atrás do número"""
+        objetos = {
+            "columnHeaders": [{"properties": {"fontColor": cor(COR["suave"]), "bold": lit(True),
+                                              "backColor": cor(COR["cartao"]), "fontSize": lit(8.5),
+                                              "outline": lit("BottomOnly")}}],
+            "values": [{"properties": {"fontSize": lit(9.0), "fontColorPrimary": cor(COR["texto"]),
+                                       "fontColorSecondary": cor(COR["texto"]),
+                                       "backColorPrimary": cor(COR["cartao"]),
+                                       "backColorSecondary": cor(COR["cartao"])}}],
+            "grid": [{"properties": {"gridHorizontal": lit(True), "gridHorizontalColor": cor(COR["grade"]),
+                                     "gridVertical": lit(False), "outlineColor": cor(COR["borda"]),
+                                     "rowPadding": lit(6)}}],
+            "total": [{"properties": {"totals": lit(False)}}],
+        }
+        if barras:
+            objetos["columnFormatting"] = [
+                {"properties": {"dataBars": {"positiveColor": cor(c), "negativeColor": cor(COR["barra_vermelha"]),
+                                             "axisColor": cor(COR["borda"]), "reverseDirection": lit(False),
+                                             "hideText": lit(False)}},
+                 "selector": {"metadata": projecao(ref)["queryRef"]}}
+                for ref, c in barras.items()]
+        extra = {"filterConfig": filtro_igual(*filtro, nome=hashlib.sha1(titulo.encode()).hexdigest()[:20])} \
+            if filtro else None
         self._add(x, y, w, h, {
             "visualType": "tableEx",
-            "query": {"queryState": {"Values": {"projections": campos(colunas)}},
+            "query": {"queryState": {"Values": {"projections": campos(colunas_)}},
                       "sortDefinition": ordenar(ordem, not crescente)},
-            "objects": {"columnHeaders": [{"properties": {"fontColor": cor(COR["texto"]), "bold": lit(True),
-                                                          "backColor": cor("#EEF1F5"), "fontSize": lit(9.0)}}],
-                        "values": [{"properties": {"fontSize": lit(9.0)}}],
-                        "grid": [{"properties": {"gridHorizontal": lit(True), "rowPadding": lit(3)}}]},
-            "visualContainerObjects": moldura(titulo),
-            "drillFilterOtherVisuals": True})
-
-    def linha_de_cartoes(self, medidas, y=146, h=96):
-        n = len(medidas)
-        espaco = 12
-        w = (LARGURA - 48 - espaco * (n - 1)) / n
-        for i, m in enumerate(medidas):
-            self.cartao(m, round(24 + i * (w + espaco), 1), y, round(w, 1), h)
+            "objects": objetos,
+            "visualContainerObjects": moldura(titulo, subtitulo),
+            "drillFilterOtherVisuals": True}, extra)
 
 
 # --- páginas -------------------------------------------------------------------------------
 
+SITUACAO = {"Atrasado": COR["critico"], "Concluído com atraso": COR["atencao"]}
+
+
 def paginas() -> list[Pagina]:
-    y2, y3 = 254, 486          # linhas da grade abaixo dos cartões
-    meia = (LARGURA - 48 - 12) / 2
+    y2, y3, h = Pagina.Y2, Pagina.Y3, Pagina.H_LINHA
+    alto = y3 + h - y2   # visual que ocupa as duas linhas
 
-    geral = Pagina("P1Geral", "Painel de Projetos",
-                   "Portfólio, prazos e entregas · dados simulados de uma ferramenta de gestão de projetos")
-    geral.linha_de_cartoes(["Projetos Ativos", "Projetos Atrasados", "Tarefas Abertas", "Tarefas Vencidas",
-                            "% Entregues no Prazo", "Desvio de Esforço %"])
-    geral.grafico("lineChart", "Tarefas criadas × entregues por mês", "dim_data.mes_ano",
+    geral = Pagina("P1Geral", "Painel de Projetos", "Portfólio, prazos e entregas · dados simulados de uma "
+                                                     "ferramenta de gestão de projetos")
+    geral.linha_de_cartoes([
+        ("Projetos Ativos", "Projetos ativos", "Contexto Projetos Ativos", "n"),
+        ("Projetos Atrasados", "Projetos atrasados", "Contexto Projetos Atrasados", "c"),
+        ("Tarefas Abertas", "Tarefas abertas", "Contexto Tarefas Abertas", "n"),
+        ("Tarefas Vencidas", "Tarefas vencidas", "Contexto Tarefas Vencidas", "c"),
+        ("% Entregues no Prazo", "Entregues no prazo", "das tarefas concluídas", "n"),
+        ("Desvio de Esforço %", "Desvio de esforço", "horas apontadas vs. estimadas", "w")])
+    geral.grafico("lineChart", "Tarefas criadas × entregues por mês",
+                  "Entregas (azul) acompanhando a demanda (cinza)", "dim_data.mes_ano",
                   [("Tarefas Criadas", "Criadas"), ("Tarefas Entregues", "Entregues")],
-                  24, y2, round(meia, 1), 452, cores=[COR["azul"], COR["verde"]], ordem="dim_data.mes_ano",
+                  24, y2, 760, h, cores=[COR["referencia"], COR["azul"]], ordem="dim_data.mes_ano",
                   ordem_crescente=True)
-    geral.grafico("clusteredColumnChart", "Projetos ativos e atrasados por equipe", "dim_projeto.equipe",
+    geral.grafico("clusteredBarChart", "Projetos ativos e atrasados por equipe",
+                  "Vermelho: já passaram do fim planejado", "dim_projeto.equipe",
                   [("Projetos Ativos", "Ativos"), ("Projetos Atrasados", "Atrasados")],
-                  round(36 + meia, 1), y2, round(meia, 1), 220, cores=[COR["azul"], COR["vermelho"]],
-                  ordem="Projetos Ativos")
-    geral.grafico("clusteredColumnChart", "Situação de prazo dos projetos", "dim_projeto.situacao_prazo",
-                  ["Projetos"], round(36 + meia, 1), y3, round(meia, 1), 220, cores=[COR["roxo"]],
-                  ordem="Projetos", legenda=False)
+                  796, y2, 460, h, cores=[COR["azul"], COR["critico"]], ordem="Projetos Ativos")
+    geral.grafico("clusteredBarChart", "Situação de prazo do portfólio",
+                  "Vermelho e âmbar pedem ação", "dim_projeto.situacao_prazo", ["Projetos"],
+                  24, y3, 460, h, cores=[COR["neutro"]], destaques=SITUACAO, ordem="Projetos")
+    geral.tabela("Precisam de atenção", "Projetos em andamento que já passaram do fim planejado",
+                 [("dim_projeto.projeto", "Projeto"), ("dim_projeto.equipe", "Equipe"),
+                  ("dim_projeto.gestor", "Gestor"), ("dim_projeto.data_fim_planejada", "Fim planejado"),
+                  ("dim_projeto.dias_atraso", "Dias de atraso")],
+                 496, y3, 760, h, ordem="dim_projeto.dias_atraso",
+                 barras={"dim_projeto.dias_atraso": COR["barra_vermelha"]},
+                 filtro=("dim_projeto.situacao_prazo", "Atrasado"))
 
-    projetos = Pagina("P2Projetos", "Projetos", "Quem está atrasado, quanto e quanto do orçamento de horas já foi")
-    projetos.linha_de_cartoes(["Projetos", "Projetos em Andamento", "Projetos Concluídos", "% Projetos Atrasados",
-                               "% Projetos Entregues no Prazo", "Atraso Médio dos Projetos (dias)"])
-    projetos.tabela("Projetos (ordenados por dias de atraso)",
+    projetos = Pagina("P2Projetos", "Projetos", "Quem está atrasado, quanto, e quanto do orçamento de horas já foi")
+    projetos.linha_de_cartoes([
+        ("Projetos", "Projetos", "no portfólio", "n"),
+        ("Projetos em Andamento", "Em andamento", "em execução agora", "n"),
+        ("Projetos Concluídos", "Concluídos", "já entregues", "g"),
+        ("% Projetos Atrasados", "% atrasados", "Contexto Atrasados de Ativos", "c"),
+        ("% Projetos Entregues no Prazo", "Entregues no prazo", "Contexto Entregues no Prazo", "c"),
+        ("Atraso Médio dos Projetos (dias)", "Atraso médio (dias)", "entre os projetos atrasados", "w")])
+    projetos.grafico("clusteredBarChart", "Orçamento de horas consumido",
+                     "% das horas orçadas já apontadas, por equipe", "dim_projeto.equipe",
+                     [("% Orçamento Consumido", "% consumido")], 24, y2, 380, h, cores=[COR["azul"]],
+                     ordem="% Orçamento Consumido")
+    projetos.grafico("clusteredBarChart", "Situação de prazo", "Projetos por situação",
+                     "dim_projeto.situacao_prazo", ["Projetos"], 24, y3, 380, h, cores=[COR["neutro"]],
+                     destaques=SITUACAO, ordem="Projetos")
+    projetos.tabela("Todos os projetos, do maior atraso para o menor",
+                    "Clique numa linha para filtrar o resto da página",
                     [("dim_projeto.projeto", "Projeto"), ("dim_projeto.equipe", "Equipe"),
-                     ("dim_projeto.gestor", "Gestor"), ("dim_projeto.status", "Status"),
-                     ("dim_projeto.situacao_prazo", "Prazo"), ("dim_projeto.data_fim_planejada", "Fim planejado"),
-                     ("dim_projeto.dias_atraso", "Dias de atraso"), ("Tarefas Abertas", "Abertas"),
-                     ("Tarefas Vencidas", "Vencidas"), ("% Orçamento Consumido", "% orçamento")],
-                    24, y2, LARGURA - 48, 452, ordem="dim_projeto.dias_atraso")
+                     ("dim_projeto.gestor", "Gestor"), ("dim_projeto.situacao_prazo", "Prazo"),
+                     ("dim_projeto.data_fim_planejada", "Fim planejado"), ("dim_projeto.dias_atraso", "Dias de atraso"),
+                     ("Tarefas Abertas", "Abertas"), ("% Orçamento Consumido", "% orçamento")],
+                    416, y2, 840, alto, ordem="dim_projeto.dias_atraso",
+                    barras={"dim_projeto.dias_atraso": COR["barra_vermelha"],
+                            "% Orçamento Consumido": COR["barra_azul"]})
 
-    fluxo = Pagina("P3Fluxo", "Fluxo e gargalos",
-                   "Quanto tempo as tarefas ficam em cada etapa, onde travam e quanto voltam da revisão")
-    fluxo.linha_de_cartoes(["Lead Time Médio (dias)", "Ciclo Médio (dias)", "Ciclo Mediano (dias)",
-                            "% Concluídas com Retrabalho", "Tarefas Bloqueadas", "Paradas há mais de 15 dias"])
-    fluxo.grafico("clusteredColumnChart", "Tempo médio em cada etapa (dias)", "fato_passagem_status.status",
-                  ["Tempo Médio na Etapa (dias)"], 24, y2, round(meia, 1), 220, cores=[COR["azul"]],
-                  ordem="fato_passagem_status.status", ordem_crescente=True, legenda=False)
-    fluxo.grafico("clusteredColumnChart", "Tarefas paradas agora, por etapa", "fato_passagem_status.status",
-                  ["Tarefas Paradas na Etapa"], round(36 + meia, 1), y2, round(meia, 1), 220,
-                  cores=[COR["laranja"]], ordem="fato_passagem_status.status", ordem_crescente=True,
-                  legenda=False)
-    fluxo.grafico("lineChart", "Mudanças de status por mês", "dim_data.mes_ano",
-                  [("Mudanças de Status", "Mudanças")], 24, y3, round(meia, 1), 220, cores=[COR["azul"]],
-                  ordem="dim_data.mes_ano", ordem_crescente=True, legenda=False)
-    fluxo.grafico("clusteredColumnChart", "Bloqueios por mês", "dim_data.mes_ano",
-                  [("Bloqueios no Período", "Bloqueios")], round(36 + meia, 1), y3, round(meia, 1), 220,
-                  cores=[COR["vermelho"]], ordem="dim_data.mes_ano", ordem_crescente=True, legenda=False)
+    fluxo = Pagina("P3Fluxo", "Fluxo e gargalos", "Tempo em cada etapa, onde as tarefas travam e quanto voltam")
+    fluxo.linha_de_cartoes([
+        ("Lead Time Médio (dias)", "Lead time médio (dias)", "da criação à conclusão", "n"),
+        ("Ciclo Médio (dias)", "Ciclo médio (dias)", "do início à conclusão", "n"),
+        ("Ciclo Mediano (dias)", "Ciclo mediano (dias)", "metade termina antes disso", "n"),
+        ("% Concluídas com Retrabalho", "Com retrabalho", "voltaram da revisão", "w"),
+        ("Tarefas Bloqueadas", "Bloqueadas", "tarefas travadas agora", "c"),
+        ("Paradas há mais de 15 dias", "Paradas > 15 dias", "sem mudar de etapa", "w")])
+    bloqueada = {"Bloqueada": COR["critico"]}
+    fluxo.grafico("clusteredBarChart", "Tempo médio em cada etapa (dias)", "Na ordem do fluxo · vermelho: bloqueio",
+                  "fato_passagem_status.status", ["Tempo Médio na Etapa (dias)"], 24, y2, 610, h,
+                  cores=[COR["azul"]], destaques=bloqueada, ordem="fato_passagem_status.status", ordem_crescente=True)
+    fluxo.grafico("clusteredBarChart", "Onde as tarefas estão paradas agora", "Tarefas abertas por etapa atual",
+                  "fato_passagem_status.status", ["Tarefas Paradas na Etapa"], 646, y2, 610, h,
+                  cores=[COR["azul"]], destaques=bloqueada, ordem="fato_passagem_status.status", ordem_crescente=True)
+    fluxo.grafico("lineChart", "Mudanças de status por mês", "Ritmo de trabalho do portfólio", "dim_data.mes_ano",
+                  [("Mudanças de Status", "Mudanças")], 24, y3, 610, h, cores=[COR["azul"]],
+                  ordem="dim_data.mes_ano", ordem_crescente=True)
+    fluxo.grafico("clusteredColumnChart", "Bloqueios por mês", "Tarefas que entraram em bloqueio",
+                  "dim_data.mes_ano", [("Bloqueios no Período", "Bloqueios")], 646, y3, 610, h,
+                  cores=[COR["critico"]], ordem="dim_data.mes_ano", ordem_crescente=True)
 
-    pessoas = Pagina("P4Pessoas", "Pessoas e esforço",
-                     "Carga de cada pessoa e horas apontadas contra o estimado")
-    pessoas.linha_de_cartoes(["Horas Orçadas", "Horas Estimadas", "Horas Apontadas", "% Orçamento Consumido",
-                              "Tarefas Concluídas", "Idade Média das Abertas (dias)"])
-    pessoas.grafico("clusteredBarChart", "Horas estimadas × apontadas por equipe", "dim_pessoa.equipe",
+    pessoas = Pagina("P4Pessoas", "Pessoas e esforço", "Carga de cada pessoa e horas apontadas contra o estimado")
+    pessoas.linha_de_cartoes([
+        ("Horas Orçadas", "Horas orçadas", "para todo o portfólio", "n"),
+        ("Horas Estimadas", "Horas estimadas", "soma das tarefas", "n"),
+        ("Horas Apontadas", "Horas apontadas", "Contexto Horas Apontadas", "w"),
+        ("% Orçamento Consumido", "Orçamento consumido", "Contexto Orçamento", "w"),
+        ("Tarefas Concluídas", "Tarefas concluídas", "Contexto Tarefas Concluídas", "g"),
+        ("Idade Média das Abertas (dias)", "Idade das abertas (dias)", "média desde a criação", "n")])
+    pessoas.grafico("clusteredBarChart", "Horas estimadas × apontadas por equipe",
+                    "Cinza: estimado · azul: apontado", "dim_pessoa.equipe",
                     [("Horas Estimadas", "Estimadas"), ("Horas Apontadas", "Apontadas")],
-                    24, y2, 460, 452, cores=[COR["cinza"], COR["azul"]], ordem="Horas Apontadas")
-    pessoas.tabela("Carga por pessoa",
+                    24, y2, 460, alto, cores=[COR["referencia"], COR["azul"]], ordem="Horas Apontadas")
+    pessoas.tabela("Carga por pessoa", "Ordenado por tarefas abertas · barras: abertas (azul) e vencidas (vermelho)",
                    [("dim_pessoa.pessoa", "Pessoa"), ("dim_pessoa.equipe", "Equipe"), ("dim_pessoa.cargo", "Cargo"),
                     ("Tarefas Abertas", "Abertas"), ("Tarefas Vencidas", "Vencidas"),
                     ("Tarefas Concluídas", "Concluídas"), ("Horas Apontadas", "Horas"),
                     ("Desvio de Esforço %", "Desvio")],
-                   496, y2, LARGURA - 496 - 24, 452, ordem="Tarefas Abertas")
+                   496, y2, LARGURA - 496 - 24, alto, ordem="Tarefas Abertas",
+                   barras={"Tarefas Abertas": COR["barra_azul"], "Tarefas Vencidas": COR["barra_vermelha"]})
     return [geral, projetos, fluxo, pessoas]
 
 
@@ -267,12 +411,15 @@ def paginas() -> list[Pagina]:
 
 def tema() -> dict:
     return {"name": "TemaPainelProjetos",
-            "dataColors": [COR[c] for c in ("azul", "verde", "laranja", "vermelho", "roxo", "cinza")],
+            "dataColors": [COR[c] for c in ("azul", "referencia", "bom", "atencao", "critico", "neutro")],
             "foreground": COR["texto"], "foregroundNeutralSecondary": COR["suave"],
-            "background": COR["cartao"], "backgroundLight": COR["fundo"], "tableAccent": COR["azul"],
-            "good": COR["verde"], "neutral": COR["laranja"], "bad": COR["vermelho"],
+            "foregroundNeutralTertiary": COR["apagado"], "background": COR["cartao"],
+            "backgroundLight": COR["fundo"], "backgroundNeutral": COR["borda"], "tableAccent": COR["azul"],
+            "good": COR["bom"], "neutral": COR["atencao"], "bad": COR["critico"],
+            "maximum": COR["azul"], "center": COR["neutro"], "minimum": COR["barra_azul"],
             "textClasses": {"callout": {"fontFace": "Segoe UI Semibold", "color": COR["texto"]},
-                            "title": {"fontFace": "Segoe UI Semibold", "color": COR["texto"]},
+                            "title": {"fontFace": "Segoe UI Semibold", "color": COR["texto"], "fontSize": 12},
+                            "header": {"fontFace": "Segoe UI Semibold", "color": COR["texto"]},
                             "label": {"fontFace": "Segoe UI", "color": COR["suave"]}}}
 
 

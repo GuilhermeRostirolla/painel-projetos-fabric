@@ -11,6 +11,48 @@ table ref_parametros
 		displayFolder: Referência
 		lineageTag: 63fa592f-504f-50c4-9fdd-7b06efd8485d
 
+	measure 'Contexto Projetos Ativos' = "de " & FORMAT ( [Projetos] + 0, "#,0" ) & " no portfólio"
+		displayFolder: Contexto dos cartões
+		lineageTag: ad546bb7-402f-5b15-9aa7-a334885d7cb7
+
+	measure 'Contexto Projetos Atrasados' = FORMAT ( [% Projetos Atrasados] + 0, "0%" ) & " dos ativos"
+		displayFolder: Contexto dos cartões
+		lineageTag: 134a4341-4d82-54ae-860e-b12cabefe4a4
+
+	measure 'Contexto Atrasados de Ativos' = FORMAT ( [Projetos Atrasados] + 0, "#,0" ) & " de " & FORMAT ( [Projetos Ativos] + 0, "#,0" ) & " ativos"
+		displayFolder: Contexto dos cartões
+		lineageTag: 6554513c-279b-516f-8f2a-b6c513938821
+
+	measure 'Contexto Entregues no Prazo' = ```
+			FORMAT ( CALCULATE ( [Projetos], dim_projeto[situacao_prazo] = "Concluído no prazo" ) + 0, "#,0" )
+			    & " de " & FORMAT ( [Projetos Concluídos] + 0, "#,0" ) & " concluídos"
+			```
+		displayFolder: Contexto dos cartões
+		lineageTag: 3c89533c-5166-5519-8a93-353161e28b46
+
+	measure 'Contexto Tarefas Abertas' = FORMAT ( [Tarefas Bloqueadas] + 0, "#,0" ) & " bloqueadas agora"
+		displayFolder: Contexto dos cartões
+		lineageTag: a754c98e-8a10-52e0-aa46-7357a6c07650
+
+	measure 'Contexto Tarefas Vencidas' = FORMAT ( [% Abertas Vencidas] + 0, "0%" ) & " das abertas"
+		displayFolder: Contexto dos cartões
+		lineageTag: e93dd27a-43d1-548b-a24b-74d98b44957e
+
+	measure 'Contexto Tarefas Concluídas' = FORMAT ( DIVIDE ( [Tarefas Concluídas], [Tarefas] ) + 0, "0%" ) & " de todas as tarefas"
+		displayFolder: Contexto dos cartões
+		lineageTag: 8930eec6-73c8-5ddc-bc24-c9d01524dce2
+
+	measure 'Contexto Horas Apontadas' = FORMAT ( DIVIDE ( [Horas Apontadas], [Horas Estimadas] ) - 1, "+0%;-0%;0%" ) & " vs. o estimado"
+		displayFolder: Contexto dos cartões
+		lineageTag: 4086d812-07fa-5d00-8a1c-66ebed4b148e
+
+	measure 'Contexto Orçamento' = ```
+			VAR saldo = [Horas Orçadas] - [Horas Apontadas]
+			RETURN IF ( saldo >= 0, "restam ", "estourou em " ) & FORMAT ( ABS ( saldo ), "#,0" ) & " h"
+			```
+		displayFolder: Contexto dos cartões
+		lineageTag: b2cd1b28-2ef1-5291-bde6-56ec65351399
+
 	column data_referencia
 		dataType: dateTime
 		formatString: dd/MM/yyyy

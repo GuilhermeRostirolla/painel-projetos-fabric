@@ -2,97 +2,34 @@
   "$schema": "https://developer.microsoft.com/json-schemas/fabric/item/report/definition/visualContainer/2.11.0/schema.json",
   "name": "09c11b0997d43c3fbd86",
   "position": {
-    "x": 646.0,
-    "y": 146,
+    "x": 44.0,
+    "y": 102,
     "z": 800,
-    "height": 96,
-    "width": 195.3,
+    "height": 20,
+    "width": 167.3,
     "tabOrder": 800
   },
   "visual": {
-    "visualType": "card",
-    "query": {
-      "queryState": {
-        "Values": {
-          "projections": [
-            {
-              "field": {
-                "Measure": {
-                  "Expression": {
-                    "SourceRef": {
-                      "Entity": "fato_tarefa"
-                    }
-                  },
-                  "Property": "Tarefas Vencidas"
-                }
-              },
-              "queryRef": "fato_tarefa.Tarefas Vencidas",
-              "nativeQueryRef": "Tarefas Vencidas"
-            }
-          ]
-        }
-      }
-    },
+    "visualType": "textbox",
     "objects": {
-      "labels": [
+      "general": [
         {
           "properties": {
-            "fontSize": {
-              "expr": {
-                "Literal": {
-                  "Value": "22.0D"
-                }
-              }
-            },
-            "color": {
-              "solid": {
-                "color": {
-                  "expr": {
-                    "Literal": {
-                      "Value": "'#1B2430'"
+            "paragraphs": [
+              {
+                "textRuns": [
+                  {
+                    "value": "PROJETOS ATIVOS",
+                    "textStyle": {
+                      "fontFamily": "Segoe UI Semibold",
+                      "fontSize": "8pt",
+                      "color": "#5A6472"
                     }
                   }
-                }
+                ],
+                "horizontalTextAlignment": "left"
               }
-            },
-            "labelDisplayUnits": {
-              "expr": {
-                "Literal": {
-                  "Value": "1.0D"
-                }
-              }
-            }
-          }
-        }
-      ],
-      "categoryLabels": [
-        {
-          "properties": {
-            "show": {
-              "expr": {
-                "Literal": {
-                  "Value": "true"
-                }
-              }
-            },
-            "fontSize": {
-              "expr": {
-                "Literal": {
-                  "Value": "9.0D"
-                }
-              }
-            },
-            "color": {
-              "solid": {
-                "color": {
-                  "expr": {
-                    "Literal": {
-                      "Value": "'#5B6573'"
-                    }
-                  }
-                }
-              }
-            }
+            ]
           }
         }
       ]
@@ -117,25 +54,7 @@
             "show": {
               "expr": {
                 "Literal": {
-                  "Value": "true"
-                }
-              }
-            },
-            "color": {
-              "solid": {
-                "color": {
-                  "expr": {
-                    "Literal": {
-                      "Value": "'#FFFFFF'"
-                    }
-                  }
-                }
-              }
-            },
-            "transparency": {
-              "expr": {
-                "Literal": {
-                  "Value": "0.0D"
+                  "Value": "false"
                 }
               }
             }
@@ -148,7 +67,7 @@
             "show": {
               "expr": {
                 "Literal": {
-                  "Value": "true"
+                  "Value": "false"
                 }
               }
             },
@@ -157,7 +76,7 @@
                 "color": {
                   "expr": {
                     "Literal": {
-                      "Value": "'#E3E7ED'"
+                      "Value": "'#E4E8EE'"
                     }
                   }
                 }
@@ -166,7 +85,7 @@
             "radius": {
               "expr": {
                 "Literal": {
-                  "Value": "8.0D"
+                  "Value": "10.0D"
                 }
               }
             }
@@ -205,28 +124,28 @@
             "top": {
               "expr": {
                 "Literal": {
-                  "Value": "8.0D"
+                  "Value": "0.0D"
                 }
               }
             },
             "bottom": {
               "expr": {
                 "Literal": {
-                  "Value": "8.0D"
+                  "Value": "0.0D"
                 }
               }
             },
             "left": {
               "expr": {
                 "Literal": {
-                  "Value": "8.0D"
+                  "Value": "0.0D"
                 }
               }
             },
             "right": {
               "expr": {
                 "Literal": {
-                  "Value": "8.0D"
+                  "Value": "0.0D"
                 }
               }
             }

@@ -2,15 +2,15 @@
   "$schema": "https://developer.microsoft.com/json-schemas/fabric/item/report/definition/visualContainer/2.11.0/schema.json",
   "name": "56b1fdcd30573a0fc691",
   "position": {
-    "x": 24.0,
-    "y": 146,
+    "x": 1134,
+    "y": 26,
     "z": 500,
-    "height": 96,
-    "width": 195.3,
+    "height": 26,
+    "width": 130,
     "tabOrder": 500
   },
   "visual": {
-    "visualType": "card",
+    "visualType": "multiRowCard",
     "query": {
       "queryState": {
         "Values": {
@@ -20,61 +20,23 @@
                 "Measure": {
                   "Expression": {
                     "SourceRef": {
-                      "Entity": "dim_projeto"
+                      "Entity": "ref_parametros"
                     }
                   },
-                  "Property": "Projetos Ativos"
+                  "Property": "Texto Referência"
                 }
               },
-              "queryRef": "dim_projeto.Projetos Ativos",
-              "nativeQueryRef": "Projetos Ativos"
+              "queryRef": "ref_parametros.Texto Referência",
+              "nativeQueryRef": "Texto Referência"
             }
           ]
         }
       }
     },
     "objects": {
-      "labels": [
+      "dataLabels": [
         {
           "properties": {
-            "fontSize": {
-              "expr": {
-                "Literal": {
-                  "Value": "22.0D"
-                }
-              }
-            },
-            "color": {
-              "solid": {
-                "color": {
-                  "expr": {
-                    "Literal": {
-                      "Value": "'#1B2430'"
-                    }
-                  }
-                }
-              }
-            },
-            "labelDisplayUnits": {
-              "expr": {
-                "Literal": {
-                  "Value": "1.0D"
-                }
-              }
-            }
-          }
-        }
-      ],
-      "categoryLabels": [
-        {
-          "properties": {
-            "show": {
-              "expr": {
-                "Literal": {
-                  "Value": "true"
-                }
-              }
-            },
             "fontSize": {
               "expr": {
                 "Literal": {
@@ -87,9 +49,74 @@
                 "color": {
                   "expr": {
                     "Literal": {
-                      "Value": "'#5B6573'"
+                      "Value": "'#B9C6D6'"
                     }
                   }
+                }
+              }
+            },
+            "fontFamily": {
+              "expr": {
+                "Literal": {
+                  "Value": "'Segoe UI'"
+                }
+              }
+            }
+          }
+        }
+      ],
+      "categoryLabels": [
+        {
+          "properties": {
+            "show": {
+              "expr": {
+                "Literal": {
+                  "Value": "false"
+                }
+              }
+            }
+          }
+        }
+      ],
+      "card": [
+        {
+          "properties": {
+            "barShow": {
+              "expr": {
+                "Literal": {
+                  "Value": "false"
+                }
+              }
+            },
+            "outline": {
+              "expr": {
+                "Literal": {
+                  "Value": "'None'"
+                }
+              }
+            },
+            "cardPadding": {
+              "expr": {
+                "Literal": {
+                  "Value": "0.0D"
+                }
+              }
+            },
+            "cardBackground": {
+              "solid": {
+                "color": {
+                  "expr": {
+                    "Literal": {
+                      "Value": "'#FFFFFF'"
+                    }
+                  }
+                }
+              }
+            },
+            "cardBackgroundTransparency": {
+              "expr": {
+                "Literal": {
+                  "Value": "100.0D"
                 }
               }
             }
@@ -117,25 +144,7 @@
             "show": {
               "expr": {
                 "Literal": {
-                  "Value": "true"
-                }
-              }
-            },
-            "color": {
-              "solid": {
-                "color": {
-                  "expr": {
-                    "Literal": {
-                      "Value": "'#FFFFFF'"
-                    }
-                  }
-                }
-              }
-            },
-            "transparency": {
-              "expr": {
-                "Literal": {
-                  "Value": "0.0D"
+                  "Value": "false"
                 }
               }
             }
@@ -148,7 +157,7 @@
             "show": {
               "expr": {
                 "Literal": {
-                  "Value": "true"
+                  "Value": "false"
                 }
               }
             },
@@ -157,7 +166,7 @@
                 "color": {
                   "expr": {
                     "Literal": {
-                      "Value": "'#E3E7ED'"
+                      "Value": "'#E4E8EE'"
                     }
                   }
                 }
@@ -166,7 +175,7 @@
             "radius": {
               "expr": {
                 "Literal": {
-                  "Value": "8.0D"
+                  "Value": "10.0D"
                 }
               }
             }
@@ -205,28 +214,28 @@
             "top": {
               "expr": {
                 "Literal": {
-                  "Value": "8.0D"
+                  "Value": "0.0D"
                 }
               }
             },
             "bottom": {
               "expr": {
                 "Literal": {
-                  "Value": "8.0D"
+                  "Value": "0.0D"
                 }
               }
             },
             "left": {
               "expr": {
                 "Literal": {
-                  "Value": "8.0D"
+                  "Value": "0.0D"
                 }
               }
             },
             "right": {
               "expr": {
                 "Literal": {
-                  "Value": "8.0D"
+                  "Value": "0.0D"
                 }
               }
             }

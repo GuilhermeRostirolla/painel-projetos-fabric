@@ -2,11 +2,11 @@
   "$schema": "https://developer.microsoft.com/json-schemas/fabric/item/report/definition/visualContainer/2.11.0/schema.json",
   "name": "73d3b246f6892bdee6ac",
   "position": {
-    "x": 24,
-    "y": 8,
+    "x": 0,
+    "y": 0,
     "z": 0,
-    "height": 42,
-    "width": 760,
+    "height": 76,
+    "width": 1280,
     "tabOrder": 0
   },
   "visual": {
@@ -19,15 +19,9 @@
               {
                 "textRuns": [
                   {
-                    "value": "Fluxo e gargalos",
-                    "textStyle": {
-                      "fontFamily": "Segoe UI Semibold",
-                      "fontSize": "20pt",
-                      "color": "#1B2430"
-                    }
+                    "value": ""
                   }
-                ],
-                "horizontalTextAlignment": "left"
+                ]
               }
             ]
           }
@@ -54,7 +48,7 @@
             "show": {
               "expr": {
                 "Literal": {
-                  "Value": "false"
+                  "Value": "true"
                 }
               }
             },
@@ -63,7 +57,7 @@
                 "color": {
                   "expr": {
                     "Literal": {
-                      "Value": "'#FFFFFF'"
+                      "Value": "'#0F2A44'"
                     }
                   }
                 }
@@ -94,7 +88,7 @@
                 "color": {
                   "expr": {
                     "Literal": {
-                      "Value": "'#E3E7ED'"
+                      "Value": "'#E4E8EE'"
                     }
                   }
                 }
@@ -103,7 +97,7 @@
             "radius": {
               "expr": {
                 "Literal": {
-                  "Value": "8.0D"
+                  "Value": "0.0D"
                 }
               }
             }

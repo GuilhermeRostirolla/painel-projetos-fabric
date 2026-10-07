@@ -43,3 +43,12 @@ As medidas de período usam o mês **09/2026** num filtro de `dim_data[mes_ano]`
 | Fluxo | Bloqueios no Período | 26 | mês 09/2026 |
 | Referência | Data de Referência | 30/09/2026 | sem filtro |
 | Referência | Texto Referência | Dados até 30/09/2026 | sem filtro |
+| Contexto dos cartões | Contexto Projetos Ativos | de 45 no portfólio | sem filtro |
+| Contexto dos cartões | Contexto Projetos Atrasados | 27% dos ativos | sem filtro |
+| Contexto dos cartões | Contexto Atrasados de Ativos | 7 de 26 ativos | sem filtro |
+| Contexto dos cartões | Contexto Entregues no Prazo | 3 de 14 concluídos | sem filtro |
+| Contexto dos cartões | Contexto Tarefas Abertas | 7 bloqueadas agora | sem filtro |
+| Contexto dos cartões | Contexto Tarefas Vencidas | 31% das abertas | sem filtro |
+| Contexto dos cartões | Contexto Tarefas Concluídas | 86% de todas as tarefas | sem filtro |
+| Contexto dos cartões | Contexto Horas Apontadas | +18% vs. o estimado | sem filtro |
+| Contexto dos cartões | Contexto Orçamento | restam 831 h | sem filtro |

@@ -19,7 +19,7 @@ VISUAIS = [(p.nome, v) for p in PAGINAS for v in p.visuais]
 def _campos(no):
     if isinstance(no, dict):
         for tipo in ("Column", "Measure"):
-            if tipo in no and "Property" in no[tipo]:
+            if tipo in no and "Property" in no[tipo] and "Entity" in no[tipo]["Expression"]["SourceRef"]:
                 yield tipo, no[tipo]["Expression"]["SourceRef"]["Entity"], no[tipo]["Property"]
         for valor in no.values():
             yield from _campos(valor)
@@ -42,17 +42,53 @@ def test_nomes_de_visual_unicos():
     assert len(nomes) == len(set(nomes))
 
 
+def _caixa(v):
+    pos = v["position"]
+    return pos["x"], pos["y"], pos["x"] + pos["width"], pos["y"] + pos["height"]
+
+
+def _sobrepoe(a, b):
+    return a[0] < b[2] - 0.5 and b[0] < a[2] - 0.5 and a[1] < b[3] - 0.5 and b[1] < a[3] - 0.5
+
+
+def _contem(fora, dentro):
+    return fora[0] <= dentro[0] + 0.5 and fora[1] <= dentro[1] + 0.5 and \
+        fora[2] >= dentro[2] - 0.5 and fora[3] >= dentro[3] - 0.5
+
+
 @pytest.mark.parametrize("pagina", PAGINAS, ids=lambda p: p.nome)
 def test_cabe_na_pagina_e_nao_sobrepoe(pagina):
-    caixas = []
+    """Visuais não se sobrepõem. Painéis de fundo (cartões, cabeçalho) podem ter visuais por cima,
+    desde que os contenham inteiros: nada fica meio dentro, meio fora."""
     for v in pagina.visuais:
-        pos = v["position"]
-        assert pos["x"] >= 0 and pos["y"] >= 0
-        assert pos["x"] + pos["width"] <= gr.LARGURA + 0.5 and pos["y"] + pos["height"] <= gr.ALTURA + 0.5, v["name"]
-        caixas.append((pos["x"], pos["y"], pos["x"] + pos["width"], pos["y"] + pos["height"]))
-    for a, b in combinations(caixas, 2):
-        sobrepoe = a[0] < b[2] - 0.5 and b[0] < a[2] - 0.5 and a[1] < b[3] - 0.5 and b[1] < a[3] - 0.5
-        assert not sobrepoe, f"visuais sobrepostos em {pagina.nome}: {a} x {b}"
+        x0, y0, x1, y1 = _caixa(v)
+        assert x0 >= 0 and y0 >= 0
+        assert x1 <= gr.LARGURA + 0.5 and y1 <= gr.ALTURA + 0.5, v["name"]
+    for a, b in combinations(pagina.visuais, 2):
+        ca, cb = _caixa(a), _caixa(b)
+        if not _sobrepoe(ca, cb):
+            continue
+        fundo_a, fundo_b = a["name"] in pagina.fundos, b["name"] in pagina.fundos
+        assert fundo_a or fundo_b, f"visuais sobrepostos em {pagina.nome}: {ca} x {cb}"
+        assert (fundo_a and _contem(ca, cb)) or (fundo_b and _contem(cb, ca)), \
+            f"visual atravessa a borda de um painel em {pagina.nome}: {ca} x {cb}"
+        if fundo_a and fundo_b:
+            continue
+        # o painel tem que estar embaixo (z menor) do que está dentro dele
+        painel, dentro = (a, b) if fundo_a else (b, a)
+        assert painel["position"]["z"] < dentro["position"]["z"]
+
+
+@pytest.mark.parametrize("pagina", PAGINAS, ids=lambda p: p.nome)
+def test_cartoes_tem_contexto(pagina):
+    """cada número grande vem com uma linha que diz se é muito ou pouco"""
+    cartoes = [v for v in pagina.visuais if v["visual"]["visualType"] == "multiRowCard"
+               and v["position"]["y"] >= 92 and v["position"]["height"] >= 30]
+    assert len(cartoes) == 6
+    for c in cartoes:
+        embaixo = [v for v in pagina.visuais if abs(v["position"]["x"] - c["position"]["x"]) < 5
+                   and 0 < v["position"]["y"] - c["position"]["y"] < 50 and v["name"] not in pagina.fundos]
+        assert embaixo, f"cartão sem contexto em {pagina.nome}"
 
 
 def test_relatorio_gerado_esta_em_dia(tmp_path):

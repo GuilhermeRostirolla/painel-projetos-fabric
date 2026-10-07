@@ -2,145 +2,70 @@
   "$schema": "https://developer.microsoft.com/json-schemas/fabric/item/report/definition/visualContainer/2.11.0/schema.json",
   "name": "9b4916267bfa2db1b83e",
   "position": {
-    "x": 646.0,
-    "y": 486,
+    "x": 248.3,
+    "y": 122,
     "z": 1400,
-    "height": 220,
-    "width": 610.0,
+    "height": 36,
+    "width": 169.3,
     "tabOrder": 1400
   },
   "visual": {
-    "visualType": "clusteredColumnChart",
+    "visualType": "multiRowCard",
     "query": {
       "queryState": {
-        "Category": {
-          "projections": [
-            {
-              "field": {
-                "Column": {
-                  "Expression": {
-                    "SourceRef": {
-                      "Entity": "dim_data"
-                    }
-                  },
-                  "Property": "mes_ano"
-                }
-              },
-              "queryRef": "dim_data.mes_ano",
-              "nativeQueryRef": "mes_ano",
-              "active": true
-            }
-          ]
-        },
-        "Y": {
+        "Values": {
           "projections": [
             {
               "field": {
                 "Measure": {
                   "Expression": {
                     "SourceRef": {
-                      "Entity": "fato_passagem_status"
+                      "Entity": "fato_tarefa"
                     }
                   },
-                  "Property": "Bloqueios no Período"
+                  "Property": "Ciclo Médio (dias)"
                 }
               },
-              "queryRef": "fato_passagem_status.Bloqueios no Período",
-              "nativeQueryRef": "Bloqueios",
-              "displayName": "Bloqueios"
+              "queryRef": "fato_tarefa.Ciclo Médio (dias)",
+              "nativeQueryRef": "Ciclo Médio (dias)"
             }
           ]
         }
-      },
-      "sortDefinition": {
-        "sort": [
-          {
-            "field": {
-              "Column": {
-                "Expression": {
-                  "SourceRef": {
-                    "Entity": "dim_data"
-                  }
-                },
-                "Property": "mes_ano"
-              }
-            },
-            "direction": "Ascending"
-          }
-        ]
       }
     },
     "objects": {
-      "categoryAxis": [
+      "dataLabels": [
         {
           "properties": {
             "fontSize": {
               "expr": {
                 "Literal": {
-                  "Value": "9.0D"
+                  "Value": "20.0D"
                 }
               }
             },
-            "labelColor": {
+            "color": {
               "solid": {
                 "color": {
                   "expr": {
                     "Literal": {
-                      "Value": "'#5B6573'"
+                      "Value": "'#17212B'"
                     }
                   }
                 }
               }
             },
-            "showAxisTitle": {
+            "fontFamily": {
               "expr": {
                 "Literal": {
-                  "Value": "false"
+                  "Value": "'Segoe UI Semibold'"
                 }
               }
             }
           }
         }
       ],
-      "valueAxis": [
-        {
-          "properties": {
-            "fontSize": {
-              "expr": {
-                "Literal": {
-                  "Value": "9.0D"
-                }
-              }
-            },
-            "labelColor": {
-              "solid": {
-                "color": {
-                  "expr": {
-                    "Literal": {
-                      "Value": "'#5B6573'"
-                    }
-                  }
-                }
-              }
-            },
-            "showAxisTitle": {
-              "expr": {
-                "Literal": {
-                  "Value": "false"
-                }
-              }
-            },
-            "labelDisplayUnits": {
-              "expr": {
-                "Literal": {
-                  "Value": "1.0D"
-                }
-              }
-            }
-          }
-        }
-      ],
-      "legend": [
+      "categoryLabels": [
         {
           "properties": {
             "show": {
@@ -149,68 +74,52 @@
                   "Value": "false"
                 }
               }
-            },
-            "position": {
-              "expr": {
-                "Literal": {
-                  "Value": "'Top'"
-                }
-              }
-            },
-            "fontSize": {
-              "expr": {
-                "Literal": {
-                  "Value": "9.0D"
-                }
-              }
             }
           }
         }
       ],
-      "labels": [
+      "card": [
         {
           "properties": {
-            "show": {
+            "barShow": {
               "expr": {
                 "Literal": {
-                  "Value": "true"
+                  "Value": "false"
                 }
               }
             },
-            "fontSize": {
+            "outline": {
               "expr": {
                 "Literal": {
-                  "Value": "9.0D"
+                  "Value": "'None'"
                 }
               }
             },
-            "labelDisplayUnits": {
+            "cardPadding": {
               "expr": {
                 "Literal": {
-                  "Value": "1.0D"
+                  "Value": "0.0D"
                 }
               }
-            }
-          }
-        }
-      ],
-      "dataPoint": [
-        {
-          "properties": {
-            "fill": {
+            },
+            "cardBackground": {
               "solid": {
                 "color": {
                   "expr": {
                     "Literal": {
-                      "Value": "'#C2413A'"
+                      "Value": "'#FFFFFF'"
                     }
                   }
                 }
               }
+            },
+            "cardBackgroundTransparency": {
+              "expr": {
+                "Literal": {
+                  "Value": "100.0D"
+                }
+              }
             }
-          },
-          "selector": {
-            "metadata": "fato_passagem_status.Bloqueios no Período"
           }
         }
       ]
@@ -222,39 +131,7 @@
             "show": {
               "expr": {
                 "Literal": {
-                  "Value": "true"
-                }
-              }
-            },
-            "text": {
-              "expr": {
-                "Literal": {
-                  "Value": "'Bloqueios por mês'"
-                }
-              }
-            },
-            "fontColor": {
-              "solid": {
-                "color": {
-                  "expr": {
-                    "Literal": {
-                      "Value": "'#1B2430'"
-                    }
-                  }
-                }
-              }
-            },
-            "fontSize": {
-              "expr": {
-                "Literal": {
-                  "Value": "11.0D"
-                }
-              }
-            },
-            "bold": {
-              "expr": {
-                "Literal": {
-                  "Value": "true"
+                  "Value": "false"
                 }
               }
             }
@@ -267,25 +144,7 @@
             "show": {
               "expr": {
                 "Literal": {
-                  "Value": "true"
-                }
-              }
-            },
-            "color": {
-              "solid": {
-                "color": {
-                  "expr": {
-                    "Literal": {
-                      "Value": "'#FFFFFF'"
-                    }
-                  }
-                }
-              }
-            },
-            "transparency": {
-              "expr": {
-                "Literal": {
-                  "Value": "0.0D"
+                  "Value": "false"
                 }
               }
             }
@@ -298,7 +157,7 @@
             "show": {
               "expr": {
                 "Literal": {
-                  "Value": "true"
+                  "Value": "false"
                 }
               }
             },
@@ -307,7 +166,7 @@
                 "color": {
                   "expr": {
                     "Literal": {
-                      "Value": "'#E3E7ED'"
+                      "Value": "'#E4E8EE'"
                     }
                   }
                 }
@@ -316,7 +175,7 @@
             "radius": {
               "expr": {
                 "Literal": {
-                  "Value": "8.0D"
+                  "Value": "10.0D"
                 }
               }
             }
@@ -355,28 +214,28 @@
             "top": {
               "expr": {
                 "Literal": {
-                  "Value": "8.0D"
+                  "Value": "0.0D"
                 }
               }
             },
             "bottom": {
               "expr": {
                 "Literal": {
-                  "Value": "8.0D"
+                  "Value": "0.0D"
                 }
               }
             },
             "left": {
               "expr": {
                 "Literal": {
-                  "Value": "8.0D"
+                  "Value": "0.0D"
                 }
               }
             },
             "right": {
               "expr": {
                 "Literal": {
-                  "Value": "8.0D"
+                  "Value": "0.0D"
                 }
               }
             }

@@ -121,6 +121,27 @@ MEDIDAS = {
     "ref_parametros": [
         ("Data de Referência", "Referência", "dd/MM/yyyy", REF),
         ("Texto Referência", "Referência", None, f'"Dados até " & FORMAT ( {REF}, "dd/MM/yyyy" )'),
+        # linha de contexto embaixo de cada cartão: o número sozinho não diz se é muito ou pouco
+        ("Contexto Projetos Ativos", "Contexto dos cartões", None,
+         '"de " & FORMAT ( [Projetos] + 0, "#,0" ) & " no portfólio"'),
+        ("Contexto Projetos Atrasados", "Contexto dos cartões", None,
+         'FORMAT ( [% Projetos Atrasados] + 0, "0%" ) & " dos ativos"'),
+        ("Contexto Atrasados de Ativos", "Contexto dos cartões", None,
+         'FORMAT ( [Projetos Atrasados] + 0, "#,0" ) & " de " & FORMAT ( [Projetos Ativos] + 0, "#,0" ) & " ativos"'),
+        ("Contexto Entregues no Prazo", "Contexto dos cartões", None,
+         'FORMAT ( CALCULATE ( [Projetos], dim_projeto[situacao_prazo] = "Concluído no prazo" ) + 0, "#,0" )\n'
+         '    & " de " & FORMAT ( [Projetos Concluídos] + 0, "#,0" ) & " concluídos"'),
+        ("Contexto Tarefas Abertas", "Contexto dos cartões", None,
+         'FORMAT ( [Tarefas Bloqueadas] + 0, "#,0" ) & " bloqueadas agora"'),
+        ("Contexto Tarefas Vencidas", "Contexto dos cartões", None,
+         'FORMAT ( [% Abertas Vencidas] + 0, "0%" ) & " das abertas"'),
+        ("Contexto Tarefas Concluídas", "Contexto dos cartões", None,
+         'FORMAT ( DIVIDE ( [Tarefas Concluídas], [Tarefas] ) + 0, "0%" ) & " de todas as tarefas"'),
+        ("Contexto Horas Apontadas", "Contexto dos cartões", None,
+         'FORMAT ( DIVIDE ( [Horas Apontadas], [Horas Estimadas] ) - 1, "+0%;-0%;0%" ) & " vs. o estimado"'),
+        ("Contexto Orçamento", "Contexto dos cartões", None,
+         'VAR saldo = [Horas Orçadas] - [Horas Apontadas]\n'
+         'RETURN IF ( saldo >= 0, "restam ", "estourou em " ) & FORMAT ( ABS ( saldo ), "#,0" ) & " h"'),
     ],
 }
 

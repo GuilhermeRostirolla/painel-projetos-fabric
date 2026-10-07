@@ -76,6 +76,27 @@ SQL = {
                                 AND date_format(data_entrada, 'yyyy-MM') = '{MES}'""",
     "Data de Referência": "SELECT date_format(data_referencia, 'dd/MM/yyyy') FROM ref_parametros",
     "Texto Referência": "SELECT concat('Dados até ', date_format(data_referencia, 'dd/MM/yyyy')) FROM ref_parametros",
+    # contexto dos cartões: o mesmo texto que o DAX monta (sem filtro, todos abaixo de 1.000)
+    "Contexto Projetos Ativos": "SELECT concat('de ', count(*), ' no portfólio') FROM dim_projeto",
+    "Contexto Projetos Atrasados": """SELECT concat(cast(round(sum(int(situacao_prazo = 'Atrasado')) / count(*) * 100) AS INT),
+                                     '% dos ativos') FROM dim_projeto WHERE status IN ('Em Andamento', 'Planejamento')""",
+    "Contexto Atrasados de Ativos": """SELECT concat(sum(int(situacao_prazo = 'Atrasado')), ' de ',
+                                      sum(int(status IN ('Em Andamento', 'Planejamento'))), ' ativos') FROM dim_projeto""",
+    "Contexto Entregues no Prazo": """SELECT concat(sum(int(situacao_prazo = 'Concluído no prazo')), ' de ',
+                                     sum(int(status = 'Concluído')), ' concluídos') FROM dim_projeto""",
+    "Contexto Tarefas Abertas": "SELECT concat(count(*), ' bloqueadas agora') FROM fato_tarefa WHERE status = 'Bloqueada'",
+    "Contexto Tarefas Vencidas": f"""SELECT concat(cast(round(avg(int(data_prazo < (SELECT data_referencia FROM ref_parametros)))
+                                   * 100) AS INT), '% das abertas')
+                                   FROM fato_tarefa WHERE status NOT IN {FINAIS} AND data_prazo IS NOT NULL""",
+    "Contexto Tarefas Concluídas": """SELECT concat(cast(round(avg(int(status = 'Concluída')) * 100) AS INT),
+                                     '% de todas as tarefas') FROM fato_tarefa""",
+    "Contexto Horas Apontadas": """SELECT concat(CASE WHEN r >= 0 THEN '+' ELSE '-' END, cast(abs(round(r * 100)) AS INT),
+                                  '% vs. o estimado')
+                                  FROM (SELECT sum(horas_apontadas) / sum(estimativa_horas) - 1 AS r FROM fato_tarefa)""",
+    "Contexto Orçamento": """SELECT concat(CASE WHEN s >= 0 THEN 'restam ' ELSE 'estourou em ' END,
+                            cast(round(abs(s)) AS BIGINT), ' h')
+                            FROM (SELECT (SELECT sum(horas_orcadas) FROM dim_projeto)
+                                       - (SELECT sum(horas_apontadas) FROM fato_tarefa) AS s)""",
 }
 PERIODO = {"Tarefas Criadas", "Tarefas Entregues", "Saldo do Período", "Mudanças de Status", "Bloqueios no Período"}
 

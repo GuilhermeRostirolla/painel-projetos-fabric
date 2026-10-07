@@ -2,7 +2,7 @@
 
 > **Todo gestor sabe quantos projetos tem. Poucos sabem, sem abrir dez telas, quais estão atrasados, onde as tarefas travam e quanto do orçamento de horas já foi.**
 
-Este projeto busca os dados de uma ferramenta de gestão de projetos **por API**, trata tudo no **Microsoft Fabric** em camadas (bronze, silver e gold) e entrega um **modelo semântico em Direct Lake** com 37 medidas e um **relatório do Power BI com 4 páginas**, tudo publicado por código.
+Este projeto busca os dados de uma ferramenta de gestão de projetos **por API**, trata tudo no **Microsoft Fabric** em camadas (bronze, silver e gold) e entrega um **modelo semântico em Direct Lake** com 46 medidas e um **relatório do Power BI com 4 páginas**, tudo publicado por código.
 
 É a continuação do [Painel de Ideias](https://github.com/GuilhermeRostirolla/painel-ideias-powerbi): lá o dado nascia num banco SQL Server; aqui ele vem de uma API, como acontece com Jira, Asana, ClickUp e companhia, e o pipeline precisa lidar com tudo que uma API real faz: token, paginação, carga incremental e limite de requisições.
 
@@ -37,7 +37,7 @@ flowchart LR
     A -- "nb_01<br/>JSON bruto" --> B[("Bronze<br/>Files/bronze")]
     B -- "nb_02<br/>contrato, limpeza,<br/>deduplicação" --> SV[("Silver<br/>tabelas Delta")]
     SV -- "nb_03<br/>star schema" --> G[("Gold<br/>tabelas Delta")]
-    G -- "Direct Lake" --> M["Modelo semântico<br/>37 medidas"] --> P["Power BI"]
+    G -- "Direct Lake" --> M["Modelo semântico<br/>46 medidas"] --> P["Power BI"]
     O["nb_00 orquestrador<br/>(agendado)"] -.-> B & SV & G
     subgraph Fabric["Microsoft Fabric · Lakehouse"]
         B
@@ -57,7 +57,7 @@ flowchart LR
 | **Gold** (`nb_03`) | Star schema para Direct Lake: `fato_tarefa`, `fato_passagem_status`, `dim_projeto`, `dim_pessoa`, `dim_status`, `dim_data` e `ref_parametros`. Confere as próprias contas antes de terminar. |
 | **Orquestrador** (`nb_00`) | Roda as três etapas em sequência. É ele que fica agendado. |
 | **Relatório** (`PainelProjetos.Report`) | 4 páginas em PBIR: Visão Geral, Projetos, Fluxo e gargalos, Pessoas e esforço. Gerado por `tools/gerar_relatorio.py` e publicado pelo `nb_04`. |
-| **Modelo semântico** (`PainelProjetos.SemanticModel`) | Direct Lake sobre a gold: 7 tabelas, 7 relacionamentos e 37 medidas em pastas (Portfólio, Prazo, Tarefas, Tempo, Fluxo, Esforço, Período). Gerado em TMDL por `tools/gerar_modelo.py`. |
+| **Modelo semântico** (`PainelProjetos.SemanticModel`) | Direct Lake sobre a gold: 7 tabelas, 7 relacionamentos e 46 medidas em pastas (Portfólio, Prazo, Tarefas, Tempo, Fluxo, Esforço, Período e o contexto de cada cartão). Gerado em TMDL por `tools/gerar_modelo.py`. |
 
 ## Páginas
 
@@ -70,6 +70,20 @@ flowchart LR
 | ![Pessoas e esforço](docs/img/pessoas.png) |
 
 > Capturas do relatório publicado no Microsoft Fabric, com os dados de 30/09/2026.
+
+## Design do relatório
+
+A primeira versão do relatório funcionava, mas era genérica: tudo no mesmo azul, filtros ocupando uma linha inteira, números sem contexto e colunas com rótulos quebrados. Antes de mexer no código, fiz um diagnóstico e desenhei a proposta no Figma ([`docs/design/`](docs/design/)):
+
+| Problema | O que mudou |
+|---|---|
+| Sem hierarquia: título, filtros e gráficos com o mesmo peso | Cabeçalho escuro com título, filtros e data de referência; cartões logo abaixo |
+| Cartões sem contexto | Rótulo em cima, número grande, linha de contexto e uma barra de cor que indica alerta |
+| Cor sem significado (roxo aleatório, “Atrasado” de duas cores) | Azul = volume, cinza = referência, verde/âmbar/vermelho só para situação; paleta conferida para daltonismo |
+| Colunas com nomes longos quebrando em duas linhas | Barras horizontais, sem eixo de valor: o rótulo na ponta já diz o número |
+| Tabelas cruas | Barras de dados nos dias de atraso e nas horas, e um bloco “Precisam de atenção” na visão geral |
+
+![Proposta no Figma](docs/design/proposta_visao_geral.png)
 
 ## Decisões que tomei
 
@@ -93,13 +107,17 @@ flowchart LR
 | **Modelo gerado a partir do schema real** | Colunas e tipos vêm de `tools/schema_gold.json`, extraído da gold; um teste falha se a gold mudar e o modelo não acompanhar. Nada de coluna digitada à mão. |
 | **Passagens ligadas à tarefa, não às dimensões** | `fato_passagem_status` se liga à `fato_tarefa`, então filtro de projeto, pessoa ou data chega às duas por um caminho só, sem ambiguidade. Para contar mudanças pela data da mudança, a medida ativa a outra data com `USERELATIONSHIP` e desliga a da criação com `CROSSFILTER`. |
 | **Relatório também é código** | As páginas e os visuais são descritos em Python e viram PBIR. Os testes garantem que todo campo usado existe no modelo, que cada visual cabe na página e que nenhum se sobrepõe a outro. |
-| **Cada medida tem um valor esperado** | `tools/valores_esperados.py` recalcula as 37 medidas em SQL, sem passar pelo DAX, e gera [`docs/valores_esperados.md`](docs/valores_esperados.md). No Power BI, cada cartão tem que bater com essa tabela. |
+| **Cada medida tem um valor esperado** | `tools/valores_esperados.py` recalcula as 46 medidas em SQL, sem passar pelo DAX, e gera [`docs/valores_esperados.md`](docs/valores_esperados.md). No Power BI, cada cartão tem que bater com essa tabela. |
+| **Segurança por linha (RLS) por equipe** | Um papel por equipe filtra `dim_projeto`, e o filtro chega às tarefas e às passagens pelos relacionamentos. O `nb_04` entra no modelo como cada papel e confere, contra contas em SQL, que ele só enxerga a própria equipe. |
+| **Design desenhado antes de virar código** | O primeiro relatório era funcional e feio. Fiz um diagnóstico (10 problemas), desenhei a proposta no Figma e só então reescrevi o gerador. Detalhes em [Design do relatório](#design-do-relatório). |
+| **Cada cartão com contexto** | Um número sozinho não diz se é muito ou pouco. Cada cartão tem uma linha embaixo (“27% dos ativos”, “restam 831 h”), calculada por medidas que respeitam os filtros e também são conferidas em SQL. |
 | **Notebooks no formato Git do Fabric** | A pasta `fabric/` sincroniza direto com um workspace pela integração com Git: os notebooks são texto, versionados e revisáveis linha a linha. |
 
 ## Como sei que funciona
 
-- **Rodou no Fabric de verdade**: o orquestrador completo (bronze → silver → gold, em Delta) terminou com sucesso; o modelo Direct Lake foi publicado e **as 37 medidas, calculadas em DAX no Fabric, bateram com o cálculo independente em SQL**.
-- **162 testes automatizados**: simulador (coerência, determinismo, calibração), API (token, paginação, incremental, 429), notebooks (formato, sintaxe), modelo semântico (toda coluna e medida citada no DAX existe, relacionamentos sem ambiguidade) e o pipeline inteiro rodando com Spark, incluindo quarentena e exclusões na fonte.
+- **Rodou no Fabric de verdade**: o orquestrador completo (bronze → silver → gold, em Delta) terminou com sucesso; o modelo Direct Lake foi publicado e **as 46 medidas, calculadas em DAX no Fabric, bateram com o cálculo independente em SQL**.
+- **Segurança testada, não suposta**: o `nb_04` consulta o modelo como cada um dos 5 papéis de equipe e compara o que ele vê com as contagens por equipe feitas em SQL.
+- **270+ testes automatizados**: simulador (coerência, determinismo, calibração), API (token, paginação, incremental, 429), notebooks (formato, sintaxe), modelo semântico (toda coluna e medida citada no DAX existe, relacionamentos sem ambiguidade) e o pipeline inteiro rodando com Spark, incluindo quarentena e exclusões na fonte.
 - **A gold é conferida contra contas feitas à mão**: status, situação de prazo, retrabalho, bloqueios, horas e projetos atrasados são recalculados em Python puro a partir da API e precisam bater com o que o Spark produziu.
 - **Carga incremental = carga completa**: rodei uma carga completa com os dados de 31/08, depois uma incremental com os de 30/09 (com 30% das chamadas falhando de propósito) e comparei a gold, linha a linha, com uma carga completa direta de 30/09. Todas as tabelas ficaram idênticas.
 - **A própria gold se confere**: antes de terminar, o `nb_03` verifica chaves, uma etapa atual por tarefa, tempos não negativos e cobertura do calendário. Se algo não fechar, a execução falha.
@@ -146,7 +164,7 @@ Crie um Azure Key Vault (ou use um existente), adicione o segredo `token-api-pro
    ```
    (Alternativas: integração Git do workspace com a pasta `fabric/`, que exige um token do GitHub, ou importar os `.ipynb` de `fabric/ipynb/` e anexar o lakehouse em cada um.)
 3. Abra o `nb_00_orquestrador`, preencha `URL_API` e `KEY_VAULT_URL`, troque `MODO` para `completo` e rode.
-4. Rode o `nb_04_publicar_modelo`: ele cria o modelo semântico e o relatório **PainelProjetos** (descobre o SQL endpoint sozinho) e confere as 37 medidas em DAX contra [`docs/valores_esperados.json`](docs/valores_esperados.json).
+4. Rode o `nb_04_publicar_modelo`: ele cria o modelo semântico e o relatório **PainelProjetos** (descobre o SQL endpoint sozinho) e confere as 46 medidas em DAX contra [`docs/valores_esperados.json`](docs/valores_esperados.json).
 5. Volte `MODO` para `incremental` e **agende** o `nb_00` (ex.: todo dia às 6h).
 
 **Rodando só no Fabric, sem API publicada:** o workspace de demonstração tem o notebook `testar_pipeline` **agendado todo dia às 06:00**. Ele sobe a API simulada dentro da própria sessão e roda o orquestrador, sem token nem serviço externo; como o modelo é Direct Lake, o relatório já mostra o resultado.
@@ -194,9 +212,9 @@ Dockerfile, render.yaml publicação da API
 ## Próximos passos
 
 - [x] Simulador, API, ingestão e camadas bronze, silver e gold
-- [x] Modelo semântico em **Direct Lake** com 37 medidas e valores esperados para conferência
+- [x] Modelo semântico em **Direct Lake** com 46 medidas e valores esperados para conferência
 - [x] Relatório: portfólio, prazos, fluxo e gargalos, esforço e pessoas
-- [ ] Segurança por linha por equipe
+- [x] Segurança por linha por equipe
 
 ## Como foi construído
 

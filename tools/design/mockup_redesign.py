@@ -1,9 +1,14 @@
-"""Gera o HTML do redesign (6 quadros) para enviar ao Figma."""
+"""Gera o HTML do redesign (6 quadros) que foi enviado ao Figma: diagnóstico, as 4 páginas e o guia de estilo.
+
+    python tools/design/mockup_redesign.py      # escreve docs/design/redesign.html
+
+Os números do mockup vêm de dados_mockup.json (agregados da gold local de 30/09/2026).
+"""
 import json
 from pathlib import Path
 
 S = Path(__file__).parent
-D = json.loads((S / "agg.json").read_text())
+D = json.loads((S / "dados_mockup.json").read_text())
 
 T = dict(page="#F3F5F8", surf="#FFFFFF", border="#E4E8EE", ink="#17212B", ink2="#5A6472", muted="#8A93A0",
          navy="#0F2A44", navy2="#B9C6D6", blue="#2F6DB5", base="#A3ACB9", good="#1F8A5B", warn="#D29B00",
@@ -398,5 +403,5 @@ html = (f'<!doctype html><html><head><meta charset="utf-8"><title>Painel de Proj
         f'<style>{CSS}</style></head><body>'
         + "".join(f'<div class="frame" data-name="{n}" id="q{i}">{c}</div>' for i, (n, c) in enumerate(quadros))
         + "</body></html>")
-(S / "redesign.html").write_text(html, encoding="utf-8")
+(S.parents[1] / "docs" / "design" / "redesign.html").write_text(html, encoding="utf-8")
 print(len(html))

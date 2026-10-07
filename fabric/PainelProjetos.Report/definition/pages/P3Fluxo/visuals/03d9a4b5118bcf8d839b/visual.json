@@ -2,15 +2,15 @@
   "$schema": "https://developer.microsoft.com/json-schemas/fabric/item/report/definition/visualContainer/2.11.0/schema.json",
   "name": "03d9a4b5118bcf8d839b",
   "position": {
-    "x": 853.3,
-    "y": 146,
+    "x": 41.0,
+    "y": 122,
     "z": 900,
-    "height": 96,
-    "width": 195.3,
+    "height": 36,
+    "width": 169.3,
     "tabOrder": 900
   },
   "visual": {
-    "visualType": "card",
+    "visualType": "multiRowCard",
     "query": {
       "queryState": {
         "Values": {
@@ -23,24 +23,24 @@
                       "Entity": "fato_tarefa"
                     }
                   },
-                  "Property": "Tarefas Bloqueadas"
+                  "Property": "Lead Time Médio (dias)"
                 }
               },
-              "queryRef": "fato_tarefa.Tarefas Bloqueadas",
-              "nativeQueryRef": "Tarefas Bloqueadas"
+              "queryRef": "fato_tarefa.Lead Time Médio (dias)",
+              "nativeQueryRef": "Lead Time Médio (dias)"
             }
           ]
         }
       }
     },
     "objects": {
-      "labels": [
+      "dataLabels": [
         {
           "properties": {
             "fontSize": {
               "expr": {
                 "Literal": {
-                  "Value": "22.0D"
+                  "Value": "20.0D"
                 }
               }
             },
@@ -49,16 +49,16 @@
                 "color": {
                   "expr": {
                     "Literal": {
-                      "Value": "'#1B2430'"
+                      "Value": "'#17212B'"
                     }
                   }
                 }
               }
             },
-            "labelDisplayUnits": {
+            "fontFamily": {
               "expr": {
                 "Literal": {
-                  "Value": "1.0D"
+                  "Value": "'Segoe UI Semibold'"
                 }
               }
             }
@@ -71,25 +71,52 @@
             "show": {
               "expr": {
                 "Literal": {
-                  "Value": "true"
+                  "Value": "false"
                 }
               }
-            },
-            "fontSize": {
+            }
+          }
+        }
+      ],
+      "card": [
+        {
+          "properties": {
+            "barShow": {
               "expr": {
                 "Literal": {
-                  "Value": "9.0D"
+                  "Value": "false"
                 }
               }
             },
-            "color": {
+            "outline": {
+              "expr": {
+                "Literal": {
+                  "Value": "'None'"
+                }
+              }
+            },
+            "cardPadding": {
+              "expr": {
+                "Literal": {
+                  "Value": "0.0D"
+                }
+              }
+            },
+            "cardBackground": {
               "solid": {
                 "color": {
                   "expr": {
                     "Literal": {
-                      "Value": "'#5B6573'"
+                      "Value": "'#FFFFFF'"
                     }
                   }
+                }
+              }
+            },
+            "cardBackgroundTransparency": {
+              "expr": {
+                "Literal": {
+                  "Value": "100.0D"
                 }
               }
             }
@@ -117,25 +144,7 @@
             "show": {
               "expr": {
                 "Literal": {
-                  "Value": "true"
-                }
-              }
-            },
-            "color": {
-              "solid": {
-                "color": {
-                  "expr": {
-                    "Literal": {
-                      "Value": "'#FFFFFF'"
-                    }
-                  }
-                }
-              }
-            },
-            "transparency": {
-              "expr": {
-                "Literal": {
-                  "Value": "0.0D"
+                  "Value": "false"
                 }
               }
             }
@@ -148,7 +157,7 @@
             "show": {
               "expr": {
                 "Literal": {
-                  "Value": "true"
+                  "Value": "false"
                 }
               }
             },
@@ -157,7 +166,7 @@
                 "color": {
                   "expr": {
                     "Literal": {
-                      "Value": "'#E3E7ED'"
+                      "Value": "'#E4E8EE'"
                     }
                   }
                 }
@@ -166,7 +175,7 @@
             "radius": {
               "expr": {
                 "Literal": {
-                  "Value": "8.0D"
+                  "Value": "10.0D"
                 }
               }
             }
@@ -205,28 +214,28 @@
             "top": {
               "expr": {
                 "Literal": {
-                  "Value": "8.0D"
+                  "Value": "0.0D"
                 }
               }
             },
             "bottom": {
               "expr": {
                 "Literal": {
-                  "Value": "8.0D"
+                  "Value": "0.0D"
                 }
               }
             },
             "left": {
               "expr": {
                 "Literal": {
-                  "Value": "8.0D"
+                  "Value": "0.0D"
                 }
               }
             },
             "right": {
               "expr": {
                 "Literal": {
-                  "Value": "8.0D"
+                  "Value": "0.0D"
                 }
               }
             }
