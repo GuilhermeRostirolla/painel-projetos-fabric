@@ -373,7 +373,7 @@ def paginas() -> list[Pagina]:
     projetos.tabela("Todos os projetos, do maior atraso para o menor",
                     "Clique numa linha para filtrar o resto da página",
                     [("dim_projeto.projeto", "Projeto"), ("dim_projeto.equipe", "Equipe"),
-                     ("dim_projeto.gestor", "Gestor"), ("dim_projeto.situacao_prazo", "Prazo"),
+                     ("dim_projeto.situacao_prazo", "Prazo"),
                      ("dim_projeto.data_fim_planejada", "Fim planejado"), ("dim_projeto.dias_atraso", "Dias de atraso"),
                      ("% Orçamento Consumido", "% orçamento")],
                     416, y2, 840, alto, ordem="dim_projeto.dias_atraso",

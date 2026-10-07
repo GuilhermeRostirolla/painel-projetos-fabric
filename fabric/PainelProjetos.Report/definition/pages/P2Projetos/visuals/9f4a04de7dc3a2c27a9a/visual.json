@@ -53,21 +53,6 @@
                       "Entity": "dim_projeto"
                     }
                   },
-                  "Property": "gestor"
-                }
-              },
-              "queryRef": "dim_projeto.gestor",
-              "nativeQueryRef": "Gestor",
-              "displayName": "Gestor"
-            },
-            {
-              "field": {
-                "Column": {
-                  "Expression": {
-                    "SourceRef": {
-                      "Entity": "dim_projeto"
-                    }
-                  },
                   "Property": "situacao_prazo"
                 }
               },
