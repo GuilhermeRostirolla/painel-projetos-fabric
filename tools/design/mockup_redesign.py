@@ -1,59 +1,84 @@
-"""Gera docs/design/redesign.html, o mockup das 3 páginas enviado ao Figma.
+"""Mockup das 3 páginas (docs/design/redesign.html) e fundos do relatório (fabric/.../fundo_*.png).
 
-    python tools/design/mockup_redesign.py
+    python tools/design/mockup_redesign.py            # mockup com dados de exemplo
+    python tools/design/mockup_redesign.py --fundos   # só a camada de fundo, para o Power BI
+
+A camada de fundo (cartões, títulos, ícones, menu) vira a imagem de fundo de cada página no Power BI;
+os visuais ficam por cima, com fundo transparente, nas mesmas coordenadas de layout.py.
 """
 import json
+import sys
 from datetime import date
 from pathlib import Path
+
+sys.path.insert(0, str(Path(__file__).parent))
+from layout import (ALTURA, CARTOES, COR, DATA_REF, KPIS, LARGURA, LEGENDA_GANTT, NAV, PAGINAS, SLICERS, X0,  # noqa: E402
+                    area, kpis)
 
 S = Path(__file__).parent
 D = json.loads((S / "dados_mockup.json").read_text())
 G = json.loads((S / "dados_gantt.json").read_text())
-
-T = dict(page="#F7F8FA", surf="#FFFFFF", line="#ECEEF2", ink="#1A202C", ink2="#5F6B7A", muted="#98A2B3",
-         blue="#2F6DB5", blue_soft="#EAF1FA", light="#A9C1DF", gray="#D5DAE1", warn="#D29B00", crit="#C2362F",
-         neutral="#C6CFDB")
 MES = ["jan", "fev", "mar", "abr", "mai", "jun", "jul", "ago", "set", "out", "nov", "dez"]
+
+ICONE = {
+    "pasta": '<path d="M3 7a2 2 0 0 1 2-2h4l2 2h8a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/>',
+    "alerta": '<path d="M12 4 2.5 20h19z"/><path d="M12 10v4"/><circle cx="12" cy="17" r=".6"/>',
+    "check": '<circle cx="12" cy="12" r="9"/><path d="m8 12 3 3 5-6"/>',
+    "relogio": '<circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/>',
+    "lista": '<path d="M9 6h11M9 12h11M9 18h11"/><path d="m3.5 6 1 1 2-2M3.5 12l1 1 2-2M3.5 18l1 1 2-2"/>',
+    "grade": '<rect x="3" y="3" width="7" height="7" rx="1.5"/><rect x="14" y="3" width="7" height="7" rx="1.5"/>'
+             '<rect x="3" y="14" width="7" height="7" rx="1.5"/><rect x="14" y="14" width="7" height="7" rx="1.5"/>',
+    "gantt": '<path d="M4 6h9M8 12h10M6 18h7"/>',
+}
+
+
+def icone(nome, cor, tam=20, traco=1.8):
+    return (f'<svg width="{tam}" height="{tam}" viewBox="0 0 24 24" fill="none" stroke="{cor}" '
+            f'stroke-width="{traco}" stroke-linecap="round" stroke-linejoin="round">{ICONE[nome]}</svg>')
 
 
 def br(n, d=0):
     return f"{n:,.{d}f}".replace(",", "X").replace(".", ",").replace("X", ".")
 
 
-def lateral(ativa):
-    paginas = ["Portfólio", "Projetos e tarefas", "Cronograma"]
-    botoes = "".join(f'<div class="nav{" on" if p == ativa else ""}">{p}</div>' for p in paginas)
-    return f"""<div class="side">
-  <div class="brand">Painel de Projetos</div>
-  <div class="navs">{botoes}</div>
-  <div class="flabel">Equipe</div><div class="sel">Todas<i>▾</i></div>
-  <div class="flabel">Status do projeto</div><div class="sel">Todos<i>▾</i></div>
-  <div class="ref">Dados até 30/09/2026</div>
-</div>"""
+def caixa(x, y, w, h, extra=""):
+    return f'style="left:{x}px;top:{y}px;width:{w}px;height:{h}px;{extra}"'
 
 
-def topo(titulo, sub):
-    return f'<div class="ttl">{titulo}</div><div class="sub">{sub}</div>'
+# --- camada de fundo -----------------------------------------------------------------------
+
+def fundo(pagina):
+    nome, titulo, sub = next(p for p in PAGINAS if p[0] == pagina)
+    h = [f'<div class="nav"><div class="logo">PP</div>']
+    for i, (destino, rotulo, _) in enumerate(PAGINAS):
+        ativo = destino == pagina
+        ic = ["grade", "lista", "gantt"][i]
+        h.append(f'<div class="navb{" on" if ativo else ""}" style="top:{96 + i * 60}px">'
+                 f'{icone(ic, COR["texto"] if ativo else COR["apagado"], 22)}</div>')
+    h.append("</div>")
+    h.append(f'<div class="t1" {caixa(X0, 18, 560, 30)}>{titulo}</div>')
+    h.append(f'<div class="t2" {caixa(X0, 50, 560, 20)}>{sub}</div>')
+    for _, rotulo, x, y, w, hh in SLICERS:
+        h.append(f'<div class="slot" {caixa(x, y, w, hh)}></div>')
+    for (rot, _, _, cor, ic), (x, y, w, hh) in zip(KPIS.get(pagina, []), kpis(len(KPIS.get(pagina, [])) or 1)):
+        h.append(f'<div class="card" {caixa(x, y, w, hh)}>'
+                 f'<div class="ico" style="background:{COR[cor]}22">{icone(ic, COR[cor], 20)}</div>'
+                 f'<div class="kl">{rot}</div></div>')
+    for chave, (x, y, w, hh, t, s) in CARTOES[pagina].items():
+        extra = ""
+        if chave == "gantt":
+            extra = '<div class="leg">' + "".join(
+                f'<span><i style="background:{COR[c]}"></i>{n}</span>' for n, c in LEGENDA_GANTT) + "</div>"
+        h.append(f'<div class="card" {caixa(x, y, w, hh)}><div class="ct">{t}</div><div class="cs">{s}</div>{extra}</div>')
+    return "".join(h)
 
 
-def kpis(itens):
-    out = []
-    for rot, val, ctx, alerta in itens:
-        out.append(f'<div class="k"><div class="kl">{rot}</div>'
-                   f'<div class="kv"{" style=color:" + T["crit"] if alerta else ""}>{val}</div>'
-                   f'<div class="kc">{ctx}</div></div>')
-    return f'<div class="kpis">{"".join(out)}</div>'
+# --- camada de dados (só no mockup) ----------------------------------------------------------
 
-
-def card(x, y, w, h, titulo, sub, corpo):
-    return (f'<div class="card" style="left:{x}px;top:{y}px;width:{w}px;height:{h}px">'
-            f'<div class="ct">{titulo}</div><div class="cs">{sub}</div>{corpo}</div>')
-
-
-def hbars(itens, w, h, cores, lab=140, fmt=lambda v: br(v)):
+def hbars(itens, w, h, cores, lab=130, fmt=lambda v: br(v)):
     n, mx = len(itens), max(v for _, v in itens)
     passo = h / n
-    bh = min(16, passo * 0.6)
+    bh = min(14, passo * 0.55)
     g = []
     for i, (r, v) in enumerate(itens):
         y = i * passo + (passo - bh) / 2
@@ -65,61 +90,88 @@ def hbars(itens, w, h, cores, lab=140, fmt=lambda v: br(v)):
     return f'<svg width="{w}" height="{h}">{"".join(g)}</svg>'
 
 
-def hbars2(itens, w, h, c1, c2, n1, n2, lab=130):
+def colunas2(itens, w, h, c1, c2, n1, n2):
     n, mx = len(itens), max(max(a, b) for _, a, b in itens)
-    top = 24
-    passo = (h - top) / n
-    bh = min(12, passo * 0.3)
-    g = [f'<circle cx="{lab + 4}" cy="9" r="4" fill="{c1}"/><text x="{lab + 12}" y="13" class="lg">{n1}</text>'
-         f'<circle cx="{lab + 84}" cy="9" r="4" fill="{c2}"/><text x="{lab + 92}" y="13" class="lg">{n2}</text>']
+    top, bot = 24, 22
+    passo = (w - 20) / n
+    bw = min(22, passo * 0.28)
+    g = [f'<circle cx="8" cy="8" r="4" fill="{c1}"/><text x="16" y="12" class="lg">{n1}</text>'
+         f'<circle cx="90" cy="8" r="4" fill="{c2}"/><text x="98" y="12" class="lg">{n2}</text>']
     for i, (r, a, b) in enumerate(itens):
-        y = top + i * passo + (passo - 2 * bh - 3) / 2
-        g.append(f'<text x="{lab - 10}" y="{y + bh + 4}" text-anchor="end" class="al">{r}</text>')
+        x = 10 + i * passo + (passo - 2 * bw - 4) / 2
         for j, (v, c) in enumerate(((a, c1), (b, c2))):
-            yy = y + j * (bh + 3)
-            bw = max(2, (w - lab - 50) * v / mx)
-            g.append(f'<rect x="{lab}" y="{yy}" width="{bw}" height="{bh}" rx="2" fill="{c}"/>'
-                     f'<text x="{lab + bw + 5}" y="{yy + bh - 2}" class="dl s">{br(v)}</text>')
+            bh = (h - top - bot - 14) * v / mx
+            xx = x + j * (bw + 4)
+            g.append(f'<rect x="{xx}" y="{h - bot - bh}" width="{bw}" height="{bh}" rx="3" fill="{c}"/>'
+                     f'<text x="{xx + bw / 2}" y="{h - bot - bh - 4}" text-anchor="middle" class="dl s">{br(v)}</text>')
+        g.append(f'<text x="{x + bw + 2}" y="{h - 6}" text-anchor="middle" class="ax">{r}</text>')
     return f'<svg width="{w}" height="{h}">{"".join(g)}</svg>'
 
 
-def linhas(series, w, h, rotulos):
-    L, R, top, bot = 34, 40, 26, 20
-    mx = max(max(v) for _, v, _ in series)
+def area_chart(series, w, h, rotulos):
+    L, R, top, bot = 30, 12, 22, 18
     teto = 200
     pw, ph = w - L - R, h - top - bot
     n = len(rotulos)
     X = lambda i: L + pw * i / (n - 1)
     Y = lambda v: top + ph * (1 - v / teto)
-    g = []
+    g = ['<defs><linearGradient id="ga" x1="0" y1="0" x2="0" y2="1">'
+         f'<stop offset="0" stop-color="{COR["azul"]}" stop-opacity=".35"/>'
+         f'<stop offset="1" stop-color="{COR["azul"]}" stop-opacity="0"/></linearGradient></defs>']
     for k in range(5):
         v = teto * k / 4
-        g.append(f'<line x1="{L}" x2="{L + pw}" y1="{Y(v)}" y2="{Y(v)}" stroke="{T["line"]}"/>'
-                 f'<text x="{L - 8}" y="{Y(v) + 4}" text-anchor="end" class="ax">{br(v)}</text>')
+        g.append(f'<line x1="{L}" x2="{L + pw}" y1="{Y(v)}" y2="{Y(v)}" stroke="{COR["grade"]}"/>'
+                 f'<text x="{L - 6}" y="{Y(v) + 3}" text-anchor="end" class="ax">{br(v)}</text>')
     for i, r in enumerate(rotulos):
         if i % 3 == 0 or i == n - 1:
-            g.append(f'<text x="{X(i)}" y="{h - 4}" text-anchor="middle" class="ax">{r}</text>')
+            g.append(f'<text x="{X(i)}" y="{h - 3}" text-anchor="middle" class="ax">{r}</text>')
     x = L
-    for nome, _, c in series:
-        g.append(f'<circle cx="{x + 4}" cy="9" r="4" fill="{c}"/><text x="{x + 12}" y="13" class="lg">{nome}</text>')
-        x += 24 + 7 * len(nome)
-    for nome, v, c in series:
-        pts = " ".join(f"{X(i):.1f},{Y(a):.1f}" for i, a in enumerate(v))
-        g.append(f'<polyline points="{pts}" fill="none" stroke="{c}" stroke-width="2" stroke-linejoin="round"/>')
+    for nome, _, c, _ in series:
+        g.append(f'<circle cx="{x + 4}" cy="7" r="4" fill="{c}"/><text x="{x + 12}" y="11" class="lg">{nome}</text>')
+        x += 26 + 7 * len(nome)
+    for nome, v, c, preenche in series:
+        pts = [f"{X(i):.1f},{Y(a):.1f}" for i, a in enumerate(v)]
+        if preenche:
+            g.append(f'<polygon points="{X(0)},{Y(0)} {" ".join(pts)} {X(n - 1)},{Y(0)}" fill="url(#ga)"/>')
+        g.append(f'<polyline points="{" ".join(pts)}" fill="none" stroke="{c}" stroke-width="2"/>')
+    return f'<svg width="{w}" height="{h}">{"".join(g)}</svg>'
+
+
+def donut(itens, cores, w, h, total):
+    import math
+    cx, cy, r, esp = h / 2, h / 2, h / 2 - 6, 18
+    soma = sum(v for _, v in itens)
+    a0 = -math.pi / 2
+    g = []
+    for (rot, v), c in zip(itens, cores):
+        a1 = a0 + 2 * math.pi * v / soma
+        grande = 1 if a1 - a0 > math.pi else 0
+        x0, y0 = cx + r * math.cos(a0), cy + r * math.sin(a0)
+        x1, y1 = cx + r * math.cos(a1 - .02), cy + r * math.sin(a1 - .02)
+        g.append(f'<path d="M{x0},{y0} A{r},{r} 0 {grande} 1 {x1},{y1}" fill="none" stroke="{c}" stroke-width="{esp}"/>')
+        a0 = a1
+    g.append(f'<text x="{cx}" y="{cy + 2}" text-anchor="middle" class="big">{total}</text>'
+             f'<text x="{cx}" y="{cy + 20}" text-anchor="middle" class="ax">projetos</text>')
+    ly = 14
+    for (rot, v), c in zip(itens, cores):
+        g.append(f'<circle cx="{h + 22}" cy="{ly}" r="4.5" fill="{c}"/>'
+                 f'<text x="{h + 32}" y="{ly + 4}" class="al">{rot}</text>'
+                 f'<text x="{w - 4}" y="{ly + 4}" text-anchor="end" class="dl">{v}</text>')
+        ly += 30
     return f'<svg width="{w}" height="{h}">{"".join(g)}</svg>'
 
 
 def tabela(cab, linhas_, larg, barras=None):
     barras = barras or {}
-    th = "".join(f'<th style="width:{l}px;text-align:{"right" if i in barras or a == "r" else "left"}">{c}</th>'
-                 for i, ((c, a), l) in enumerate(zip(cab, larg)))
+    th = "".join(f'<th style="width:{l}px;text-align:{"right" if a == "r" else "left"}">{c}</th>'
+                 for (c, a), l in zip(cab, larg))
     trs = []
     for ln in linhas_:
         tds = []
         for i, (v, l) in enumerate(zip(ln, larg)):
             if i in barras:
-                cor, mx, num = barras[i][0], barras[i][1], barras[i][2](v)
-                bw = max(0, (l - 10) * num / mx)
+                cor, mx, num = barras[i]
+                bw = max(0, (l - 10) * num(v) / mx)
                 tds.append(f'<td style="text-align:right"><div class="db"><div style="width:{bw}px;background:{cor}">'
                            f'</div><span>{v}</span></div></td>')
             else:
@@ -128,73 +180,90 @@ def tabela(cab, linhas_, larg, barras=None):
     return f'<table><thead><tr>{th}</tr></thead><tbody>{"".join(trs)}</tbody></table>'
 
 
-X0, W = 224, 1032
-METADE = (W - 16) / 2
+def no_cartao(pagina, chave, conteudo):
+    x, y, w, h = area(CARTOES[pagina][chave])
+    return f'<div class="vis" {caixa(x, y, w, h)}>{conteudo}</div>'
 
 
-def portfolio():
-    meses = [m for m, _ in D["criadas"]]
-    ent = dict(D["entregues"])
-    corpo = lateral("Portfólio") + topo("Portfólio", "Situação dos 45 projetos de 5 equipes")
-    corpo += kpis([("Projetos ativos", "26", "de 45 no portfólio", False),
-                   ("Projetos atrasados", "7", "27% dos ativos", True),
-                   ("Entregues no prazo", "76,2%", "das tarefas concluídas", False),
-                   ("Orçamento consumido", "96,3%", "restam 831 h", False),
-                   ("Desvio de esforço", "+33,6%", "apontado vs. estimado", False)])
+def kpis_dados(pagina, valores):
+    out = []
+    for (x, y, w, h), (valor, ctx, alerta) in zip(kpis(len(valores)), valores):
+        out.append(f'<div class="vis" {caixa(x + 72, y + 40, w - 90, 34)}><div class="kv"'
+                   f'{" style=color:" + COR["vermelho"] if alerta else ""}>{valor}</div></div>'
+                   f'<div class="vis" {caixa(x + 72, y + 74, w - 90, 20)}><div class="kc">{ctx}</div></div>')
+    return "".join(out)
+
+
+def comuns():
+    out = []
+    for _, rotulo, x, y, w, h in SLICERS:
+        out.append(f'<div class="vis sl" {caixa(x, y, w, h)}><span>{rotulo}</span><b>Todos</b><i>▾</i></div>')
+    x, y, w, h = DATA_REF
+    out.append(f'<div class="vis ref" {caixa(x, y, w, h)}>Dados até 30/09/2026</div>')
+    return "".join(out)
+
+
+def dados_portfolio():
+    p = "P1Portfolio"
+    out = comuns() + kpis_dados(p, [("26", "de 45 no portfólio", False), ("7", "27% dos ativos", True),
+                                    ("76,2%", "das tarefas concluídas", False), ("96,3%", "restam 831 h", False)])
     sit = [("No prazo", 19), ("Concluído com atraso", 11), ("Atrasado", 7), ("Concluído no prazo", 3),
            ("Pausado", 3), ("Cancelado", 2)]
-    cores = [T["crit"] if r == "Atrasado" else T["warn"] if r == "Concluído com atraso" else T["neutral"]
-             for r, _ in sit]
-    corpo += card(X0, 176, METADE, 260, "Situação de prazo", "Projetos por situação",
-                  hbars(sit, METADE - 40, 196, cores, lab=150))
+    cores = [COR["azul"], COR["ambar"], COR["vermelho"], COR["verde"], COR["concluido"], COR["cancelado"]]
+    x, y, w, h = area(CARTOES[p]["saude"])
+    out += no_cartao(p, "saude", donut(sit, cores, w, h, 45))
+    meses = [m for m, _ in D["criadas"]]
+    ent = dict(D["entregues"])
+    x, y, w, h = area(CARTOES[p]["entregas"])
+    out += no_cartao(p, "entregas", area_chart(
+        [("Criadas", [v for _, v in D["criadas"]], COR["concluido"], False),
+         ("Entregues", [ent.get(m, 0) for m in meses], COR["azul"], True)],
+        w, h, [f"{MES[int(m[5:]) - 1]}/{m[2:4]}" for m in meses]))
+    risco = [(r[0][:24], str(r[6])) for r in D["proj"] if r[4] == "Atrasado"][:5]
+    x, y, w, h = area(CARTOES[p]["risco"])
+    out += no_cartao(p, "risco", tabela([("Projeto", "l"), ("Dias", "r")], risco, [w - 90, 90],
+                                        {1: ("#E44A5D55", 407, float)}))
     eq = [("Tecnologia", 7, 3), ("Comercial", 6, 1), ("Dados & BI", 5, 1), ("Operações", 5, 1),
-          ("Pessoas & Cultura", 3, 1)]
-    corpo += card(X0 + METADE + 16, 176, METADE, 260, "Projetos por equipe", "Ativos e atrasados",
-                  hbars2(eq, METADE - 40, 196, T["blue"], T["crit"], "Ativos", "Atrasados", lab=130))
-    corpo += card(X0, 452, METADE, 252, "Tarefas criadas e entregues", "Por mês",
-                  linhas([("Criadas", [v for _, v in D["criadas"]], T["neutral"]),
-                          ("Entregues", [ent.get(m, 0) for m in meses], T["blue"])],
-                         METADE - 40, 188, [f"{MES[int(m[5:]) - 1]}/{m[2:4]}" for m in meses]))
-    corpo += card(X0 + METADE + 16, 452, METADE, 252, "Horas por equipe", "Estimadas e apontadas",
-                  hbars2([(e, a, b) for e, a, b in D["horas"]], METADE - 40, 188, T["neutral"], T["blue"],
-                         "Estimadas", "Apontadas", lab=130))
-    return corpo
+          ("Pessoas & Cult.", 3, 1)]
+    x, y, w, h = area(CARTOES[p]["equipes"])
+    out += no_cartao(p, "equipes", colunas2(eq, w, h, COR["azul"], COR["vermelho"], "Ativos", "Atrasados"))
+    x, y, w, h = area(CARTOES[p]["esforco"])
+    horas = [(e if e != "Pessoas & Cultura" else "Pessoas & Cult.", a, b) for e, a, b in D["horas"]]
+    out += no_cartao(p, "esforco", colunas2(horas, w, h, COR["neutro"], COR["azul"], "Estimadas", "Apontadas"))
+    return out
 
 
-def projetos_tarefas():
-    corpo = lateral("Projetos e tarefas") + topo("Projetos e tarefas", "Clique num projeto para ver as tarefas dele")
-    corpo += kpis([("Tarefas abertas", "140", "de 1.435 tarefas", False),
-                   ("Vencidas", "39", "31% das abertas", True),
-                   ("Bloqueadas", "7", "travadas agora", False),
-                   ("Lead time médio", "20,6 d", "da criação à conclusão", False),
-                   ("Com retrabalho", "18,0%", "voltaram da revisão", False)])
+def dados_tarefas():
+    p = "P2ProjetosTarefas"
+    out = comuns() + kpis_dados(p, [("140", "7 bloqueadas agora", False), ("39", "31% das abertas", True),
+                                    ("86,1%", "86% de todas as tarefas", False), ("20,6", "da criação à conclusão", False)])
     linhas_ = []
-    for p in sorted(G["proj"], key=lambda r: -(int(r[7]) if r[7] else -1))[:13]:
-        linhas_.append((p[0], p[1], p[3], f"{br(float(p[8]) * 100)}%", p[7] or ""))
-    corpo += card(X0, 176, 620, 528, "Projetos", "Do maior atraso para o menor",
-                  tabela([("Projeto", "l"), ("Equipe", "l"), ("Prazo", "l"), ("Concluído", "r"),
-                          ("Dias de atraso", "r")], linhas_, [190, 110, 130, 80, 90],
-                         {3: (T["blue_soft"], 100, lambda v: float(v[:-1].replace(",", "."))),
-                          4: ("#F6D9D6", 407, lambda v: float(v or 0))}))
+    for r in sorted(G["proj"], key=lambda r: -(int(r[7]) if r[7] else -1))[:14]:
+        linhas_.append((r[0], r[1], r[3], f"{br(float(r[8]) * 100)}%", r[7] or ""))
+    x, y, w, h = area(CARTOES[p]["projetos"])
+    out += no_cartao(p, "projetos", tabela(
+        [("Projeto", "l"), ("Equipe", "l"), ("Prazo", "l"), ("Concluído", "r"), ("Dias de atraso", "r")],
+        linhas_, [220, 120, 140, 90, 100],
+        {3: ("#4682F555", 100, lambda v: float(v[:-1].replace(",", "."))),
+         4: ("#E44A5D55", 407, lambda v: float(v or 0))}))
     ordem = ["Backlog", "A Fazer", "Em Andamento", "Em Revisão", "Bloqueada"]
     par = dict(D["paradas"])
-    corpo += card(X0 + 636, 176, W - 636, 250, "Tarefas abertas por etapa", "Onde estão paradas agora",
-                  hbars([(e, par[e]) for e in ordem], W - 636 - 40, 186,
-                        [T["crit"] if e == "Bloqueada" else T["blue"] for e in ordem], lab=110))
-    venc = [(v[0][:26], v[2], v[3]) for v in G["vencidas"][:6]]
-    corpo += card(X0 + 636, 442, W - 636, 262, "Tarefas vencidas", "Mais atrasadas primeiro",
-                  tabela([("Tarefa", "l"), ("Responsável", "l"), ("Dias", "r")], venc, [170, 120, 50]))
-    return corpo
+    x, y, w, h = area(CARTOES[p]["etapas"])
+    out += no_cartao(p, "etapas", hbars([(e, par[e]) for e in ordem], w, h,
+                                        [COR["vermelho"] if e == "Bloqueada" else COR["azul"] for e in ordem], lab=110))
+    x, y, w, h = area(CARTOES[p]["vencidas"])
+    out += no_cartao(p, "vencidas", tabela([("Tarefa", "l"), ("Responsável", "l"), ("Dias", "r")],
+                                           [(v[0][:28], v[2], v[3]) for v in G["vencidas"][:6]], [200, 150, 80]))
+    return out
 
 
-def cronograma():
-    corpo = lateral("Cronograma") + topo("Cronograma", "Projetos e tarefas no tempo · clique no + para abrir as tarefas")
-    legenda = [("Em andamento", T["blue"]), ("Atrasado / vencida", T["crit"]), ("Bloqueada", T["warn"]),
-               ("Concluído", T["light"]), ("Cancelado", T["gray"])]
-    corpo += '<div class="leg">' + "".join(f'<span><i style="background:{c}"></i>{n}</span>' for n, c in legenda) + "</div>"
+def dados_cronograma():
+    p = "P3Cronograma"
+    out = comuns()
+    x, y, w, h = area(CARTOES[p]["gantt"])
     meses = [(a, m) for a in (2025, 2026) for m in range(1, 13)]
     ref = date(2026, 9, 30)
-    cw = (W - 32 - 250) / len(meses)
+    cw = (w - 250) / len(meses)
 
     def faixa(ini, fim, cor):
         cel = []
@@ -202,78 +271,94 @@ def cronograma():
             c0 = date(a, m, 1)
             c1 = date(a + (m == 12), m % 12 + 1, 1)
             dentro = ini < c1 and fim >= c0
-            cel.append(f'<td style="width:{cw}px"><div class="gb" style="background:{cor if dentro else "transparent"}">'
-                       f'</div></td>')
+            cel.append(f'<td><div class="gb" style="background:{cor if dentro else "transparent"}"></div></td>')
         return "".join(cel)
 
-    def cor_proj(p):
-        return {"Atrasado": T["crit"], "Cancelado": T["gray"]}.get(p[3], T["light"] if p[2] == "Concluído" else T["blue"])
+    def cor_proj(r):
+        if r[3] == "Atrasado":
+            return COR["vermelho"]
+        return {"Cancelado": COR["cancelado"], "Concluído": COR["concluido"]}.get(r[2], COR["azul"])
 
     cab = "".join(f'<th style="width:{cw}px">{MES[m - 1]}{"<br>" + str(a)[2:] if m == 1 else ""}</th>' for a, m in meses)
     trs = []
-    for p in G["proj"][:15]:
-        ini = date.fromisoformat(p[4])
-        fim = (date.fromisoformat(p[6]) if p[6] else date.fromisoformat(p[5]) if p[2] == "Cancelado"
-               else max(ref, date.fromisoformat(p[5])))
-        aberto = p[0] == "Gestão de pátio"
-        trs.append(f'<tr class="pr"><td class="rh"><b>{"−" if aberto else "+"}</b> {p[0]}</td>{faixa(ini, fim, cor_proj(p))}</tr>')
+    for r in G["proj"][:13]:
+        ini = date.fromisoformat(r[4])
+        fim = (date.fromisoformat(r[6]) if r[6] else date.fromisoformat(r[5]) if r[2] == "Cancelado"
+               else max(ref, date.fromisoformat(r[5])))
+        aberto = r[0] == "Gestão de pátio"
+        trs.append(f'<tr><td class="rh"><b>{"−" if aberto else "+"}</b> {r[0]}</td>{faixa(ini, fim, cor_proj(r))}</tr>')
         if aberto:
-            for t in G["tarefas_gestao"][-7:]:
+            for t in G["tarefas_gestao"][-6:]:
                 ti = date.fromisoformat(t[3])
                 tf = date.fromisoformat(t[4]) if t[4] else ref
-                c = (T["light"] if t[1] == "Concluída" else T["warn"] if t[1] == "Bloqueada"
-                     else T["crit"] if t[2] == "Vencida" else T["blue"])
-                trs.append(f'<tr class="tr"><td class="rh sub2">{t[0][:30]}</td>{faixa(ti, tf, c)}</tr>')
-    corpo += (f'<div class="card" style="left:{X0}px;top:112px;width:{W}px;height:592px">'
-              f'<table class="gantt"><thead><tr><th class="rh">Projeto / tarefa</th>{cab}</tr></thead>'
-              f'<tbody>{"".join(trs)}</tbody></table></div>')
-    return corpo
+                c = (COR["concluido"] if t[1] == "Concluída" else COR["ambar"] if t[1] == "Bloqueada"
+                     else COR["vermelho"] if t[2] == "Vencida" else COR["azul"])
+                trs.append(f'<tr><td class="rh sub2">{t[0][:30]}</td>{faixa(ti, tf, c)}</tr>')
+    out += (f'<div class="vis" {caixa(x, y, w, h)}><table class="gantt"><thead><tr><th class="rh">Projeto / tarefa</th>'
+            f'{cab}</tr></thead><tbody>{"".join(trs)}</tbody></table></div>')
+    return out
 
 
 CSS = f"""
 *{{box-sizing:border-box;margin:0;padding:0}}
-body{{font-family:Inter,'Segoe UI',sans-serif;background:#DADFE6;padding:40px;display:flex;flex-direction:column;gap:60px}}
-.frame{{position:relative;width:1280px;height:720px;background:{T['page']};overflow:hidden;color:{T['ink']}}}
-.side{{position:absolute;left:0;top:0;width:200px;height:720px;background:#fff;border-right:1px solid {T['line']};padding:22px 16px}}
-.brand{{font-size:15px;font-weight:700;letter-spacing:-.01em;margin:0 0 26px 6px}}
-.navs{{display:flex;flex-direction:column;gap:4px;margin-bottom:30px}}
-.nav{{font-size:12.5px;color:{T['ink2']};padding:9px 10px;border-radius:8px}}
-.nav.on{{background:{T['blue_soft']};color:{T['blue']};font-weight:600}}
-.flabel{{font-size:10.5px;color:{T['muted']};margin:12px 0 5px 4px}}
-.sel{{font-size:12px;border:1px solid {T['line']};border-radius:8px;padding:8px 10px;position:relative}}
-.sel i{{position:absolute;right:10px;font-style:normal;color:{T['muted']}}}
-.ref{{position:absolute;left:20px;bottom:22px;font-size:10.5px;color:{T['muted']}}}
-.ttl{{position:absolute;left:224px;top:22px;font-size:20px;font-weight:700;letter-spacing:-.01em}}
-.sub{{position:absolute;left:224px;top:52px;font-size:11.5px;color:{T['ink2']}}}
-.kpis{{position:absolute;left:224px;top:80px;width:1032px;height:80px;background:#fff;border-radius:12px;
-  border:1px solid {T['line']};display:flex}}
-.k{{flex:1;padding:12px 18px;border-left:1px solid {T['line']}}}.k:first-child{{border-left:none}}
-.kl{{font-size:10.5px;color:{T['ink2']}}}.kv{{font-size:22px;font-weight:700;margin:2px 0 1px;letter-spacing:-.01em}}
-.kc{{font-size:10px;color:{T['muted']}}}
-.card{{position:absolute;background:#fff;border:1px solid {T['line']};border-radius:12px;padding:14px 18px}}
-.ct{{font-size:13px;font-weight:600}}.cs{{font-size:10.5px;color:{T['muted']};margin:2px 0 12px}}
+body{{font-family:Inter,'Segoe UI',sans-serif;background:#05080F;padding:40px;display:flex;flex-direction:column;gap:60px}}
+body.fundos{{padding:0;gap:0;background:none}}
+.frame{{position:relative;width:{LARGURA}px;height:{ALTURA}px;overflow:hidden;color:{COR['texto']};
+  background:radial-gradient(900px 420px at 92% -8%,#1B3566 0%,rgba(10,16,32,0) 60%),
+             radial-gradient(700px 380px at 10% 110%,#16244A 0%,rgba(10,16,32,0) 60%),{COR['pagina']}}}
+.frame>div{{position:absolute}}
+.nav{{left:0;top:0;width:{NAV}px;height:{ALTURA}px;background:#0D1526;border-right:1px solid {COR['borda']}}}
+.logo{{position:absolute;left:16px;top:20px;width:40px;height:40px;border-radius:12px;
+  background:linear-gradient(135deg,#4682F5,#7B5CF5);font-weight:800;font-size:14px;color:#fff;
+  display:flex;align-items:center;justify-content:center;letter-spacing:.02em}}
+.navb{{position:absolute;left:12px;width:48px;height:48px;border-radius:12px;display:flex;align-items:center;justify-content:center}}
+.navb.on{{background:{COR['azul_suave']};box-shadow:inset 3px 0 0 {COR['azul']}}}
+.t1{{font-size:21px;font-weight:700;letter-spacing:-.01em}}
+.t2{{font-size:11.5px;color:{COR['suave']}}}
+.slot{{border:1px solid {COR['borda']};border-radius:10px;background:#0F1729}}
+.card{{background:linear-gradient(180deg,#131D31 0%,{COR['cartao']} 100%);border:1px solid {COR['borda']};
+  border-radius:16px;box-shadow:0 8px 24px rgba(0,0,0,.25)}}
+.ico{{position:absolute;left:20px;top:30px;width:40px;height:40px;border-radius:12px;display:flex;align-items:center;justify-content:center}}
+.kl{{position:absolute;left:72px;top:20px;font-size:11px;color:{COR['suave']};letter-spacing:.02em}}
+.ct{{position:absolute;left:20px;top:16px;font-size:13.5px;font-weight:600}}
+.cs{{position:absolute;left:20px;top:36px;font-size:10.5px;color:{COR['apagado']}}}
+.leg{{position:absolute;right:20px;top:20px;display:flex;gap:16px;font-size:10.5px;color:{COR['suave']}}}
+.leg i{{display:inline-block;width:10px;height:10px;border-radius:3px;margin-right:6px;vertical-align:-1px}}
+.kv{{font-size:26px;font-weight:700;letter-spacing:-.02em;line-height:34px}}
+.kc{{font-size:10.5px;color:{COR['suave']}}}
+.sl{{padding:5px 12px}}.sl span{{display:block;font-size:9px;color:{COR['apagado']}}}.sl b{{font-size:12px;font-weight:600}}
+.sl i{{position:absolute;right:12px;top:15px;font-style:normal;color:{COR['apagado']}}}
+.ref{{font-size:10.5px;color:{COR['suave']};text-align:right;line-height:26px}}
 svg text{{font-family:Inter,'Segoe UI',sans-serif}}
-.al{{font-size:10.5px;fill:{T['ink']}}}.dl{{font-size:10px;font-weight:600;fill:{T['ink']}}}.dl.s{{font-size:9.5px}}
-.ax{{font-size:9px;fill:{T['muted']}}}.lg{{font-size:10px;fill:{T['ink2']}}}
-table{{border-collapse:collapse;font-size:10.5px;width:100%}}
-th{{font-size:9.5px;font-weight:600;color:{T['muted']};padding:6px 5px;border-bottom:1px solid {T['line']}}}
-td{{padding:0 5px;height:30px;border-bottom:1px solid #F3F4F6;white-space:nowrap}}
+.al{{font-size:10.5px;fill:{COR['texto']}}}.dl{{font-size:10px;font-weight:600;fill:{COR['texto']}}}.dl.s{{font-size:9px}}
+.ax{{font-size:9px;fill:{COR['apagado']}}}.lg{{font-size:10px;fill:{COR['suave']}}}
+.big{{font-size:28px;font-weight:700;fill:{COR['texto']}}}
+table{{border-collapse:collapse;font-size:10.5px;width:100%;color:{COR['texto']}}}
+th{{font-size:9.5px;font-weight:600;color:{COR['apagado']};padding:6px 5px;border-bottom:1px solid {COR['borda']}}}
+td{{padding:0 5px;height:29px;border-bottom:1px solid {COR['grade']};white-space:nowrap}}
 .db{{position:relative;height:18px;display:flex;align-items:center;justify-content:flex-end}}
 .db div{{position:absolute;left:0;top:2px;height:14px;border-radius:3px}}.db span{{position:relative;font-weight:600}}
-.leg{{position:absolute;right:24px;top:30px;display:flex;gap:14px;font-size:10.5px;color:{T['ink2']}}}
-.leg i{{display:inline-block;width:10px;height:10px;border-radius:3px;margin-right:5px;vertical-align:-1px}}
 .gantt th{{font-size:9px;text-align:center;padding:4px 0;line-height:1.2}}
-.gantt td{{height:28px;padding:0;border-bottom:1px solid #F3F4F6}}
+.gantt td{{height:28px;padding:0}}
 .gantt .rh{{width:250px;text-align:left;padding-left:4px;font-size:10.5px}}
-.gantt .rh b{{display:inline-block;width:14px;color:{T['muted']};font-weight:600}}
-.gantt .sub2{{padding-left:22px;color:{T['ink2']};font-size:10px}}
+.gantt .rh b{{display:inline-block;width:14px;color:{COR['apagado']};font-weight:600}}
+.gantt .sub2{{padding-left:22px;color:{COR['suave']};font-size:10px}}
 .gb{{height:14px}}
-.pad{{padding:32px 40px}}
+body.fundos .vis{{display:none}}
 """
 
-quadros = [("01 · Portfólio", portfolio()), ("02 · Projetos e tarefas", projetos_tarefas()),
-           ("03 · Cronograma", cronograma())]
-html = (f'<!doctype html><html><head><meta charset="utf-8"><title>Painel de Projetos</title>'
-        f'<style>{CSS}</style></head><body>'
-        + "".join(f'<div class="frame" data-name="{n}">{c}</div>' for n, c in quadros) + "</body></html>")
-(S.parents[1] / "docs" / "design" / "redesign.html").write_text(html, encoding="utf-8")
+
+def html(com_dados=True):
+    dados = {"P1Portfolio": dados_portfolio, "P2ProjetosTarefas": dados_tarefas, "P3Cronograma": dados_cronograma}
+    quadros = "".join(f'<div class="frame" data-name="{p[1]}" id="{p[0]}">{fundo(p[0])}{dados[p[0]]()}</div>'
+                      for p in PAGINAS)
+    return (f'<!doctype html><html><head><meta charset="utf-8"><title>Painel de Projetos</title>'
+            f'<style>{CSS}</style></head><body class="{"" if com_dados else "fundos"}">{quadros}</body></html>')
+
+
+if __name__ == "__main__":
+    raiz = S.parents[1]
+    if "--fundos" in sys.argv:
+        (raiz / "docs" / "design" / "fundos.html").write_text(html(False), encoding="utf-8")
+    else:
+        (raiz / "docs" / "design" / "redesign.html").write_text(html(True), encoding="utf-8")
