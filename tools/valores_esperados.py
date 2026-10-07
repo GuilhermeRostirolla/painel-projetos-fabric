@@ -6,7 +6,7 @@ from pathlib import Path
 RAIZ = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(RAIZ))
 
-from tools.gerar_modelo import MEDIDAS, PAPEIS  # noqa: E402
+from tools.gerar_modelo import MEDIDAS, PAPEIS, SEM_CONFERENCIA  # noqa: E402
 
 MES = "2026-09"
 MES_ANO = "set/26"
@@ -68,6 +68,7 @@ SQL = {
                                 AND date_format(data_entrada, 'yyyy-MM') = '{MES}'""",
     "Data de Referência": "SELECT date_format(data_referencia, 'dd/MM/yyyy') FROM ref_parametros",
     "Texto Referência": "SELECT concat('Dados até ', date_format(data_referencia, 'dd/MM/yyyy')) FROM ref_parametros",
+    "% Tarefas Concluídas": "SELECT avg(int(status = 'Concluída')) FROM fato_tarefa",
     "Contexto Projetos Ativos": "SELECT concat('de ', count(*), ' no portfólio') FROM dim_projeto",
     "Contexto Projetos Atrasados": """SELECT concat(cast(round(sum(int(situacao_prazo = 'Atrasado')) / count(*) * 100) AS INT),
                                      '% dos ativos') FROM dim_projeto WHERE status IN ('Em Andamento', 'Planejamento')""",
@@ -108,6 +109,8 @@ def calcular(spark) -> tuple[list[tuple[str, str, str, str]], dict]:
     linhas, brutos = [], {}
     for tabela, medidas in MEDIDAS.items():
         for nome, pasta, formato, _ in medidas:
+            if pasta in SEM_CONFERENCIA:
+                continue
             valor = spark.sql(SQL[nome]).first()[0]
             contexto = f"mês {MES[5:]}/{MES[:4]}" if nome in PERIODO else "sem filtro"
             linhas.append((pasta, nome, formatar(valor, formato), contexto))
@@ -138,7 +141,7 @@ def main() -> None:
     spark.conf.set("spark.sql.session.timeZone", "UTC")
     for tabela in ("fato_tarefa", "fato_passagem_status", "dim_projeto", "ref_parametros"):
         spark.read.parquet(str(a.pasta / "Tables" / tabela)).createOrReplaceTempView(tabela)
-    faltando = {m[0] for ms in MEDIDAS.values() for m in ms} - set(SQL)
+    faltando = {m[0] for ms in MEDIDAS.values() for m in ms if m[1] not in SEM_CONFERENCIA} - set(SQL)
     if faltando:
         raise SystemExit(f"medidas sem conferência: {faltando}")
 

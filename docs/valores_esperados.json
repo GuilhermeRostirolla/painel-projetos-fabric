@@ -121,6 +121,10 @@
    "valor": -8.0,
    "periodo": true
   },
+  "% Tarefas Concluídas": {
+   "valor": 0.8606271777003485,
+   "periodo": false
+  },
   "Tempo Médio na Etapa (dias)": {
    "valor": 4.4363294611164905,
    "periodo": false
