@@ -50,6 +50,10 @@ table ref_parametros
 		displayFolder: Contexto dos cartões
 		lineageTag: 446e6f54-15db-50cf-9974-462077a59b30
 
+	measure 'Texto Orçamento' = "R$ " & FORMAT ( [Orçamento] / 1000000, "#,0.0" ) & " mi"
+		displayFolder: Contexto dos cartões
+		lineageTag: 4b307adf-71b7-53a9-8b5b-a83a97414d2a
+
 	measure 'Contexto Projetos de Ideias' = FORMAT ( [Projetos de Ideias] + 0, "#,0" ) & " vieram de ideias"
 		displayFolder: Contexto dos cartões
 		lineageTag: d98cb9fb-7280-5cb6-bc33-6c445f81f386

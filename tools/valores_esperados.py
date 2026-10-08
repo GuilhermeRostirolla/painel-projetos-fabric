@@ -74,6 +74,8 @@ SQL = {
     "Contexto Orçamento Consumido": """SELECT concat(cast(round((SELECT sum(horas_apontadas) FROM fato_tarefa)
                                       / (SELECT sum(horas_orcadas) FROM dim_projeto) * 100) AS INT),
                                       '% das horas orçadas já usadas')""",
+    "Texto Orçamento": """SELECT concat('R$ ', translate(format_number(sum(orcamento) / 1000000, 1), ',.', '.,'), ' mi')
+                          FROM dim_projeto""",
     "Contexto Projetos de Ideias": "SELECT concat(count(*), ' vieram de ideias') FROM dim_projeto WHERE origem = 'Ideia'",
     "% Tarefas Concluídas": "SELECT avg(int(status = 'Concluído')) FROM fato_tarefa",
     "Contexto Projetos Ativos": "SELECT concat('de ', count(*), ' no portfólio') FROM dim_projeto",

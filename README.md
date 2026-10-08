@@ -47,7 +47,7 @@ flowchart LR
 - **Bronze (`nb_01`)**: grava cada página da API como veio, com marca d'água por recurso. A marca só avança se todos os recursos forem gravados, então uma falha no meio faz a próxima execução repetir a janela. 429 e 5xx têm nova tentativa respeitando o `Retry-After`. O token fica no Key Vault.
 - **Silver (`nb_02`)**: schema fixo por recurso, textos e datas padronizados, uma linha por registro. Registro com status desconhecido ou chave órfã vai para `silver_rejeitados` com o motivo.
 - **Gold (`nb_03`)**: `fato_tarefa`, `fato_passagem_status` e as dimensões. Ciclo, tempo impedido e retrabalho saem do histórico de movimentações. Tudo é medido contra a data de referência gravada nos dados, não contra `TODAY()`, para os números não mudarem sozinhos.
-- **Modelo (`PainelProjetos.SemanticModel`)**: Direct Lake, 7 tabelas, 53 medidas e um papel de RLS por portfólio (8). O TMDL é gerado por `tools/gerar_modelo.py` a partir do schema da gold.
+- **Modelo (`PainelProjetos.SemanticModel`)**: Direct Lake, 7 tabelas, 54 medidas e um papel de RLS por portfólio (8). O TMDL é gerado por `tools/gerar_modelo.py` a partir do schema da gold.
 - **Relatório (`PainelProjetos.Report`)**: PBIR gerado por `tools/gerar_relatorio.py`, sobre fundos desenhados em HTML (`tools/design`).
 - **Publicação (`nb_04`)**: cria ou atualiza modelo e relatório pela API REST do Fabric, roda as medidas em DAX e compara com valores calculados em SQL (`docs/valores_esperados.json`), e consulta o modelo como cada papel de RLS para conferir o filtro.
 

@@ -20,14 +20,14 @@
                 "Measure": {
                   "Expression": {
                     "SourceRef": {
-                      "Entity": "dim_projeto"
+                      "Entity": "ref_parametros"
                     }
                   },
-                  "Property": "Orçamento"
+                  "Property": "Texto Orçamento"
                 }
               },
-              "queryRef": "dim_projeto.Orçamento",
-              "nativeQueryRef": "Orçamento"
+              "queryRef": "ref_parametros.Texto Orçamento",
+              "nativeQueryRef": "Texto Orçamento"
             }
           ]
         }

@@ -48,7 +48,7 @@ KPIS = {
         ("Projetos ativos", "Projetos Ativos", "Contexto Projetos de Ideias", "azul", "pasta"),
         ("Projetos atrasados", "Projetos Atrasados", "Contexto Projetos Atrasados", "vermelho", "alerta"),
         ("Entregues no prazo", "% Entregues no Prazo", "das tarefas concluídas", "verde", "check"),
-        ("Orçamento do portfólio", "Orçamento", "Contexto Orçamento Consumido", "ambar", "relogio"),
+        ("Orçamento do portfólio", "Texto Orçamento", "Contexto Orçamento Consumido", "ambar", "relogio"),
     ],
     "P2ProjetosTarefas": [
         ("Tarefas abertas", "Tarefas Abertas", "Contexto Tarefas Abertas", "azul", "lista"),

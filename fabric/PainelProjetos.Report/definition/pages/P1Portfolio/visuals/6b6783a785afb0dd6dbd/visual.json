@@ -128,7 +128,7 @@
             "labelStyle": {
               "expr": {
                 "Literal": {
-                  "Value": "'Category, data value'"
+                  "Value": "'Both'"
                 }
               }
             },
