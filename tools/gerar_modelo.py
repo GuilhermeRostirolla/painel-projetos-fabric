@@ -207,6 +207,10 @@ def bloco_dax(dax: str, recuo: str) -> str:
     return f" ```\n{linhas}\n{recuo}\t\t```"
 
 
+def texto_tmdl(valor: str) -> str:
+    return '"' + valor.replace('"', '""') + '"' if '"' in valor else valor
+
+
 def tabela(nome: str, colunas: list[list[str]]) -> str:
     saida = [f"table {nome}", f"\tlineageTag: {tag(nome)}", f"\tsourceLineageTag: [dbo].[{nome}]"]
     if nome == "dim_data":
@@ -215,7 +219,7 @@ def tabela(nome: str, colunas: list[list[str]]) -> str:
     for medida, pasta, formato, dax in MEDIDAS.get(nome, []):
         saida.append(f"\tmeasure {nome_tmdl(medida)} ={bloco_dax(dax, chr(9))}")
         if formato:
-            saida.append(f"\t\tformatString: {formato}")
+            saida.append(f"\t\tformatString: {texto_tmdl(formato)}")
         saida += [f"\t\tdisplayFolder: {pasta}", f"\t\tlineageTag: {tag(nome, 'medida', medida)}", ""]
     for coluna, tipo in colunas:
         saida += [f"\tcolumn {coluna}", f"\t\tdataType: {TIPOS[tipo]}"]
@@ -223,7 +227,7 @@ def tabela(nome: str, colunas: list[list[str]]) -> str:
             saida.append("\t\tisKey")
         formato = FORMATO_COLUNA.get((nome, coluna), FORMATOS.get(tipo))
         if formato:
-            saida.append(f"\t\tformatString: {formato}")
+            saida.append(f"\t\tformatString: {texto_tmdl(formato)}")
         if coluna in OCULTAS.get(nome, set()):
             saida.append("\t\tisHidden")
         saida += [f"\t\tlineageTag: {tag(nome, coluna)}", f"\t\tsourceLineageTag: {coluna}",

@@ -88,3 +88,12 @@ def test_um_papel_por_portfolio():
         assert texto.startswith(f"role {nome}\n") and f'[portfolio] = "{portfolio}"' in texto
         assert f"ref role {nome}" in modelo
         assert nome.isidentifier() and nome.isascii()
+
+
+def test_format_string_com_aspas_escapado():
+    for arquivo in (gm.DESTINO / "definition" / "tables").glob("*.tmdl"):
+        for linha in arquivo.read_text().splitlines():
+            valor = linha.strip().removeprefix("formatString: ")
+            if linha.strip().startswith("formatString:") and '"' in valor:
+                miolo = valor[1:-1]
+                assert valor[0] == valor[-1] == '"' and '"' not in miolo.replace('""', ''), linha
