@@ -350,7 +350,9 @@ class Pagina:
                 "sortDefinition": ordenar("dim_projeto.projeto", decrescente=False)},
             "objects": objetos,
             "visualContainerObjects": sem_moldura(),
-            "drillFilterOtherVisuals": True})
+            "drillFilterOtherVisuals": True},
+            {"filterConfig": filtro_igual("dim_data.ano", [2025, 2026], nome=hashlib.sha1(
+                f"{self.nome}/{chave}".encode()).hexdigest()[:20])})
 
 
 FAROL = {"Verde": COR["bom"], "Amarelo": COR["atencao"], "Vermelho": COR["critico"], "Encerrado": COR["cancelado"]}

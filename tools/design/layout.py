@@ -13,7 +13,7 @@ COR = {
 
 PAGINAS = [("P1Portfolio", "Portfólio", "Visão executiva da Central de Iniciativas da AEVO"),
            ("P2ProjetosTarefas", "Projetos e tarefas", "Andamento de cada projeto e o que está travando as entregas"),
-           ("P3Cronograma", "Cronograma", "Projetos e tarefas no tempo")]
+           ("P3Cronograma", "Cronograma", "Projetos e tarefas no tempo, de jan/2025 a dez/2026")]
 
 SLICERS = [("dim_projeto.portfolio", "Portfólio", 888, 14, 180, 54),
            ("dim_projeto.status", "Status do projeto", 1084, 14, 180, 54)]
