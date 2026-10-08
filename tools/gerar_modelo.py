@@ -80,7 +80,7 @@ RETURN
                 )
             RETURN
                 IF (
-                    p_ini <= fim && p_fim >= ini,
+                    NOT ISBLANK ( p_ini ) && p_ini <= fim && p_fim >= ini,
                     SWITCH (
                         TRUE (),
                         MAX ( dim_projeto[situacao_prazo] ) = "Atrasado", "#E44A5D",
