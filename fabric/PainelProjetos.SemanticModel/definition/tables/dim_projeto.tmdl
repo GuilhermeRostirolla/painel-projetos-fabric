@@ -53,7 +53,7 @@ table dim_projeto
 		lineageTag: 799b8e6f-04f6-5737-9fb0-1ced7f10f44c
 
 	measure 'Orçamento' = SUM ( dim_projeto[orcamento] )
-		formatString: """R$"" #,0.0,, "" mi"""
+		formatString: """R$"" #,0"
 		displayFolder: Portfólio
 		lineageTag: 0cc4f2b3-9107-5c9f-aa7d-0679194e49e6
 

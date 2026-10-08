@@ -257,7 +257,7 @@ class Pagina:
         if tipo == "donutChart":
             objetos = {
                 "legend": objetos["legend"],
-                "labels": [{"properties": {"show": lit(True), "labelStyle": lit("Category, data value"),
+                "labels": [{"properties": {"show": lit(True), "labelStyle": lit("Both"),
                                            "color": cor(COR["texto"]), "fontSize": lit(9.0),
                                            "labelDisplayUnits": lit(1.0)}}],
                 "slices": [{"properties": {"innerRadiusRatio": lit(72)}}],
