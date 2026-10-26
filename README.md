@@ -1,5 +1,8 @@
 # Painel de Projetos - API + Microsoft Fabric + Power BI
 
+[![testes](https://github.com/GuilhermeRostirolla/painel-projetos-fabric/actions/workflows/testes.yml/badge.svg)](https://github.com/GuilhermeRostirolla/painel-projetos-fabric/actions/workflows/testes.yml)
+[English version](README.en.md)
+
 Pipeline que busca dados de uma ferramenta de gestão de projetos por API, trata no Microsoft Fabric (bronze, silver e gold) e entrega um modelo semântico em Direct Lake com um relatório executivo de 3 páginas no Power BI. Modelo e relatório são gerados por código e publicados por notebook.
 
 É a continuação do [Painel de Ideias](https://github.com/GuilhermeRostirolla/painel-ideias-powerbi). Lá o dado vinha de um SQL Server; aqui vem de uma API no formato da Central de Iniciativas da AEVO (portfólios, projetos, tarefas e movimentações), então a ingestão precisa lidar com token, paginação, carga incremental e limite de requisições.
@@ -69,6 +72,8 @@ Os cartões, ícones e a grade ficam numa imagem de fundo por página, gerada de
 
 ## Testes
 
+Os testes e o lint (`ruff`) rodam no GitHub Actions a cada push e pull request.
+
 - `pytest`: simulador, API, notebooks, modelo (toda coluna e medida citada no DAX existe) e relatório (todo campo existe, nenhum visual sobreposto).
 - `pytest -m pipeline`: roda os notebooks do Fabric com Spark local e confere a gold contra contas feitas em Python a partir da API.
 - Carga incremental: uma carga completa em 31/08 seguida de uma incremental em 30/09, com 30% das chamadas falhando, gerou a mesma gold que uma carga completa direto em 30/09.
@@ -91,10 +96,14 @@ No Fabric:
 
 1. Publique a API (o `render.yaml` sobe no Render) e guarde o token no Key Vault como `token-api-projetos`.
 2. Crie um workspace com um lakehouse `lh_projetos`.
-3. Num notebook qualquer, instale os notebooks:
-   ```python
-   import requests; exec(requests.get("https://raw.githubusercontent.com/GuilhermeRostirolla/painel-projetos-fabric/main/tools/instalar_no_fabric.py").text)
-   ```
+3. Importe os notebooks de uma das duas formas:
+   - **Manual (sem executar código baixado):** no workspace, use **Importar > Notebook > Deste computador** com os arquivos de `fabric/ipynb/` e defina `lh_projetos` como lakehouse padrão de cada um.
+   - **Por script:** o `tools/instalar_no_fabric.py` cria ou atualiza os cinco notebooks pela API do Fabric e já anexa o lakehouse. Leia o script e fixe o commit que você revisou, para não executar uma versão diferente da que leu:
+     ```python
+     COMMIT = "<sha-completo-do-commit>"
+     RAMO = COMMIT
+     import requests; exec(requests.get(f"https://raw.githubusercontent.com/GuilhermeRostirolla/painel-projetos-fabric/{COMMIT}/tools/instalar_no_fabric.py").text)
+     ```
 4. Rode o `nb_00_orquestrador` com `MODO = "completo"`, preenchendo `URL_API` e `KEY_VAULT_URL`.
 5. Rode o `nb_04_publicar_modelo`.
 6. Volte o `MODO` para `incremental` e agende o `nb_00`.
@@ -126,3 +135,7 @@ tests/
 ## Como foi construído
 
 Projeto desenvolvido por mim com apoio de IA (Claude) como assistente de programação. A ideia, o desenho das camadas, as regras de negócio, as métricas e a revisão de cada entrega são meus; a IA acelerou a escrita de código, os testes e as verificações.
+
+## Licença
+
+[MIT](LICENSE)
