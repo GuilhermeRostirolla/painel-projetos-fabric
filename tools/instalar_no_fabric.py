@@ -37,8 +37,8 @@ def _esperar(resposta, o_que):
     raise TimeoutError(o_que)
 
 
-_lakehouse = next(l for l in _cliente.get(f"v1/workspaces/{_ws}/lakehouses").json()["value"]
-                  if l["displayName"] == NOME_LAKEHOUSE)
+_lakehouse = next(lh for lh in _cliente.get(f"v1/workspaces/{_ws}/lakehouses").json()["value"]
+                  if lh["displayName"] == NOME_LAKEHOUSE)
 _existentes = {n["displayName"]: n["id"] for n in _cliente.get(f"v1/workspaces/{_ws}/notebooks").json()["value"]}
 
 for _nome in NOTEBOOKS:

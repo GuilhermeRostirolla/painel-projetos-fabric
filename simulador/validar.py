@@ -1,6 +1,7 @@
 """Regras de coerência do cenário. Se alguma falhar, a API não sobe."""
 from collections import defaultdict
 from datetime import date, datetime
+from itertools import pairwise
 
 from simulador.catalogos import CONCLUIDA, STATUS, STATUS_FINAIS
 
@@ -15,7 +16,7 @@ def _dt(texto: str) -> datetime:
 def problemas(dados: dict[str, list[dict]], referencia: date) -> list[str]:
     erros: list[str] = []
     for nome, linhas in dados.items():
-        ids = [l["id"] for l in linhas]
+        ids = [linha["id"] for linha in linhas]
         if len(ids) != len(set(ids)):
             erros.append(f"{nome}: id duplicado")
 
@@ -40,7 +41,7 @@ def problemas(dados: dict[str, list[dict]], referencia: date) -> list[str]:
         if not evs or evs[0]["etapa_anterior"] is not None:
             erros.append(f"{tid}: histórico não começa na criação")
             continue
-        for a, b in zip(evs, evs[1:]):
+        for a, b in pairwise(evs):
             if b["etapa_anterior"] != a["etapa_nova"]:
                 erros.append(f"{tid}: histórico pula etapa ({a['etapa_nova']} -> {b['etapa_anterior']})")
             if _dt(b["ocorrido_em"]) <= _dt(a["ocorrido_em"]):

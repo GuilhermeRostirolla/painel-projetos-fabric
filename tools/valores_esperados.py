@@ -112,7 +112,7 @@ def formatar(valor, formato: str | None) -> str:
 
 def calcular(spark) -> tuple[list[tuple[str, str, str, str]], dict]:
     linhas, brutos = [], {}
-    for tabela, medidas in MEDIDAS.items():
+    for medidas in MEDIDAS.values():
         for nome, pasta, formato, _ in medidas:
             if pasta in SEM_CONFERENCIA:
                 continue

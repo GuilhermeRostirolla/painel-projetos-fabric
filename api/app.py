@@ -56,7 +56,7 @@ def criar_app(cfg: Config | None = None, token: str | None = None,
                 raise HTTPException(400, "este recurso não aceita atualizado_desde")
             if atualizado_desde.tzinfo is None:
                 raise HTTPException(400, "atualizado_desde precisa de fuso, ex.: 2026-01-01T00:00:00-03:00")
-            linhas = [l for l in linhas if datetime.fromisoformat(l[campo_data]) > atualizado_desde]
+            linhas = [linha for linha in linhas if datetime.fromisoformat(linha[campo_data]) > atualizado_desde]
         total = len(linhas)
         inicio = (pagina - 1) * tamanho
         proxima = None

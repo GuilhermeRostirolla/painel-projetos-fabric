@@ -3,3 +3,22 @@ pythonpath = ["."]
 testpaths = ["tests"]
 markers = ["pipeline: roda os notebooks com Spark local (lento, precisa de Java)"]
 addopts = "-m 'not pipeline'"
+
+[tool.ruff]
+line-length = 130
+target-version = "py311"
+extend-exclude = ["fabric/ipynb"]  # cópia gerada por tools/exportar_ipynb.py
+
+[tool.ruff.lint]
+select = ["E", "F", "W", "I", "N", "B", "UP", "SIM"]
+
+[tool.ruff.lint.flake8-bugbear]
+extend-immutable-calls = ["fastapi.Depends", "fastapi.Query"]
+
+[tool.ruff.lint.per-file-ignores]
+# notebooks do Fabric: spark, notebookutils e display são globais da sessão; a célula de
+# parâmetros vem antes dos imports; F para pyspark.sql.functions é a convenção do Spark
+"fabric/**" = ["F821", "E402", "N812", "E731", "E741", "UP017", "I001", "E501"]
+# geradores de mockup: nomes curtos de geometria (L, R, X, Y) são intencionais
+"tools/design/**" = ["N806", "E731", "E741", "B007", "B905"]
+"tools/gerar_relatorio.py" = ["N812"]  # import layout as L, usado como grade
