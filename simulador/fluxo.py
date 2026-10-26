@@ -4,8 +4,7 @@ from datetime import datetime
 
 import numpy as np
 
-from simulador.catalogos import (A_FAZER, BACKLOG, BLOQUEADA, CANCELADA, CONCLUIDA,
-                                 EM_ANDAMENTO, EM_REVISAO, STATUS_FINAIS)
+from simulador.catalogos import A_FAZER, BACKLOG, BLOQUEADA, CANCELADA, CONCLUIDA, EM_ANDAMENTO, EM_REVISAO, STATUS_FINAIS
 from simulador.tempo import avancar
 
 SIGMA = 0.6

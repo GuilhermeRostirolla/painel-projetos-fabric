@@ -211,7 +211,7 @@ class Pagina:
             "drillFilterOtherVisuals": True})
 
     def faixa_de_cartoes(self, itens):
-        for (x, y, w, h), (_, medida, contexto, cor_icone, _) in zip(L.kpis(len(itens)), itens):
+        for (x, y, w, _h), (_, medida, contexto, cor_icone, _) in zip(L.kpis(len(itens)), itens, strict=True):
             alerta = cor_icone == "vermelho"
             self.valor(medida, x + 70, y + 38, w - 88, 36, 20, COR["critico"] if alerta else COR["texto"],
                        negrito=True)
@@ -269,7 +269,7 @@ class Pagina:
         if len(nomes) == 1 and cores:
             pontos.append({"properties": {"defaultColor": cor(cores[0])}})
         else:
-            for m, c in zip(nomes, cores or []):
+            for m, c in zip(nomes, cores or [], strict=False):
                 pontos.append({"properties": {"fill": cor(c)}, "selector": {"metadata": projecao(m)["queryRef"]}})
         for valor_categoria, c in (destaques or {}).items():
             pontos.append({"properties": {"fill": cor(c)}, "selector": quando(categoria, valor_categoria)})

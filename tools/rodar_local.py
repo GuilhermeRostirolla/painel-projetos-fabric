@@ -18,7 +18,7 @@ sys.path.insert(0, str(RAIZ))
 MARCADOR = re.compile(r"^# (CELL|PARAMETERS CELL|MARKDOWN|METADATA) \*+\s*$")
 
 
-class _Saida(Exception):
+class _Saida(Exception):  # noqa: N818 - não é erro: imita notebookutils.notebook.exit
     def __init__(self, valor):
         self.valor = valor
 

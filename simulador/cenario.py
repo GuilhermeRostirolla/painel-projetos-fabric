@@ -204,7 +204,8 @@ def _farol(situacao: str, etiquetas: list[str], limite: date, tarefas: list, ini
     return "Amarelo" if decorrido - feitas > 0.05 else "Verde"
 
 
-def gerar(cfg: Config = Config()) -> dict[str, list[dict]]:
+def gerar(cfg: Config | None = None) -> dict[str, list[dict]]:
+    cfg = cfg or Config()
     ref = datetime.combine(cfg.data_referencia, time(23, 59, 59))
     pessoas, projetos = _mundo(cfg)
 

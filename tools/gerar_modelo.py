@@ -107,7 +107,7 @@ MEDIDAS = {
         ("% Projetos Entregues no Prazo", "Prazo", PCT,
          'DIVIDE ( CALCULATE ( [Projetos], dim_projeto[situacao_prazo] = "Concluído no prazo" ), [Projetos Concluídos] )'),
         ("Atraso Médio dos Projetos (dias)", "Prazo", DIAS,
-         'CALCULATE ( AVERAGE ( dim_projeto[dias_atraso] ), dim_projeto[situacao_prazo] IN { "Atrasado", "Concluído com atraso" } )'),
+         'CALCULATE ( AVERAGE ( dim_projeto[dias_atraso] ), dim_projeto[situacao_prazo] IN { "Atrasado", "Concluído com atraso" } )'),  # noqa: E501 (DAX legível numa linha)
         ("Horas Orçadas", "Esforço", HORAS, "SUM ( dim_projeto[horas_orcadas] )"),
         ("% Orçamento Consumido", "Esforço", PCT, "DIVIDE ( [Horas Apontadas], [Horas Orçadas] )"),
         ("Orçamento", "Portfólio", '"R$" #,0', "SUM ( dim_projeto[orcamento] )"),
@@ -126,7 +126,7 @@ MEDIDAS = {
          'DIVIDE (\n    CALCULATE ( [Tarefas], fato_tarefa[situacao_prazo] = "Concluída no prazo" ),\n'
          '    CALCULATE ( [Tarefas], fato_tarefa[situacao_prazo] IN { "Concluída no prazo", "Concluída com atraso" } )\n)'),
         ("Atraso Médio das Tarefas (dias)", "Prazo", DIAS,
-         'CALCULATE ( AVERAGE ( fato_tarefa[dias_atraso] ), fato_tarefa[situacao_prazo] IN { "Vencida", "Concluída com atraso" } )'),
+         'CALCULATE ( AVERAGE ( fato_tarefa[dias_atraso] ), fato_tarefa[situacao_prazo] IN { "Vencida", "Concluída com atraso" } )'),  # noqa: E501 (DAX legível numa linha)
         ("Lead Time Médio (dias)", "Tempo", DIAS, "AVERAGE ( fato_tarefa[lead_time_dias] )"),
         ("Ciclo Médio (dias)", "Tempo", DIAS, "AVERAGE ( fato_tarefa[ciclo_dias] )"),
         ("Ciclo Mediano (dias)", "Tempo", DIAS, "MEDIAN ( fato_tarefa[ciclo_dias] )"),
@@ -205,7 +205,7 @@ def nome_tmdl(nome: str) -> str:
 def bloco_dax(dax: str, recuo: str) -> str:
     if "\n" not in dax:
         return " " + dax
-    linhas = "\n".join(recuo + "\t\t" + l for l in dax.splitlines())
+    linhas = "\n".join(recuo + "\t\t" + linha for linha in dax.splitlines())
     return f" ```\n{linhas}\n{recuo}\t\t```"
 
 
