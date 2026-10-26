@@ -1,0 +1,26 @@
+name: testes
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  testes:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"   # mesmo Python do runtime do Fabric
+          cache: pip
+          cache-dependency-path: requirements*.txt
+      - name: Instalar dependências
+        run: pip install -r requirements-dev.txt ruff
+      - name: Lint
+        run: ruff check .
+      - name: Testes
+        run: pytest
