@@ -26,13 +26,13 @@ def blocos(texto: str) -> list[tuple[str, list[str]]]:
 
 def celula(tipo: str, linhas: list[str]) -> dict:
     if tipo == "MARKDOWN":
-        texto = [re.sub(r"^# ?", "", l) for l in linhas]
-        return {"cell_type": "markdown", "metadata": {}, "source": [l + "\n" for l in texto[:-1]] + texto[-1:]}
+        texto = [re.sub(r"^# ?", "", linha) for linha in linhas]
+        return {"cell_type": "markdown", "metadata": {}, "source": [t + "\n" for t in texto[:-1]] + texto[-1:]}
     meta = {"microsoft": {"language": "python", "language_group": "synapse_pyspark"}}
     if tipo == "PARAMETERS CELL":
         meta["tags"] = ["parameters"]
     return {"cell_type": "code", "execution_count": None, "metadata": meta, "outputs": [],
-            "source": [l + "\n" for l in linhas[:-1]] + linhas[-1:]}
+            "source": [linha + "\n" for linha in linhas[:-1]] + linhas[-1:]}
 
 
 def main() -> None:
@@ -40,7 +40,7 @@ def main() -> None:
     destino.mkdir(exist_ok=True)
     for pasta in sorted((RAIZ / "fabric").glob("*.Notebook")):
         nome = pasta.name.removesuffix(".Notebook")
-        celulas = [celula(t, l) for t, l in blocos((pasta / "notebook-content.py").read_text(encoding="utf-8"))]
+        celulas = [celula(t, linhas) for t, linhas in blocos((pasta / "notebook-content.py").read_text(encoding="utf-8"))]
         for i, c in enumerate(celulas):
             c["id"] = f"{nome[:5]}-{i:02d}"
         nb = {"cells": celulas,

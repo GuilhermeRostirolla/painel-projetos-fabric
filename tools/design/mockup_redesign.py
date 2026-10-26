@@ -12,8 +12,7 @@ from datetime import date
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).parent))
-from layout import (ALTURA, CARTOES, COR, DATA_REF, KPIS, LARGURA, LEGENDA_GANTT, NAV, PAGINAS, SLICERS, X0,  # noqa: E402
-                    area, kpis)
+from layout import ALTURA, CARTOES, COR, DATA_REF, KPIS, LARGURA, LEGENDA_GANTT, NAV, PAGINAS, SLICERS, X0, area, kpis  # noqa: E402
 
 S = Path(__file__).parent
 D = json.loads((S / "dados_mockup.json").read_text())
@@ -49,7 +48,7 @@ def caixa(x, y, w, h, extra=""):
 
 def fundo(pagina):
     nome, titulo, sub = next(p for p in PAGINAS if p[0] == pagina)
-    h = [f'<div class="nav"><div class="logo">PP</div>']
+    h = ['<div class="nav"><div class="logo">PP</div>']
     for i, (destino, rotulo, _) in enumerate(PAGINAS):
         ativo = destino == pagina
         ic = ["grade", "lista", "gantt"][i]

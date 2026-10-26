@@ -36,5 +36,5 @@ def test_codigo_compila(pasta):
 def test_ipynb_em_dia(pasta):
     nome = pasta.name.removesuffix(".Notebook")
     gerado = json.loads((RAIZ / "fabric" / "ipynb" / f"{nome}.ipynb").read_text(encoding="utf-8"))
-    esperado = [celula(t, l) for t, l in blocos((pasta / "notebook-content.py").read_text(encoding="utf-8"))]
+    esperado = [celula(t, linhas) for t, linhas in blocos((pasta / "notebook-content.py").read_text(encoding="utf-8"))]
     assert [{k: v for k, v in c.items() if k != "id"} for c in gerado["cells"]] == esperado
